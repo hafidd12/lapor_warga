@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+
+<html lang="id"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "tertiary-fixed-dim": "#94d4b1",
+                    "primary-fixed": "#c1ecd4",
+                    "on-primary-fixed": "#002114",
+                    "surface-dim": "#d9dadb",
+                    "tertiary-fixed": "#b0f1cc",
+                    "secondary-container": "#d8e2dc",
+                    "surface": "#f8f9fa",
+                    "primary": "#012d1d",
+                    "on-secondary-fixed-variant": "#3f4945",
+                    "on-secondary-fixed": "#151d1a",
+                    "on-primary": "#ffffff",
+                    "on-error": "#ffffff",
+                    "surface-tint": "#3f6653",
+                    "surface-container": "#edeeef",
+                    "on-tertiary-fixed": "#002113",
+                    "surface-container-highest": "#e1e3e4",
+                    "outline": "#717973",
+                    "secondary": "#57615c",
+                    "background": "#f8f9fa",
+                    "surface-bright": "#f8f9fa",
+                    "on-secondary": "#ffffff",
+                    "inverse-surface": "#2e3132",
+                    "on-primary-fixed-variant": "#274e3d",
+                    "on-surface-variant": "#414844",
+                    "inverse-primary": "#a5d0b9",
+                    "surface-variant": "#e1e3e4",
+                    "secondary-fixed-dim": "#bfc9c3",
+                    "on-secondary-container": "#5b6560",
+                    "on-tertiary-container": "#74b392",
+                    "on-tertiary": "#ffffff",
+                    "on-surface": "#191c1d",
+                    "on-background": "#191c1d",
+                    "tertiary": "#002d1b",
+                    "tertiary-container": "#00452d",
+                    "inverse-on-surface": "#f0f1f2",
+                    "error": "#ba1a1a",
+                    "primary-container": "#1b4332",
+                    "on-error-container": "#93000a",
+                    "primary-fixed-dim": "#a5d0b9",
+                    "outline-variant": "#c1c8c2",
+                    "surface-container-low": "#f3f4f5",
+                    "on-tertiary-fixed-variant": "#0c5136",
+                    "on-primary-container": "#86af99",
+                    "error-container": "#ffdad6",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-container-high": "#e7e8e9",
+                    "secondary-fixed": "#dbe5df"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "xs": "4px",
+                    "max-width": "1200px",
+                    "xl": "40px",
+                    "lg": "24px",
+                    "sm": "8px",
+                    "md": "16px",
+                    "margin-desktop": "64px",
+                    "unit": "4px",
+                    "margin-mobile": "16px",
+                    "gutter": "16px"
+            },
+            "fontFamily": {
+                    "body-lg": ["Inter"],
+                    "label-caps": ["Inter"],
+                    "button": ["Inter"],
+                    "headline-lg-mobile": ["Inter"],
+                    "headline-lg": ["Inter"],
+                    "body-sm": ["Inter"],
+                    "headline-md": ["Inter"]
+            },
+            "fontSize": {
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "button": ["15px", {"lineHeight": "20px", "fontWeight": "600"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #f8f9fa;
+            color: #191c1d;
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .tonal-elevation-1 {
+            box-shadow: 0 4px 12px rgba(0, 45, 27, 0.04);
+        }
+        .progress-step-active::before {
+            content: '';
+            position: absolute;
+            left: 7px;
+            top: 24px;
+            bottom: -8px;
+            width: 2px;
+            background-color: #012d1d;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #bfc9c3;
+            border-radius: 10px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface selection:bg-primary-fixed selection:text-on-primary-fixed">
+<!-- Top App Bar -->
+<header class="fixed top-0 left-0 w-full z-50 bg-surface flex justify-between items-center px-margin-mobile h-16 shadow-sm">
+<div class="flex items-center gap-4">
+<button class="p-2 -ml-2 hover:bg-surface-container-high transition-colors rounded-full active:scale-95 duration-150">
+<span class="material-symbols-outlined text-primary" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="font-headline-md text-headline-md font-bold text-primary">Detail Pengumuman</h1>
+</div>
+<div class="flex gap-2">
+<button class="p-2 hover:bg-surface-container-high transition-colors rounded-full active:scale-95 duration-150">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+</header>
+<!-- Content Canvas -->
+<main class="pt-16 pb-24 max-w-max-width mx-auto min-h-screen">
+<!-- Hero Image Section -->
+<div class="relative w-full aspect-[16/9] md:aspect-[21/9] overflow-hidden md:rounded-xl md:mt-4">
+<img alt="Kerja Bakti" class="w-full h-full object-cover" data-alt="A cinematic, high-angle photograph showing a group of diverse community members working together in a lush, green urban park during a 'Kerja Bakti' event. They are planting trees and cleaning walking paths under soft, warm morning sunlight that highlights the vibrant greens of the foliage. The scene evokes a sense of unity, environmental stewardship, and civic duty, consistent with a modern light-mode interface. The color palette is dominated by deep forest greens and bright, clean whites." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD2GeZH7G_g5vncJ3vbruSf1n1Vd9Wb74M-xnZEo2NgR96DhaDO81G4m0KoGHoqBzmuNUU6x3oTF4wPkC2jjfntt-bl8VwMMrMhu4f9CDNlhcJ1oGVa7_rwhRHCgZRkCgEGpLUZzJO7fx3NcYlOSD3s66xnjYvaHiqFfoY_QQbSFRZyTy9YqxBpN1cMDBig7i1MVF-3Bg9Ia2bLFiqtTMyckNQehT5cd3Y6m4uFuFbM9g30zzjnIiSaU9d_YA0PnRmFE57IVBa9-eA"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-margin-mobile">
+<span class="bg-primary-container text-on-primary-container px-3 py-1 rounded-full font-label-caps text-label-caps uppercase tracking-wider">
+                    Kegiatan
+                </span>
+</div>
+</div>
+<div class="px-margin-mobile mt-6 space-y-6">
+<!-- Headline & Meta -->
+<section class="space-y-3">
+<h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-primary leading-tight">
+                    Kerja Bakti Minggu Depan: Bersih-bersih Lingkungan RW 02
+                </h2>
+<div class="flex flex-wrap gap-y-3 gap-x-6 py-2 border-y border-outline-variant/30">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-on-tertiary-fixed-variant" data-icon="calendar_today" style="font-size: 20px;">calendar_today</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">24 Nov 2024</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-on-tertiary-fixed-variant" data-icon="schedule" style="font-size: 20px;">schedule</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">07:00 - 10:00 WIB</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-on-tertiary-fixed-variant" data-icon="location_on" style="font-size: 20px;">location_on</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Wilayah RT 05 / RW 02</span>
+</div>
+</div>
+</section>
+<!-- Detailed Body -->
+<section class="space-y-4">
+<div class="bg-surface-container-lowest p-md rounded-xl shadow-sm tonal-elevation-1">
+<p class="font-body-lg text-body-lg text-on-surface leading-relaxed">
+                        Halo Warga! Sehubungan dengan datangnya musim hujan, kami mengajak seluruh warga RT 05 untuk berpartisipasi dalam kegiatan kerja bakti lingkungan. Fokus utama kita kali ini adalah membersihkan saluran air (selokan) untuk mencegah banjir dan sarang nyamuk.
+                    </p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="bg-secondary-fixed p-md rounded-xl border border-outline-variant/20">
+<h3 class="font-button text-button text-primary mb-2 flex items-center gap-2">
+<span class="material-symbols-outlined" data-icon="handyman">handyman</span>
+                            Peralatan yang Dibawa
+                        </h3>
+<ul class="font-body-sm text-body-sm text-on-secondary-fixed-variant space-y-2">
+<li class="flex items-start gap-2">• Cangkul atau skop kecil</li>
+<li class="flex items-start gap-2">• Sapu lidi dan pengki</li>
+<li class="flex items-start gap-2">• Kantong sampah besar</li>
+</ul>
+</div>
+<div class="bg-tertiary-fixed p-md rounded-xl border border-outline-variant/20">
+<h3 class="font-button text-button text-on-tertiary-fixed-variant mb-2 flex items-center gap-2">
+<span class="material-symbols-outlined" data-icon="restaurant">restaurant</span>
+                            Konsumsi
+                        </h3>
+<p class="font-body-sm text-body-sm text-on-tertiary-fixed-variant">
+                            Disediakan sarapan bersama, snack, dan minuman teh hangat oleh Ibu-ibu PKK di Pos Ronda.
+                        </p>
+</div>
+</div>
+<!-- Schedule Tracker -->
+<div class="space-y-4 pt-4">
+<h3 class="font-button text-button text-primary">Agenda Kegiatan</h3>
+<div class="space-y-4 ml-2">
+<div class="relative pl-8 pb-4 progress-step-active">
+<div class="absolute left-0 top-0 w-4 h-4 rounded-full bg-primary flex items-center justify-center">
+<div class="w-1.5 h-1.5 rounded-full bg-white"></div>
+</div>
+<div>
+<p class="font-label-caps text-label-caps text-primary">07:00 - 07:15</p>
+<p class="font-body-sm text-body-sm text-on-surface font-semibold">Berkumpul di depan Pos Ronda RT 05</p>
+</div>
+</div>
+<div class="relative pl-8 pb-4 progress-step-active">
+<div class="absolute left-0 top-0 w-4 h-4 rounded-full bg-primary flex items-center justify-center">
+<div class="w-1.5 h-1.5 rounded-full bg-white"></div>
+</div>
+<div>
+<p class="font-label-caps text-label-caps text-primary">07:15 - 09:30</p>
+<p class="font-body-sm text-body-sm text-on-surface font-semibold">Pembersihan selokan dan perapihan taman</p>
+</div>
+</div>
+<div class="relative pl-8">
+<div class="absolute left-0 top-0 w-4 h-4 rounded-full border-2 border-primary bg-surface flex items-center justify-center"></div>
+<div>
+<p class="font-label-caps text-label-caps text-on-surface-variant">09:30 - Selesai</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Ramah tamah dan makan bersama</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Action Buttons -->
+<div class="flex flex-col md:flex-row gap-4 pt-6 pb-8">
+<button class="flex-1 bg-primary text-on-primary font-button text-button py-4 rounded-xl flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all shadow-md">
+<span class="material-symbols-outlined" data-icon="event_available">event_available</span>
+                    Tambahkan ke Kalender
+                </button>
+<button class="flex-1 border-2 border-primary text-primary font-button text-button py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-primary-fixed/20 active:scale-[0.98] transition-all">
+<span class="material-symbols-outlined" data-icon="share">share</span>
+                    Bagikan Pengumuman
+                </button>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-2 pb-safe bg-surface-container-lowest shadow-lg border-t border-outline-variant/20 rounded-t-xl">
+<a class="flex flex-col items-center justify-center text-secondary hover:bg-surface-container-high p-2 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-label-caps text-label-caps">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary hover:bg-surface-container-high p-2 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="add_box">add_box</span>
+<span class="font-label-caps text-label-caps">Report</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-4 py-1 active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-label-caps text-label-caps">Activity</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary hover:bg-surface-container-high p-2 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label-caps text-label-caps">Profile</span>
+</a>
+</nav>
+<script>
+        // Simple micro-interaction for share button
+        document.querySelector('button:has([data-icon="share"])').addEventListener('click', () => {
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Kerja Bakti RW 02',
+                    text: 'Ayo bergabung dalam Kerja Bakti Minggu Depan di Wilayah RT 05 / RW 02!',
+                    url: window.location.href
+                }).then(() => console.log('Shared successfully'))
+                  .catch((error) => console.log('Error sharing:', error));
+            } else {
+                alert('Tautan pengumuman telah disalin ke papan klip!');
+            }
+        });
+    </script>
+</body></html>

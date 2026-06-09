@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>Resident Directory - Admin</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "inverse-primary": "#a5d0b9",
+                      "on-surface": "#191c1d",
+                      "surface-container-high": "#e7e8e9",
+                      "outline": "#717973",
+                      "on-background": "#191c1d",
+                      "primary": "#012d1d",
+                      "inverse-on-surface": "#f0f1f2",
+                      "surface-dim": "#d9dadb",
+                      "secondary-fixed": "#dbe5df",
+                      "surface": "#f8f9fa",
+                      "primary-fixed-dim": "#a5d0b9",
+                      "surface-container": "#edeeef",
+                      "secondary-fixed-dim": "#bfc9c3",
+                      "tertiary-fixed": "#b0f1cc",
+                      "outline-variant": "#c1c8c2",
+                      "surface-variant": "#e1e3e4",
+                      "on-secondary": "#ffffff",
+                      "tertiary-fixed-dim": "#94d4b1",
+                      "on-secondary-container": "#5b6560",
+                      "on-primary-fixed-variant": "#274e3d",
+                      "surface-container-highest": "#e1e3e4",
+                      "on-tertiary-fixed-variant": "#0c5136",
+                      "surface-bright": "#f8f9fa",
+                      "on-secondary-fixed-variant": "#3f4945",
+                      "on-primary-container": "#86af99",
+                      "on-error-container": "#93000a",
+                      "primary-fixed": "#c1ecd4",
+                      "on-primary-fixed": "#002114",
+                      "error": "#ba1a1a",
+                      "secondary-container": "#d8e2dc",
+                      "background": "#f8f9fa",
+                      "surface-container-low": "#f3f4f5",
+                      "error-container": "#ffdad6",
+                      "surface-tint": "#3f6653",
+                      "secondary": "#57615c",
+                      "on-tertiary": "#ffffff",
+                      "surface-container-lowest": "#ffffff",
+                      "on-tertiary-fixed": "#002113",
+                      "on-tertiary-container": "#74b392",
+                      "tertiary-container": "#00452d",
+                      "tertiary": "#002d1b",
+                      "on-primary": "#ffffff",
+                      "primary-container": "#1b4332",
+                      "on-surface-variant": "#414844",
+                      "on-error": "#ffffff",
+                      "on-secondary-fixed": "#151d1a",
+                      "inverse-surface": "#2e3132"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "margin-desktop": "64px",
+                      "xl": "40px",
+                      "xs": "4px",
+                      "md": "16px",
+                      "max-width": "1200px",
+                      "sm": "8px",
+                      "lg": "24px",
+                      "gutter": "16px",
+                      "margin-mobile": "16px",
+                      "unit": "4px"
+              },
+              "fontFamily": {
+                      "body-sm": ["Inter"],
+                      "headline-lg": ["Inter"],
+                      "label-caps": ["Inter"],
+                      "headline-md": ["Inter"],
+                      "headline-lg-mobile": ["Inter"],
+                      "button": ["Inter"],
+                      "body-lg": ["Inter"]
+              },
+              "fontSize": {
+                      "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                      "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "headline-lg-mobile": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                      "button": ["15px", {"lineHeight": "20px", "fontWeight": "600"}],
+                      "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .ambient-card-shadow {
+            box-shadow: 0 4px 12px rgba(27, 67, 50, 0.04);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-lg min-h-screen pb-24">
+<!-- Top AppBar -->
+<header class="w-full sticky top-0 z-50 shadow-sm bg-surface flex items-center justify-between px-4 h-16 w-full">
+<div class="flex items-center gap-4">
+<button class="hover:bg-surface-container transition-colors active:scale-95 duration-150 p-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">arrow_back</span>
+</button>
+<h1 class="font-headline-md text-headline-md text-primary">Resident Directory</h1>
+</div>
+<div class="flex items-center gap-2">
+<button class="hover:bg-surface-container transition-colors active:scale-95 duration-150 p-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">search</span>
+</button>
+</div>
+</header>
+<main class="max-w-[1200px] mx-auto px-4 md:px-margin-desktop py-6">
+<!-- Search & Utility Section -->
+<div class="mb-8 space-y-6">
+<div class="relative group">
+<div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-outline">search</span>
+</div>
+<input class="w-full h-14 pl-12 pr-4 bg-surface-container-lowest border border-outline-variant rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all outline-none font-body-lg" placeholder="Cari nama warga..." type="text"/>
+</div>
+<!-- Horizontal Filter Chips -->
+<div class="flex gap-3 overflow-x-auto no-scrollbar pb-2">
+<button class="whitespace-nowrap px-6 py-2.5 rounded-full bg-primary text-on-primary font-button shadow-sm hover:opacity-90 transition-all">
+                    Semua
+                </button>
+<button class="whitespace-nowrap px-6 py-2.5 rounded-full bg-secondary-container text-on-secondary-container font-button border border-outline-variant/30 hover:bg-outline-variant/20 transition-all">
+                    Aktif
+                </button>
+<button class="whitespace-nowrap px-6 py-2.5 rounded-full bg-secondary-container text-on-secondary-container font-button border border-outline-variant/30 hover:bg-outline-variant/20 transition-all">
+                    Menunggu Verifikasi
+                </button>
+<button class="whitespace-nowrap px-6 py-2.5 rounded-full bg-secondary-container text-on-secondary-container font-button border border-outline-variant/30 hover:bg-outline-variant/20 transition-all">
+                    Blokir
+                </button>
+</div>
+</div>
+<!-- Resident Grid/List -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+<!-- Card 1 -->
+<div class="bg-surface-container-lowest p-md rounded-xl ambient-card-shadow border border-outline-variant/10 flex items-start justify-between group hover:border-primary/20 transition-colors">
+<div class="flex gap-4">
+<div class="relative">
+<img alt="Profile" class="w-14 h-14 rounded-full object-cover" data-alt="A professional headshot portrait of a friendly Indonesian man in his early 30s with short black hair. He is wearing a clean white polo shirt against a soft, out-of-focus neighborhood background. The lighting is natural and bright, conveying a sense of community, trust, and professional minimalist aesthetics consistent with a modern civic app." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDhaPpa8fyi8Y5GVrWVXsad2d10y1PLIaXH63YjR84Ox0BeAXcJlaqN3UnbxpGtHxN5Bgqq2cLlTsTGKb7I_8zFzcD-UKABy_JtXV-1r6GQs7UjaI6iZREO3OJAsdwRSbmQeAQimVby3cXZNaumzOI6ODVF6svbkUbzcNH46Je-naNXyS0HKnAxjZYjNtU1YIUem0oCv9mS-nylhSkZbxLYBuzDqgCilnPf_3Y5mm84U6XBmjLp1ASQ6xi8VQbzdGr2SIkqcPUim_s"/>
+<div class="absolute -bottom-1 -right-1 bg-green-500 w-4 h-4 rounded-full border-2 border-surface"></div>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Budi Santoso</h3>
+<p class="font-body-sm text-on-surface-variant mb-3">Blok C4 No. 12</p>
+<span class="inline-flex items-center px-3 py-1 rounded-full text-label-caps font-label-caps bg-green-100 text-green-800">
+                            Verified
+                        </span>
+</div>
+</div>
+<button class="p-2 hover:bg-surface-container rounded-lg transition-colors">
+<span class="material-symbols-outlined text-outline">more_vert</span>
+</button>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container-lowest p-md rounded-xl ambient-card-shadow border border-outline-variant/10 flex items-start justify-between group hover:border-primary/20 transition-colors">
+<div class="flex gap-4">
+<div class="relative">
+<img alt="Profile" class="w-14 h-14 rounded-full object-cover" data-alt="A high-quality portrait of a young Indonesian woman in her late 20s wearing a modest hijab and a professional blouse. She is smiling warmly in a bright, clean indoor setting with modern architectural details. The image has a light, airy mood with soft shadows, reflecting a professional and transparent civic directory interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC-kyDtkvg-I7FS7BjmVge_WddDqjv3NJeVrkUnRecOnYPEuQd-9hgZc_xCz1G3CTY1FmzUXfaQKKLukIK4C3RgIcuJ9Ah0Lkk9SUAD2hZ4-RE9Y-WsrosYii8cUWWefteZPEEOkzMPd0hOo1vW7YhyHEDmPbTuU9ollsxbthaLG8vxJ1estKXLkwitYZo3K7BRSs6F2-PEs0_hPVkcsRPIujsJLh_DEGHcnxlxCKMqQk0r0TUsxpoYySdRFTTgiy7Dy7fLwjjSaFU"/>
+<div class="absolute -bottom-1 -right-1 bg-orange-500 w-4 h-4 rounded-full border-2 border-surface"></div>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Siti Aminah</h3>
+<p class="font-body-sm text-on-surface-variant mb-3">Blok A2 No. 05</p>
+<span class="inline-flex items-center px-3 py-1 rounded-full text-label-caps font-label-caps bg-orange-100 text-orange-800">
+                            Pending
+                        </span>
+</div>
+</div>
+<button class="p-2 hover:bg-surface-container rounded-lg transition-colors">
+<span class="material-symbols-outlined text-outline">more_vert</span>
+</button>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-container-lowest p-md rounded-xl ambient-card-shadow border border-outline-variant/10 flex items-start justify-between group hover:border-primary/20 transition-colors">
+<div class="flex gap-4">
+<div class="relative">
+<div class="w-14 h-14 rounded-full bg-secondary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-3xl">account_circle</span>
+</div>
+<div class="absolute -bottom-1 -right-1 bg-green-500 w-4 h-4 rounded-full border-2 border-surface"></div>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Agus Prayoga</h3>
+<p class="font-body-sm text-on-surface-variant mb-3">Blok B1 No. 08</p>
+<span class="inline-flex items-center px-3 py-1 rounded-full text-label-caps font-label-caps bg-green-100 text-green-800">
+                            Verified
+                        </span>
+</div>
+</div>
+<button class="p-2 hover:bg-surface-container rounded-lg transition-colors">
+<span class="material-symbols-outlined text-outline">more_vert</span>
+</button>
+</div>
+<!-- Card 4 -->
+<div class="bg-surface-container-lowest p-md rounded-xl ambient-card-shadow border border-outline-variant/10 flex items-start justify-between group hover:border-primary/20 transition-colors">
+<div class="flex gap-4">
+<div class="relative">
+<img alt="Profile" class="w-14 h-14 rounded-full object-cover" data-alt="A portrait of an elderly Indonesian man with glasses, wearing a traditional batik shirt, sitting in a bright and comfortable living room. The atmosphere is peaceful and respectful. The image is captured with professional studio-quality lighting to match the clean, reliable aesthetic of a community-focused mobile application." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCtUnReYooq9HB1bks8XV68KB0IMpPHo7js9M0XyKUhyxytOqLQh6E3rSXf9Dad10zJQm2iMvkmOtlmKvCrWe6037lN-WzZYgsh6bHc2hVoNkoDNtX6U213kjW2m3oUN7M2agQ6f80S8rvM7XZTmTtzhgoltcECLKUobDWm3TW3-RUwk4g83WT5SEBlt68f-JFKHeI-YcAqs90sUtlPEzDXtOP7bTg_UnDfL0zkodOB-3lEhNaRosIdUvon5xnKpGWF404Ndv5Pm00"/>
+<div class="absolute -bottom-1 -right-1 bg-green-500 w-4 h-4 rounded-full border-2 border-surface"></div>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Haji Maimun</h3>
+<p class="font-body-sm text-on-surface-variant mb-3">Blok D10 No. 44</p>
+<span class="inline-flex items-center px-3 py-1 rounded-full text-label-caps font-label-caps bg-green-100 text-green-800">
+                            Verified
+                        </span>
+</div>
+</div>
+<button class="p-2 hover:bg-surface-container rounded-lg transition-colors">
+<span class="material-symbols-outlined text-outline">more_vert</span>
+</button>
+</div>
+<!-- Card 5 -->
+<div class="bg-surface-container-lowest p-md rounded-xl ambient-card-shadow border border-outline-variant/10 flex items-start justify-between group hover:border-primary/20 transition-colors">
+<div class="flex gap-4">
+<div class="relative">
+<div class="w-14 h-14 rounded-full bg-secondary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-3xl">account_circle</span>
+</div>
+<div class="absolute -bottom-1 -right-1 bg-red-500 w-4 h-4 rounded-full border-2 border-surface"></div>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Rudi Hermawan</h3>
+<p class="font-body-sm text-on-surface-variant mb-3">Blok A1 No. 01</p>
+<span class="inline-flex items-center px-3 py-1 rounded-full text-label-caps font-label-caps bg-red-100 text-red-800">
+                            Blocked
+                        </span>
+</div>
+</div>
+<button class="p-2 hover:bg-surface-container rounded-lg transition-colors">
+<span class="material-symbols-outlined text-outline">more_vert</span>
+</button>
+</div>
+<!-- Card 6 -->
+<div class="bg-surface-container-lowest p-md rounded-xl ambient-card-shadow border border-outline-variant/10 flex items-start justify-between group hover:border-primary/20 transition-colors">
+<div class="flex gap-4">
+<div class="relative">
+<img alt="Profile" class="w-14 h-14 rounded-full object-cover" data-alt="Close-up of a smiling young adult Indonesian man with stylish glasses, in a workspace environment. The background shows hints of modern greenery and light wood furniture. The overall palette is soft and neutral, reinforcing the brand's identity of transparency and modern civic management." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCiL24PiiL8jBFsdj8ANmtOc2BESLIGdXSAYw6_Xw4YYMc0hJDjX73z_muBT-Kb6i6JJJnN4BOR_N-EBaZZbgI_bynC_zHywstRWanq7LkSiXhNt-XrEV5C97c94Upk8eTGUaqF9VCZl9-7a84NcAyfQqhDLmXGYQAXYTV7Gg5r0JwoqOGTWUSsySLEaPHrqBvAR8fBidI-FzPHk893kTd2pL03XwwfqhZRdVqJA9zQqiXmT8biXJ5IzQ2ch0jD3Mk4bOapmJlqKeA"/>
+<div class="absolute -bottom-1 -right-1 bg-orange-500 w-4 h-4 rounded-full border-2 border-surface"></div>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Doni Pratama</h3>
+<p class="font-body-sm text-on-surface-variant mb-3">Blok C2 No. 03</p>
+<span class="inline-flex items-center px-3 py-1 rounded-full text-label-caps font-label-caps bg-orange-100 text-orange-800">
+                            Pending
+                        </span>
+</div>
+</div>
+<button class="p-2 hover:bg-surface-container rounded-lg transition-colors">
+<span class="material-symbols-outlined text-outline">more_vert</span>
+</button>
+</div>
+</div>
+<!-- Pagination Placeholder -->
+<div class="mt-12 flex justify-center items-center gap-4">
+<button class="w-10 h-10 rounded-full border border-outline-variant flex items-center justify-center text-outline hover:border-primary hover:text-primary transition-all">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<div class="flex gap-2">
+<span class="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center font-button">1</span>
+<span class="w-10 h-10 rounded-full border border-outline-variant text-outline flex items-center justify-center font-button hover:bg-surface-container-high transition-all cursor-pointer">2</span>
+<span class="w-10 h-10 rounded-full border border-outline-variant text-outline flex items-center justify-center font-button hover:bg-surface-container-high transition-all cursor-pointer">3</span>
+</div>
+<button class="w-10 h-10 rounded-full border border-outline-variant flex items-center justify-center text-outline hover:border-primary hover:text-primary transition-all">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-2 pb-safe bg-surface shadow-lg">
+<button class="flex flex-col items-center justify-center text-on-surface-variant px-3 py-1 hover:bg-secondary-container/50 active:scale-90 transition-all duration-200">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-caps text-label-caps">Dashboard</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant px-3 py-1 hover:bg-secondary-container/50 active:scale-90 transition-all duration-200">
+<span class="material-symbols-outlined">description</span>
+<span class="font-label-caps text-label-caps">Reports</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl px-3 py-1 active:scale-90 transition-all duration-200">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">group</span>
+<span class="font-label-caps text-label-caps">Residents</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant px-3 py-1 hover:bg-secondary-container/50 active:scale-90 transition-all duration-200">
+<span class="material-symbols-outlined">account_circle</span>
+<span class="font-label-caps text-label-caps">Profile</span>
+</button>
+</nav>
+<!-- FAB for adding new resident (Optional context-appropriate action) -->
+<button class="fixed right-6 bottom-24 bg-primary text-on-primary w-14 h-14 rounded-2xl shadow-xl flex items-center justify-center active:scale-90 transition-transform z-40">
+<span class="material-symbols-outlined">person_add</span>
+</button>
+<script>
+        // Micro-interactions for Filter Chips
+        document.querySelectorAll('.no-scrollbar button').forEach(button => {
+            button.addEventListener('click', () => {
+                document.querySelectorAll('.no-scrollbar button').forEach(btn => {
+                    btn.classList.remove('bg-primary', 'text-on-primary');
+                    btn.classList.add('bg-secondary-container', 'text-on-secondary-container');
+                });
+                button.classList.add('bg-primary', 'text-on-primary');
+                button.classList.remove('bg-secondary-container', 'text-on-secondary-container');
+            });
+        });
+
+        // Atmospheric effect: Subtle scroll parallax for header
+        window.addEventListener('scroll', () => {
+            const header = document.querySelector('header');
+            if (window.scrollY > 20) {
+                header.classList.add('shadow-md');
+                header.classList.remove('shadow-sm');
+            } else {
+                header.classList.add('shadow-sm');
+                header.classList.remove('shadow-md');
+            }
+        });
+    </script>
+</body></html>

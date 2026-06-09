@@ -1,0 +1,205 @@
+<!DOCTYPE html><html lang="id"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Lapor Warga - Report</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-container": "#1b4332",
+                        "on-primary-container": "#86af99",
+                        "on-secondary-container": "#5b6560",
+                        "secondary-container": "#d8e2dc",
+                        "on-primary-fixed-variant": "#274e3d",
+                        "surface-container": "#edeeef",
+                        "outline-variant": "#c1c8c2",
+                        "on-tertiary": "#ffffff",
+                        "surface": "#f8f9fa",
+                        "on-secondary": "#ffffff",
+                        "on-error": "#ffffff",
+                        "secondary": "#57615c",
+                        "on-surface-variant": "#414844",
+                        "primary-fixed-dim": "#a5d0b9",
+                        "surface-bright": "#f8f9fa",
+                        "on-surface": "#191c1d",
+                        "on-error-container": "#93000a",
+                        "error": "#ba1a1a",
+                        "surface-dim": "#d9dadb",
+                        "inverse-on-surface": "#f0f1f2",
+                        "on-tertiary-container": "#74b392",
+                        "on-tertiary-fixed-variant": "#0c5136",
+                        "surface-tint": "#3f6653",
+                        "surface-container-high": "#e7e8e9",
+                        "on-primary": "#ffffff",
+                        "on-background": "#191c1d",
+                        "on-tertiary-fixed": "#002113",
+                        "on-secondary-fixed-variant": "#3f4945",
+                        "inverse-surface": "#2e3132",
+                        "on-primary-fixed": "#002114",
+                        "surface-variant": "#e1e3e4",
+                        "secondary-fixed": "#dbe5df",
+                        "tertiary-fixed": "#b0f1cc",
+                        "tertiary-container": "#00452d",
+                        "surface-container-highest": "#e1e3e4",
+                        "inverse-primary": "#a5d0b9",
+                        "background": "#f8f9fa",
+                        "error-container": "#ffdad6",
+                        "primary-fixed": "#c1ecd4",
+                        "primary": "#1b4332",
+                        "on-secondary-fixed": "#151d1a",
+                        "tertiary-fixed-dim": "#94d4b1",
+                        "secondary-fixed-dim": "#bfc9c3",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary": "#002d1b",
+                        "surface-container-low": "#f3f4f5",
+                        "outline": "#717973"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sm": "8px",
+                        "lg": "24px",
+                        "xs": "4px",
+                        "unit": "4px",
+                        "margin-desktop": "64px",
+                        "gutter": "16px",
+                        "xl": "40px",
+                        "max-width": "1200px",
+                        "margin-mobile": "16px",
+                        "md": "16px"
+                    },
+                    "fontFamily": {
+                        "body-sm": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "button": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "label-caps": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "button": ["15px", {"lineHeight": "20px", "fontWeight": "600"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-lg-mobile": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                        "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-background text-on-surface min-h-screen pb-24">
+<!-- Top AppBar -->
+<header class="bg-surface shadow-sm flex justify-between items-center w-full px-margin-mobile h-16 sticky top-0 z-50">
+<div class="flex items-center gap-4">
+<button class="hover:bg-surface-container-high transition-colors p-2 rounded-full active:opacity-80 active:scale-95 duration-150">
+<span class="material-symbols-outlined text-primary">arrow_back</span>
+</button>
+<h1 class="font-headline-md text-headline-md font-bold text-primary">Report</h1>
+</div>
+<div class="flex items-center">
+<button class="hover:bg-surface-container-high transition-colors p-2 rounded-full active:opacity-80 active:scale-95 duration-150">
+<span class="material-symbols-outlined text-primary">notifications</span>
+</button>
+</div>
+</header>
+<main class="max-w-[1200px] mx-auto px-margin-mobile py-lg">
+<div class="space-y-lg">
+<!-- Title Input -->
+<section class="bg-surface-container-lowest p-md rounded-xl shadow-sm border border-outline-variant/10">
+<label class="block font-label-caps text-label-caps text-secondary mb-sm uppercase">Judul Laporan</label>
+<input class="w-full p-md rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-body-lg placeholder:text-outline-variant transition-all" placeholder="Tuliskan judul laporan singkat atau subjek laporan..." type="text">
+</section>
+<!-- Detail Input -->
+<section class="bg-surface-container-lowest p-md rounded-xl shadow-sm border border-outline-variant/10">
+<label class="block font-label-caps text-label-caps text-secondary mb-sm uppercase">Detail Laporan</label>
+<textarea class="w-full h-32 p-md rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none text-body-lg resize-none placeholder:text-outline-variant transition-all" placeholder="Ceritakan detail kejadian atau masalah yang Anda temukan..."></textarea>
+</section>
+<!-- Priority Selection -->
+<section class="bg-surface-container-lowest p-md rounded-xl shadow-sm border border-outline-variant/10">
+<label class="block font-label-caps text-label-caps text-secondary mb-sm uppercase">Prioritas</label>
+<div class="flex bg-surface-container-low p-1 rounded-lg gap-1">
+<button class="flex-1 py-2 text-body-sm font-button rounded-md transition-all bg-surface-container-lowest shadow-sm text-primary" onclick="selectSegment(this)">Rendah</button>
+<button class="flex-1 py-2 text-body-sm font-button rounded-md transition-all text-secondary hover:bg-surface-container-high" onclick="selectSegment(this)">Sedang</button>
+<button class="flex-1 py-2 text-body-sm font-button rounded-md transition-all text-secondary hover:bg-surface-container-high" onclick="selectSegment(this)">Tinggi</button>
+</div>
+</section>
+<!-- Image Upload -->
+<section class="bg-surface-container-lowest p-md rounded-xl shadow-sm border border-outline-variant/10">
+<label class="block font-label-caps text-label-caps text-secondary mb-sm uppercase">Unggah Foto</label>
+<div class="border-2 border-dashed border-outline-variant rounded-xl aspect-video flex flex-col items-center justify-center gap-2 text-outline hover:border-primary hover:text-primary transition-colors cursor-pointer group bg-surface-container-low/30">
+<span class="material-symbols-outlined text-4xl group-hover:scale-110 transition-transform">add_a_photo</span>
+<span class="font-button text-button">Pilih Foto Kejadian</span>
+</div>
+</section>
+<!-- Location Selection -->
+<section class="bg-surface-container-lowest p-md rounded-xl shadow-sm border border-outline-variant/10">
+<label class="block font-label-caps text-label-caps text-secondary mb-sm uppercase">Pilih Lokasi</label>
+<div class="relative rounded-xl overflow-hidden aspect-[16/9] group cursor-pointer border border-outline-variant">
+<img alt="Map Preview" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDqk3khg_jUYRZ7Wedvlju2akDIwpzx-oHQxg_-WC2gP5lBmCX4SDK5JyZia3l4I9Ms7J-8F5bhuMCPLDRZoHHCiFQbttDc-tbXbzV20b-hMk3-Fh09om6dJzJVgdsdrDuBI-aFTXBOfk_aDa5FuDKcz2wP8_ILrN4woF7sfekTDgOGjp07yAZoD7hdNKTjcbzD7EEOXsWVMA21ax2cik2sGBha_Fub0leX9VMKX8HShd-OYhrXoKxooJzKW5Tb9Yk4pF5emOSi-ZY">
+<div class="absolute inset-0 bg-black/10 flex items-center justify-center group-hover:bg-black/20 transition-all">
+<div class="bg-surface-container-lowest px-4 py-2 rounded-full flex items-center gap-2 shadow-lg active:scale-95 transition-transform border border-outline-variant">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">location_on</span>
+<span class="font-button text-button text-primary">Tentukan Titik Lokasi</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Submit Button -->
+<div class="pt-4">
+<button class="w-full bg-primary text-on-primary font-button text-button py-4 rounded-xl shadow-lg hover:opacity-90 transition-all active:scale-95 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">send</span>
+                    Kirim Laporan
+                </button>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-4 pt-2 bg-surface shadow-[0_-4px_12px_rgba(0,0,0,0.05)] rounded-t-xl border-t border-outline-variant/20">
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1.5 hover:bg-surface-container-high transition-all active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-caps text-[10px] mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl px-4 py-1.5 active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">add_circle</span>
+<span class="font-label-caps text-[10px] mt-1 font-bold">Report</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1.5 hover:bg-surface-container-high transition-all active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined">history</span>
+<span class="font-label-caps text-[10px] mt-1">Activity</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1.5 hover:bg-surface-container-high transition-all active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-label-caps text-[10px] mt-1">Profile</span>
+</a>
+</nav>
+<script>
+        function selectSegment(btn) {
+            const container = btn.parentElement;
+            container.querySelectorAll('button').forEach(b => {
+                b.classList.remove('bg-surface-container-lowest', 'shadow-sm', 'text-primary');
+                b.classList.add('text-secondary', 'hover:bg-surface-container-high');
+            });
+            btn.classList.add('bg-surface-container-lowest', 'shadow-sm', 'text-primary');
+            btn.classList.remove('text-secondary', 'hover:bg-surface-container-high');
+        }
+    </script>
+</body></html>

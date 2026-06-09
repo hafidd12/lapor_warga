@@ -1,0 +1,215 @@
+<!DOCTYPE html><html lang="id"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        .animate-shimmer {
+            animation: shimmer 2s infinite ease-in-out;
+        }
+        @keyframes slow-pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.02); }
+        }
+        .animate-slow-pulse {
+            animation: slow-pulse 4s infinite ease-in-out;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-error-container": "#93000a",
+                        "outline": "#717973",
+                        "on-primary-fixed-variant": "#274e3d",
+                        "on-surface": "#191c1d",
+                        "primary": "#012d1d",
+                        "on-background": "#191c1d",
+                        "surface-bright": "#f8f9fa",
+                        "surface-container-low": "#f3f4f5",
+                        "tertiary-fixed": "#b0f1cc",
+                        "on-primary-container": "#86af99",
+                        "secondary-fixed-dim": "#bfc9c3",
+                        "on-primary": "#ffffff",
+                        "secondary-container": "#d8e2dc",
+                        "tertiary-fixed-dim": "#94d4b1",
+                        "inverse-on-surface": "#f0f1f2",
+                        "tertiary": "#002d1b",
+                        "on-secondary": "#ffffff",
+                        "secondary-fixed": "#dbe5df",
+                        "inverse-primary": "#a5d0b9",
+                        "on-secondary-container": "#5b6560",
+                        "primary-fixed": "#c1ecd4",
+                        "primary-container": "#1b4332",
+                        "surface-container-high": "#e7e8e9",
+                        "surface": "#f8f9fa",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-container": "#74b392",
+                        "tertiary-container": "#00452d",
+                        "surface-variant": "#e1e3e4",
+                        "background": "#f8f9fa",
+                        "surface-container": "#edeeef",
+                        "surface-dim": "#d9dadb",
+                        "secondary": "#57615c",
+                        "on-tertiary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "primary-fixed-dim": "#a5d0b9",
+                        "surface-tint": "#3f6653",
+                        "on-tertiary-fixed-variant": "#0c5136",
+                        "on-primary-fixed": "#002114",
+                        "on-error": "#ffffff",
+                        "on-surface-variant": "#414844",
+                        "inverse-surface": "#2e3132",
+                        "surface-container-highest": "#e1e3e4",
+                        "on-secondary-fixed": "#151d1a",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-fixed": "#002113",
+                        "outline-variant": "#c1c8c2",
+                        "on-secondary-fixed-variant": "#3f4945"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xs": "4px",
+                        "lg": "24px",
+                        "margin-desktop": "64px",
+                        "md": "16px",
+                        "unit": "4px",
+                        "margin-mobile": "16px",
+                        "gutter": "16px",
+                        "sm": "8px",
+                        "max-width": "1200px",
+                        "xl": "40px"
+                    },
+                    "fontFamily": {
+                        "body-sm": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "button": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+                        "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "button": ["15px", { "lineHeight": "20px", "fontWeight": "600" }]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-primary-container min-h-screen flex flex-items-center justify-center overflow-hidden font-body-lg">
+<!-- Background Texture Layer -->
+<div class="absolute inset-0 opacity-10 pointer-events-none overflow-hidden">
+<div class="absolute -top-24 -left-24 w-96 h-96 bg-primary-fixed rounded-full blur-[100px]"></div>
+<div class="absolute -bottom-24 -right-24 w-96 h-96 bg-tertiary-fixed rounded-full blur-[100px]"></div>
+</div>
+<!-- Main Content Canvas -->
+<main class="relative z-10 flex flex-col items-center justify-center w-full max-w-md px-margin-mobile h-screen">
+<!-- Logo Section -->
+<div class="mb-12 flex flex-col items-center space-y-6 animate-slow-pulse">
+<div class="w-32 h-32 md:w-40 md:h-40 bg-on-primary rounded-[32px] shadow-2xl flex items-center justify-center relative group"><img src="https://lh3.googleusercontent.com/aida-public/AB6AXuCob5-ijRSvtlLXTV3jQKa7QDqIAKPCbg4TRkaRASMK3edpvqY7FGdBkR2poPqrvLUADzAdj6tbMRMGE6MITtEvc8bBSSRfNDOrt1JZABaZvqazeFCd3TFQjR4Wl61el87GjOFRLtU-KI_Y5p5b1BdeUHH09APKIdHnGZerL8Uv2LSixaCUDiluKyk0jaoV0KPPuYFxF6Udg3mrNLs7Th4dbTkCQH8H0xHWXw9tlJcxY-zuHinAcHWZ0vaddhWxM-KYa3FExiVwxTc" alt="Lapor Warga Logo" class="w-full h-full object-contain p-4 rounded-[32px]"><div class="absolute inset-0 rounded-[32px] border-4 border-primary-fixed opacity-30 animate-ping"></div></div>
+<div class="text-center">
+<h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-primary tracking-tight">
+                    Lapor Warga
+                </h1>
+<p class="font-body-sm text-body-sm text-on-primary-container/80 mt-2 tracking-wide uppercase font-medium">
+                    Menuju Lingkungan yang Lebih Baik
+                </p>
+</div>
+</div>
+<!-- Loading Indicator -->
+<div class="w-full max-w-[200px] space-y-4">
+<!-- Progress Track Concept -->
+<div class="h-1 w-full bg-on-primary/10 rounded-full overflow-hidden relative">
+<div class="absolute top-0 left-0 h-full bg-primary-fixed rounded-full transition-all duration-300 ease-out" id="progress-bar" style="width: 100%;"></div>
+<!-- Shimmer Effect -->
+<div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent w-1/2 animate-shimmer"></div>
+</div>
+<div class="flex justify-center">
+<p class="font-label-caps text-label-caps text-primary-fixed-dim/90 text-primary-fixed" id="loading-text" style="opacity: 1;">Sistem Siap</p>
+</div>
+</div>
+</main>
+<!-- Branding Element Footer -->
+<footer class="fixed bottom-12 w-full text-center px-6">
+<div class="flex items-center justify-center gap-2 opacity-60">
+<span class="material-symbols-outlined text-on-primary text-[18px]">public</span>
+<span class="font-label-caps text-label-caps text-on-primary">Suara Warga, Solusi Bersama</span>
+</div>
+</footer>
+<script>
+        // Micro-interaction for loading simulation
+        document.addEventListener('DOMContentLoaded', () => {
+            const progressBar = document.getElementById('progress-bar');
+            const loadingText = document.getElementById('loading-text');
+            const texts = [
+                "Menyiapkan modul pelaporan...",
+                "Menghubungkan ke pusat data...",
+                "Memverifikasi identitas warga...",
+                "Menghubungkan komunitas...",
+                "Hampir selesai..."
+            ];
+            
+            let progress = 0;
+            let textIndex = 0;
+
+            const updateLoading = () => {
+                if (progress < 100) {
+                    // Randomized progress steps
+                    progress += Math.floor(Math.random() * 15) + 5;
+                    if (progress > 100) progress = 100;
+                    
+                    progressBar.style.width = `${progress}%`;
+                    
+                    // Update text occasionally
+                    if (progress > (textIndex + 1) * 20 && textIndex < texts.length - 1) {
+                        textIndex++;
+                        loadingText.style.opacity = '0';
+                        setTimeout(() => {
+                            loadingText.innerText = texts[textIndex];
+                            loadingText.style.opacity = '1';
+                        }, 200);
+                    }
+
+                    const nextStep = Math.floor(Math.random() * 600) + 200;
+                    setTimeout(updateLoading, nextStep);
+                } else {
+                    loadingText.innerText = "Sistem Siap";
+                    loadingText.classList.add('text-primary-fixed');
+                }
+            };
+
+            // Start simulation
+            setTimeout(updateLoading, 800);
+        });
+    </script>
+
+
+</body></html>

@@ -1,0 +1,236 @@
+<!DOCTYPE html><html lang="id"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "outline-variant": "#c1c8c2",
+                    "error-container": "#ffdad6",
+                    "outline": "#717973",
+                    "secondary-fixed-dim": "#bfc9c3",
+                    "secondary": "#57615c",
+                    "on-secondary-container": "#5b6560",
+                    "on-primary-fixed-variant": "#274e3d",
+                    "inverse-primary": "#a5d0b9",
+                    "background": "#f8f9fa",
+                    "tertiary-container": "#00452d",
+                    "surface-variant": "#e1e3e4",
+                    "inverse-surface": "#2e3132",
+                    "on-background": "#191c1d",
+                    "surface-dim": "#d9dadb",
+                    "surface": "#f8f9fa",
+                    "on-tertiary": "#ffffff",
+                    "tertiary-fixed-dim": "#94d4b1",
+                    "error": "#ba1a1a",
+                    "surface-container": "#edeeef",
+                    "on-primary-fixed": "#002114",
+                    "secondary-fixed": "#dbe5df",
+                    "on-secondary": "#ffffff",
+                    "tertiary-fixed": "#b0f1cc",
+                    "surface-container-high": "#e7e8e9",
+                    "tertiary": "#002d1b",
+                    "on-tertiary-fixed": "#002113",
+                    "surface-container-highest": "#e1e3e4",
+                    "on-surface": "#191c1d",
+                    "surface-bright": "#f8f9fa",
+                    "surface-tint": "#3f6653",
+                    "primary": "#012d1d",
+                    "secondary-container": "#d8e2dc",
+                    "on-secondary-fixed-variant": "#3f4945",
+                    "on-primary-container": "#86af99",
+                    "on-tertiary-container": "#74b392",
+                    "inverse-on-surface": "#f0f1f2",
+                    "on-error": "#ffffff",
+                    "on-primary": "#ffffff",
+                    "primary-fixed-dim": "#a5d0b9",
+                    "on-surface-variant": "#414844",
+                    "surface-container-lowest": "#ffffff",
+                    "primary-fixed": "#c1ecd4",
+                    "primary-container": "#1b4332",
+                    "on-secondary-fixed": "#151d1a",
+                    "surface-container-low": "#f3f4f5",
+                    "on-error-container": "#93000a",
+                    "on-tertiary-fixed-variant": "#0c5136"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "xl": "40px",
+                    "md": "16px",
+                    "gutter": "16px",
+                    "sm": "8px",
+                    "margin-mobile": "16px",
+                    "xs": "4px",
+                    "unit": "4px",
+                    "margin-desktop": "64px",
+                    "max-width": "1200px",
+                    "lg": "24px"
+            },
+            "fontFamily": {
+                    "body-sm": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "headline-lg": ["Inter"],
+                    "button": ["Inter"],
+                    "headline-lg-mobile": ["Inter"],
+                    "label-caps": ["Inter"],
+                    "body-lg": ["Inter"]
+            },
+            "fontSize": {
+                    "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "button": ["15px", {"lineHeight": "20px", "fontWeight": "600"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #f8f9fa;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body-lg">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-on-background border-b border-outline-variant/20 shadow-sm fixed top-0 left-0 right-0 z-50">
+<div class="flex justify-between items-center w-full px-margin-mobile h-16 max-w-max-width mx-auto">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary dark:text-primary-fixed-dim" style="font-size: 28px;">eco</span>
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed-dim">Lapor Warga</h1>
+</div>
+<div class="active:scale-95 transition-transform duration-200">
+<img alt="User avatar" class="w-10 h-10 rounded-full bg-secondary-container" data-alt="A professional high-resolution avatar of a middle-aged Indonesian man named Budi, with a friendly expression and short black hair. He is wearing a clean, modern dark green polo shirt that matches a professional civic application aesthetic. The background is a soft, out-of-focus urban park at golden hour, suggesting an outdoor community setting. The lighting is warm and natural, emphasizing a approachable and trustworthy community leader persona." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCzd14EVw5pCpGP0h3IP1yKEEAVwhAmQeOGEluD76g5MyXynyjfu2OGmIRZ3Vx9AlrMEhlWRvMJeBCUDkF0pl43dv9a2NUq9VyYAal5TcqPO-Ng5G3bjvPfe8eMlKgLpHqiNtc4OHs2J59dnkjZ0v_mqYdtsm3f4Zwr_Wk0nChzhWId4Dtd-KW9mRMffOh_B5blZGE_q10vSI2F0a2gnDVV1Lqa1vrXVctfmcK-uLKeAc-0u6tzuhMldrlhwPEP6aLQU5EQ2sCoHPs">
+</div>
+</div>
+</header>
+<main class="pt-24 pb-32 px-margin-mobile max-w-max-width mx-auto">
+<!-- Profile Header Section -->
+<section class="flex flex-col items-center mb-10">
+<div class="relative mb-4 group">
+<div class="w-32 h-32 rounded-full p-1 bg-gradient-to-tr from-primary to-primary-container shadow-lg">
+<img class="w-full h-full rounded-full border-4 border-surface object-cover" data-alt="A detailed digital portrait of a male user with a welcoming smile, representing a community citizen. The image is framed within a circular container with a subtle green glow, set against a clean, minimalist studio background with soft directional lighting. The color palette is composed of natural greens and warm skin tones, reflecting a theme of transparency, civic engagement, and modern professional UI design." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDsZA1AYLDpLEg2SGcI_z9Nc2WjVZDHNZjWjWx-RBG81Xvi1BTln-gp6dZWXFBq2wpTym4oedmfkN3w_qpyXOl7eqnJ6C6B3e675NoLGLBl-SmoY7qSp45eka86zv1KNGF7nb6pU2IvYjVVtWlzn-rkkzb5D4cFvlW2Dxzuw08Ww6oLACrPS7lj892obLq32ulAx-P4HHnflxLuaPhYe3e36z-nc3wDpdJuF44raCM38KlJ8kSkXwiozNoeZ2vJZlaoJre3RrKZWwI">
+</div>
+<button class="absolute bottom-1 right-1 bg-primary text-on-primary p-2 rounded-full shadow-md hover:bg-tertiary-container transition-colors">
+<span class="material-symbols-outlined text-[18px]">photo_camera</span>
+</button>
+</div>
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-primary mb-1">Budi Santoso</h2>
+<div class="flex items-center gap-1.5 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">location_on</span>
+<span class="font-body-sm text-body-sm">RT 004 / RW 002, Kel. Hijau Lestari</span>
+</div>
+<!-- Quick Stats Card -->
+<div class="grid grid-cols-3 gap-4 w-full mt-8 bg-surface-container-lowest rounded-xl p-4 shadow-sm">
+<div class="flex flex-col items-center border-r border-outline-variant/30">
+<span class="text-primary font-bold text-headline-md">12</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Laporan</span>
+</div>
+<div class="flex flex-col items-center border-r border-outline-variant/30">
+<span class="text-primary font-bold text-headline-md">8</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Selesai</span>
+</div>
+<div class="flex flex-col items-center">
+<span class="text-primary font-bold text-headline-md">4</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Proses</span>
+</div>
+</div>
+</section>
+<!-- Menu Section -->
+<section class="space-y-3">
+<h3 class="font-label-caps text-label-caps text-on-surface-variant mb-4 px-1">PENGATURAN AKUN</h3>
+<!-- Menu Item: Edit Profil -->
+<button class="flex items-center justify-between w-full p-4 bg-surface-container-lowest rounded-xl shadow-sm hover:bg-surface-container-high transition-all active:scale-[0.98] group">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-lg bg-secondary-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">person_edit</span>
+</div>
+<span class="font-body-lg text-body-lg text-on-surface font-semibold">Edit Profil</span>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:translate-x-1 transition-transform">chevron_right</span>
+</button>
+<!-- Menu Item: Keamanan Akun -->
+<button class="flex items-center justify-between w-full p-4 bg-surface-container-lowest rounded-xl shadow-sm hover:bg-surface-container-high transition-all active:scale-[0.98] group">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-lg bg-secondary-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">shield_lock</span>
+</div>
+<span class="font-body-lg text-body-lg text-on-surface font-semibold">Keamanan Akun</span>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:translate-x-1 transition-transform">chevron_right</span>
+</button>
+<!-- Menu Item: Pusat Bantuan -->
+<button class="flex items-center justify-between w-full p-4 bg-surface-container-lowest rounded-xl shadow-sm hover:bg-surface-container-high transition-all active:scale-[0.98] group">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-lg bg-secondary-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">help_center</span>
+</div>
+<span class="font-body-lg text-body-lg text-on-surface font-semibold">Pusat Bantuan</span>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:translate-x-1 transition-transform">chevron_right</span>
+</button>
+<!-- Logout Button -->
+<button class="flex items-center justify-center w-full p-4 mt-8 border-2 border-error/20 bg-error-container/10 rounded-xl hover:bg-error-container/20 transition-all active:scale-[0.98] group">
+<div class="flex items-center gap-2 text-error">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-button text-button">Keluar</span>
+</div>
+</button>
+</section>
+<!-- Version Info -->
+<p class="text-center mt-12 font-label-caps text-label-caps text-outline">Versi 2.4.0 • Built for Citizens</p>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-4 pt-2 bg-surface dark:bg-on-background shadow-[0_-4px_12px_rgba(0,0,0,0.04)] rounded-t-xl">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:bg-surface-container-high dark:hover:bg-surface-variant/20 transition-all active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-label-caps text-label-caps">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:bg-surface-container-high dark:hover:bg-surface-variant/20 transition-all active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="add_circle">add_circle</span>
+<span class="font-label-caps text-label-caps">Report</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:bg-surface-container-high dark:hover:bg-surface-variant/20 transition-all active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span class="font-label-caps text-label-caps">Activity</span>
+</a>
+<!-- Active Tab: Profile -->
+<a class="flex flex-col items-center justify-center bg-secondary-container dark:bg-primary-container text-on-secondary-container dark:text-on-primary-container rounded-full px-4 py-1.5 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="person" style="font-variation-settings: 'FILL' 1;">person</span>
+<span class="font-label-caps text-label-caps">Profile</span>
+</a>
+</nav>
+<script>
+        // Simple ripple-like effect on menu buttons
+        document.querySelectorAll('button').forEach(button => {
+            button.addEventListener('click', function(e) {
+                let ripple = document.createElement('div');
+                ripple.classList.add('ripple');
+                this.appendChild(ripple);
+                setTimeout(() => ripple.remove(), 600);
+            });
+        });
+    </script>
+</body></html>

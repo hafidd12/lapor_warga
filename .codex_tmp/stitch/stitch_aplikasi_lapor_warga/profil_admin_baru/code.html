@@ -1,0 +1,240 @@
+<!DOCTYPE html><html lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Profil Admin - Lapor Warga</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-error-container": "#93000a",
+                        "on-secondary": "#ffffff",
+                        "tertiary-container": "#00452d",
+                        "primary-container": "#1b4332",
+                        "inverse-on-surface": "#f0f1f2",
+                        "background": "#f8f9fa",
+                        "on-primary-fixed": "#002114",
+                        "on-error": "#ffffff",
+                        "secondary-fixed-dim": "#bfc9c3",
+                        "on-primary-container": "#86af99",
+                        "tertiary-fixed-dim": "#94d4b1",
+                        "surface-container-highest": "#e1e3e4",
+                        "primary": "#012d1d",
+                        "inverse-surface": "#2e3132",
+                        "surface-bright": "#f8f9fa",
+                        "on-tertiary-fixed-variant": "#0c5136",
+                        "inverse-primary": "#a5d0b9",
+                        "surface": "#f8f9fa",
+                        "surface-dim": "#d9dadb",
+                        "primary-fixed": "#c1ecd4",
+                        "on-primary-fixed-variant": "#274e3d",
+                        "on-tertiary-container": "#74b392",
+                        "on-surface": "#191c1d",
+                        "error": "#ba1a1a",
+                        "surface-container-low": "#f3f4f5",
+                        "outline-variant": "#c1c8c2",
+                        "surface-variant": "#e1e3e4",
+                        "on-background": "#191c1d",
+                        "tertiary": "#002d1b",
+                        "on-secondary-fixed-variant": "#3f4945",
+                        "tertiary-fixed": "#b0f1cc",
+                        "on-tertiary": "#ffffff",
+                        "secondary-fixed": "#dbe5df",
+                        "secondary-container": "#d8e2dc",
+                        "on-surface-variant": "#414844",
+                        "surface-container-high": "#e7e8e9",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary": "#57615c",
+                        "outline": "#717973",
+                        "surface-container": "#edeeef",
+                        "on-tertiary-fixed": "#002113",
+                        "on-secondary-fixed": "#151d1a",
+                        "surface-tint": "#3f6653",
+                        "on-secondary-container": "#5b6560",
+                        "primary-fixed-dim": "#a5d0b9",
+                        "on-primary": "#ffffff",
+                        "error-container": "#ffdad6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "lg": "24px",
+                        "margin-desktop": "64px",
+                        "xl": "40px",
+                        "sm": "8px",
+                        "xs": "4px",
+                        "unit": "4px",
+                        "margin-mobile": "16px",
+                        "md": "16px",
+                        "max-width": "1200px",
+                        "gutter": "16px"
+                    },
+                    "fontFamily": {
+                        "headline-lg-mobile": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "button": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "headline-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-lg-mobile": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                        "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "button": ["15px", {"lineHeight": "20px", "fontWeight": "600"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .ambient-shadow {
+            box-shadow: 0 4px 12px rgba(27, 67, 50, 0.04);
+        }
+        .active-shadow {
+            box-shadow: 0 8px 24px rgba(27, 67, 50, 0.08);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface">
+<!-- Top AppBar -->
+<header class="bg-surface sticky top-0 z-50 flex justify-between items-center w-full px-margin-mobile h-16 shadow-sm">
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-primary hover:bg-surface-container-high p-2 rounded-full transition-colors" data-icon="menu">menu</button>
+<h1 class="font-headline-md text-headline-md font-bold text-primary">Profil Admin</h1>
+</div>
+<div class="flex items-center gap-2">
+<button class="material-symbols-outlined text-primary hover:bg-surface-container-high p-2 rounded-full transition-colors" data-icon="notifications">notifications</button>
+</div>
+</header>
+<!-- Main Content -->
+<main class="max-w-max-width mx-auto px-margin-mobile py-lg pb-32">
+<!-- Profile Hero Section -->
+<div class="bg-surface-container-lowest rounded-xl p-lg ambient-shadow flex flex-col md:flex-row items-center gap-6 mb-lg">
+<div class="relative">
+<img alt="Profile Picture" class="w-24 h-24 md:w-32 md:h-32 rounded-full object-cover border-4 border-primary-container/10" data-alt="A professional portrait of a senior coordinator in a high-end civic office. The lighting is soft and natural, emphasizing a bright and welcoming atmosphere. The background features subtle green architectural elements that reflect a modern environmental theme. The overall visual style is clean, sharp, and trustworthy, with a focus on professional minimalism." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAhoYkkXKL2PzYItfBRQEiNPkpn3WecNLeeEAfKa8FCbs7pBF69NkM6xspNYY-rNQasLoU_6196a_wUtI1LOCSVjM1HtYjyRTeZti-R0WE3RKrNdQ4tUeiSNYlRJ6pzkY6sq20MeLrdVqurfahhSQaAa6-jFpHoKC5yUqDBK7YriLxMXW1NkdnD3iSc5p_WAeJgiJVpPqB1gBq2DiRGUmohnHTcPsq1SRUMl-LDXUDar4yLnXUefm2swyD2FmiL6UcYI5Jveu7dtoI">
+<div class="absolute bottom-1 right-1 bg-primary text-on-primary p-1.5 rounded-full border-2 border-surface">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+</div>
+<div class="text-center md:text-left">
+<h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-primary">Admin Lapor Warga</h2>
+<p class="font-body-lg text-body-lg text-secondary mb-2">Senior Coordinator</p>
+<div class="flex flex-wrap justify-center md:justify-start gap-2">
+<span class="bg-primary-container/15 text-primary-container px-3 py-1 rounded-full text-[12px] font-bold uppercase tracking-wider">Verified Admin</span>
+<span class="bg-tertiary-container/15 text-tertiary-container px-3 py-1 rounded-full text-[12px] font-bold uppercase tracking-wider">Level 5 Officer</span>
+</div>
+</div>
+</div>
+<!-- Account Settings Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
+<!-- Account Settings Card -->
+
+<!-- Admin Stats Card -->
+
+<!-- System Preferences -->
+<section class="bg-surface-container-lowest rounded-xl p-lg ambient-shadow lg:col-span-3">
+<h3 class="font-headline-md text-headline-md text-primary mb-md">Preferences</h3>
+<div class="flex flex-col md:flex-row gap-gutter">
+<div class="flex-1 p-4 border border-outline-variant/30 rounded-xl hover:border-primary/50 transition-colors">
+<div class="flex items-center justify-between mb-2">
+<span class="material-symbols-outlined text-primary" data-icon="dark_mode">dark_mode</span>
+<input class="w-10 h-5 bg-outline-variant/30 rounded-full appearance-none cursor-pointer relative checked:bg-primary before:content-[''] before:absolute before:w-4 before:h-4 before:bg-white before:rounded-full before:top-0.5 before:left-0.5 before:transition-transform checked:before:translate-x-5" type="checkbox">
+</div>
+<p class="font-body-lg text-body-lg text-on-surface">Dark Interface</p>
+<p class="font-body-sm text-body-sm text-secondary">Enable high-contrast night mode</p>
+</div>
+<div class="flex-1 p-4 border border-outline-variant/30 rounded-xl hover:border-primary/50 transition-colors">
+<div class="flex items-center justify-between mb-2">
+<span class="material-symbols-outlined text-primary" data-icon="language">language</span>
+</div>
+<p class="font-body-lg text-body-lg text-on-surface">Bahasa Indonesia</p>
+<p class="font-body-sm text-body-sm text-secondary">Default system language</p>
+</div>
+<div class="flex-1 p-4 border border-outline-variant/30 rounded-xl hover:border-primary/50 transition-colors">
+<div class="flex items-center justify-between mb-2">
+<span class="material-symbols-outlined text-primary" data-icon="location_on">location_on</span>
+</div>
+<p class="font-body-lg text-body-lg text-on-surface">Region Tracking</p>
+<p class="font-body-sm text-body-sm text-secondary">Focus on Jakarta area reports</p>
+</div>
+</div>
+</section>
+<!-- Danger Zone -->
+<section class="bg-error-container/10 border border-error/20 rounded-xl p-lg lg:col-span-3">
+<h3 class="font-headline-md text-headline-md text-error mb-md">Logout &amp; Sessions</h3>
+<div class="flex flex-col md:flex-row justify-between items-center gap-4">
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-lg">Manage your active login sessions across devices. We recommend logging out from shared workstations after each shift.</p>
+<button class="bg-error text-on-error px-8 py-3 rounded-xl font-button flex items-center gap-2 hover:bg-on-error-container transition-all active:scale-95 duration-150">
+<span class="material-symbols-outlined text-[20px]" data-icon="logout">logout</span>
+                        Logout Account
+                    </button>
+</div>
+</section>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-2 pb-safe bg-surface-container-lowest shadow-lg border-t border-outline-variant/20 rounded-t-xl">
+<a class="flex flex-col items-center justify-center text-secondary hover:bg-surface-container-high p-2 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-label-caps text-label-caps mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary hover:bg-surface-container-high p-2 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-label-caps text-label-caps mt-1">Activity</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-4 py-1" href="#">
+<span class="material-symbols-outlined" data-icon="person" style="font-variation-settings: 'FILL' 1;">person</span>
+<span class="font-label-caps text-label-caps mt-1 font-bold">Profile</span>
+</a>
+</nav>
+<script>
+        // Micro-interactions
+        document.querySelectorAll('button, a').forEach(elem => {
+            elem.addEventListener('click', (e) => {
+                if (elem.classList.contains('active:scale-95')) return;
+                elem.classList.add('scale-95', 'opacity-80');
+                setTimeout(() => {
+                    elem.classList.remove('scale-95', 'opacity-80');
+                }, 150);
+            });
+        });
+
+        // Simple Tab active simulation
+        const navItems = document.querySelectorAll('nav a');
+        navItems.forEach(item => {
+            item.addEventListener('click', function(e) {
+                navItems.forEach(nav => {
+                    nav.className = "flex flex-col items-center justify-center text-secondary hover:bg-surface-container-high p-2 rounded-lg transition-colors";
+                    const icon = nav.querySelector('.material-symbols-outlined');
+                    if (icon) icon.style.fontVariationSettings = "'FILL' 0";
+                });
+                this.className = "flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-4 py-1";
+                const activeIcon = this.querySelector('.material-symbols-outlined');
+                if (activeIcon) activeIcon.style.fontVariationSettings = "'FILL' 1";
+            });
+        });
+    </script>
+
+
+</body></html>

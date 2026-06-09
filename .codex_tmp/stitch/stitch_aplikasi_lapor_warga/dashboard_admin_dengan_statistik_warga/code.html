@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+
+<html lang="id" style=""><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container-lowest": "#ffffff",
+                      "on-primary-fixed": "#002114",
+                      "tertiary-fixed": "#b0f1cc",
+                      "tertiary": "#002d1b",
+                      "on-primary-fixed-variant": "#274e3d",
+                      "surface-variant": "#e1e3e4",
+                      "tertiary-container": "#00452d",
+                      "surface-container-highest": "#e1e3e4",
+                      "surface-container-low": "#f3f4f5",
+                      "on-secondary-fixed": "#151d1a",
+                      "primary": "#012d1d",
+                      "surface-container": "#edeeef",
+                      "secondary-container": "#d8e2dc",
+                      "surface-dim": "#d9dadb",
+                      "outline-variant": "#c1c8c2",
+                      "error": "#ba1a1a",
+                      "on-tertiary-fixed-variant": "#0c5136",
+                      "on-primary": "#ffffff",
+                      "secondary": "#57615c",
+                      "primary-fixed": "#c1ecd4",
+                      "on-background": "#191c1d",
+                      "background": "#f8f9fa",
+                      "surface-tint": "#3f6653",
+                      "on-secondary-container": "#5b6560",
+                      "inverse-on-surface": "#f0f1f2",
+                      "on-primary-container": "#86af99",
+                      "on-tertiary-container": "#74b392",
+                      "on-tertiary": "#ffffff",
+                      "error-container": "#ffdad6",
+                      "on-surface": "#191c1d",
+                      "on-secondary": "#ffffff",
+                      "surface-container-high": "#e7e8e9",
+                      "surface": "#f8f9fa",
+                      "on-error-container": "#93000a",
+                      "secondary-fixed": "#dbe5df",
+                      "outline": "#717973",
+                      "on-tertiary-fixed": "#002113",
+                      "surface-bright": "#f8f9fa",
+                      "inverse-surface": "#2e3132",
+                      "tertiary-fixed-dim": "#94d4b1",
+                      "on-surface-variant": "#414844",
+                      "primary-container": "#1b4332",
+                      "primary-fixed-dim": "#a5d0b9",
+                      "on-error": "#ffffff",
+                      "secondary-fixed-dim": "#bfc9c3",
+                      "inverse-primary": "#a5d0b9",
+                      "on-secondary-fixed-variant": "#3f4945"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "gutter": "16px",
+                      "margin-mobile": "16px",
+                      "margin-desktop": "64px",
+                      "xl": "40px",
+                      "xs": "4px",
+                      "sm": "8px",
+                      "max-width": "1200px",
+                      "lg": "24px",
+                      "unit": "4px",
+                      "md": "16px"
+              },
+              "fontFamily": {
+                      "headline-lg-mobile": ["Inter"],
+                      "label-caps": ["Inter"],
+                      "headline-md": ["Inter"],
+                      "headline-lg": ["Inter"],
+                      "body-lg": ["Inter"],
+                      "button": ["Inter"],
+                      "body-sm": ["Inter"]
+              },
+              "fontSize": {
+                      "headline-lg-mobile": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                      "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                      "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "button": ["15px", {"lineHeight": "20px", "fontWeight": "600"}],
+                      "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+        }
+        .card-shadow {
+            box-shadow: 0 4px 12px rgba(1, 45, 29, 0.04);
+        }
+        .glass-header {
+            backdrop-filter: blur(8px);
+            background: rgba(248, 249, 250, 0.8);
+        }
+    </style>
+</head>
+<body class="text-on-surface">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-mobile md:px-margin-desktop h-16 bg-surface shadow-sm dark:shadow-none glass-header">
+<div class="flex items-center">
+<h1 class="font-headline-md text-headline-md font-bold text-primary">Lapor Warga</h1>
+</div>
+<div class="flex items-center gap-4">
+<span class="hidden md:block font-label-caps text-label-caps text-on-surface-variant">Admin RT 05</span>
+<button class="p-2 hover:bg-surface-container-high transition-colors rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">notifications</span>
+</button>
+</div>
+</header>
+<main class="pt-24 pb-32 px-margin-mobile md:px-margin-desktop max-w-max-width mx-auto">
+<!-- Welcome Section -->
+<section class="mb-lg">
+<h2 class="font-headline-lg text-headline-lg text-primary mb-1">Hallo, Pak RT</h2>
+<p class="font-body-lg text-body-lg text-secondary">Pantau dan kelola laporan warga dengan efisien.</p>
+</section>
+<!-- Stats Grid -->
+<section class="grid grid-cols-1 gap-md mb-xl md:grid-cols-4">
+<!-- New Reports -->
+<div class="bg-surface-container-lowest p-md rounded-xl card-shadow border-l-4 border-error" style="transform: translateY(0px); transition: transform 0.3s;">
+<div class="flex justify-between items-start mb-sm">
+<span class="font-label-caps text-label-caps text-secondary">Laporan Baru</span>
+<span class="material-symbols-outlined text-error">priority_high</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="text-4xl font-bold text-on-surface">12</span>
+<span class="text-xs text-error font-semibold">+3 hari ini</span>
+</div>
+</div>
+<!-- In Progress -->
+<div class="bg-surface-container-lowest p-md rounded-xl card-shadow border-l-4 border-primary" style="transform: translateY(0px); transition: transform 0.3s;">
+<div class="flex justify-between items-start mb-sm">
+<span class="font-label-caps text-label-caps text-secondary">Sedang Diproses</span>
+<span class="material-symbols-outlined text-primary">sync</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="text-4xl font-bold text-on-surface">08</span>
+<span class="text-xs text-primary font-semibold">Berjalan lancar</span>
+</div>
+</div>
+<!-- Resolved -->
+<div class="bg-surface-container-lowest p-md rounded-xl card-shadow border-l-4 border-tertiary-fixed-dim" style="transform: translateY(0px); transition: transform 0.3s;">
+<div class="flex justify-between items-start mb-sm">
+<span class="font-label-caps text-label-caps text-secondary">Selesai</span>
+<span class="material-symbols-outlined text-tertiary-fixed-dim">check_circle</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="text-4xl font-bold text-on-surface">45</span>
+<span class="text-xs text-secondary font-semibold">Bulan ini</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-md rounded-xl card-shadow border-l-4 border-outline-variant" style="transform: translateY(0px); transition: transform 0.3s;"><div class="flex justify-between items-start mb-sm"><span class="font-label-caps text-label-caps text-secondary">Jumlah Warga</span><span class="material-symbols-outlined text-secondary">group</span></div><div class="flex items-baseline gap-2"><span class="text-4xl font-bold text-on-surface">1.240</span><span class="text-xs text-secondary font-semibold">Warga terdaftar</span></div></div></section>
+<!-- Content Section -->
+<section class="bg-surface-container-lowest rounded-xl card-shadow overflow-hidden" style="transform: translateY(0px); transition: transform 0.3s;">
+<!-- Filter Bar -->
+<div class="p-md border-b border-outline-variant/20 flex flex-wrap gap-4 items-center justify-between">
+<h3 class="font-headline-md text-headline-md text-primary">Daftar Laporan Masuk</h3>
+<div class="flex gap-2">
+<div class="relative">
+<select class="appearance-none bg-surface-container-low border border-outline-variant rounded-lg px-4 py-2 pr-10 text-body-sm font-medium focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all">
+<option>Semua Status</option>
+<option>Baru</option>
+<option>Diproses</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-secondary">expand_more</span>
+</div>
+<div class="relative">
+<select class="appearance-none bg-surface-container-low border border-outline-variant rounded-lg px-4 py-2 pr-10 text-body-sm font-medium focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all">
+<option>Kategori</option>
+<option>Keamanan</option>
+<option>Kebersihan</option>
+<option>Infrastruktur</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-secondary">filter_list</span>
+</div>
+</div>
+</div>
+<!-- Report List -->
+<div class="divide-y divide-outline-variant/10">
+<!-- Item 1 -->
+<div class="p-md hover:bg-surface-container transition-colors group">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div class="flex gap-4">
+<div class="w-12 h-12 rounded-full bg-secondary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-on-secondary-container">person</span>
+</div>
+<div>
+<div class="flex items-center gap-2 mb-1">
+<h4 class="font-headline-md text-body-lg font-bold">Bpk. Ahmad Subarjo</h4>
+<span class="px-2 py-0.5 rounded-full bg-error/15 text-error text-[10px] font-bold tracking-wider uppercase">High Priority</span>
+</div>
+<p class="text-body-sm text-secondary mb-2 line-clamp-1">Lampu jalan padam di blok C4 menimbulkan kerawanan saat malam hari.</p>
+<div class="flex gap-4 text-[12px] font-medium text-on-surface-variant">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">category</span> Infrastruktur</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">schedule</span> 2 jam yang lalu</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button class="flex-1 md:flex-none px-4 py-2 border border-outline text-on-surface font-button text-button rounded-lg hover:bg-surface-container-high transition-all">
+                                Detail
+                            </button>
+<button class="flex-1 md:flex-none px-4 py-2 bg-primary text-on-primary font-button text-button rounded-lg shadow-sm hover:opacity-90 active:scale-95 transition-all">
+                                Tindak Lanjut
+                            </button>
+</div>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="p-md hover:bg-surface-container transition-colors group">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div class="flex gap-4">
+<div class="w-12 h-12 rounded-full bg-secondary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-on-secondary-container">person</span>
+</div>
+<div>
+<div class="flex items-center gap-2 mb-1">
+<h4 class="font-headline-md text-body-lg font-bold">Ibu Siti Aminah</h4>
+<span class="px-2 py-0.5 rounded-full bg-secondary-container text-secondary text-[10px] font-bold tracking-wider uppercase">Normal</span>
+</div>
+<p class="text-body-sm text-secondary mb-2 line-clamp-1">Penumpukan sampah di area taman warga karena petugas telat mengangkut.</p>
+<div class="flex gap-4 text-[12px] font-medium text-on-surface-variant">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">category</span> Kebersihan</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">schedule</span> 5 jam yang lalu</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button class="flex-1 md:flex-none px-4 py-2 border border-outline text-on-surface font-button text-button rounded-lg hover:bg-surface-container-high transition-all">
+                                Detail
+                            </button>
+<button class="flex-1 md:flex-none px-4 py-2 bg-primary text-on-primary font-button text-button rounded-lg shadow-sm hover:opacity-90 active:scale-95 transition-all">
+                                Tindak Lanjut
+                            </button>
+</div>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="p-md hover:bg-surface-container transition-colors group">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div class="flex gap-4">
+<div class="w-12 h-12 rounded-full bg-secondary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-on-secondary-container">person</span>
+</div>
+<div>
+<div class="flex items-center gap-2 mb-1">
+<h4 class="font-headline-md text-body-lg font-bold">Bpk. Rahmat Hidayat</h4>
+<span class="px-2 py-0.5 rounded-full bg-error/15 text-error text-[10px] font-bold tracking-wider uppercase">High Priority</span>
+</div>
+<p class="text-body-sm text-secondary mb-2 line-clamp-1">Ada orang tidak dikenal mencurigakan mondar-mandir di gang buntu.</p>
+<div class="flex gap-4 text-[12px] font-medium text-on-surface-variant">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">category</span> Keamanan</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">schedule</span> 6 jam yang lalu</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button class="flex-1 md:flex-none px-4 py-2 border border-outline text-on-surface font-button text-button rounded-lg hover:bg-surface-container-high transition-all">
+                                Detail
+                            </button>
+<button class="flex-1 md:flex-none px-4 py-2 bg-primary text-on-primary font-button text-button rounded-lg shadow-sm hover:opacity-90 active:scale-95 transition-all">
+                                Tindak Lanjut
+                            </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Pagination / Footer -->
+<div class="p-md bg-surface-container-low flex justify-center border-t border-outline-variant/20">
+<button class="text-body-sm font-semibold text-primary hover:underline">Lihat Semua Laporan</button>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-2 pb-safe bg-surface-container-lowest shadow-lg border-t border-outline-variant/20 rounded-t-xl gap-8"><a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-4 py-1" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-caps text-label-caps">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">ballot</span>
+<span class="font-label-caps text-label-caps">Voting</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">campaign</span>
+<span class="font-label-caps text-label-caps">Info</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-label-caps text-label-caps">Profile</span>
+</a></nav>
+<script>
+        // Simple micro-interaction for status cards
+        document.querySelectorAll('.card-shadow').forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                card.style.transform = 'translateY(-4px)';
+                card.style.transition = 'transform 0.3s ease';
+            });
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'translateY(0)';
+            });
+        });
+    </script>
+</body></html>

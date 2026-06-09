@@ -1,0 +1,285 @@
+<!DOCTYPE html><html lang="id"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Aktivitas Admin - Lapor Warga</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-error-container": "#93000a",
+                    "on-secondary": "#ffffff",
+                    "tertiary-container": "#00452d",
+                    "primary-container": "#1b4332",
+                    "inverse-on-surface": "#f0f1f2",
+                    "background": "#f8f9fa",
+                    "on-primary-fixed": "#002114",
+                    "on-error": "#ffffff",
+                    "secondary-fixed-dim": "#bfc9c3",
+                    "on-primary-container": "#86af99",
+                    "tertiary-fixed-dim": "#94d4b1",
+                    "surface-container-highest": "#e1e3e4",
+                    "primary": "#012d1d",
+                    "inverse-surface": "#2e3132",
+                    "surface-bright": "#f8f9fa",
+                    "on-tertiary-fixed-variant": "#0c5136",
+                    "inverse-primary": "#a5d0b9",
+                    "surface": "#f8f9fa",
+                    "surface-dim": "#d9dadb",
+                    "primary-fixed": "#c1ecd4",
+                    "on-primary-fixed-variant": "#274e3d",
+                    "on-tertiary-container": "#74b392",
+                    "on-surface": "#191c1d",
+                    "error": "#ba1a1a",
+                    "surface-container-low": "#f3f4f5",
+                    "outline-variant": "#c1c8c2",
+                    "surface-variant": "#e1e3e4",
+                    "on-background": "#191c1d",
+                    "tertiary": "#002d1b",
+                    "on-secondary-fixed-variant": "#3f4945",
+                    "tertiary-fixed": "#b0f1cc",
+                    "on-tertiary": "#ffffff",
+                    "secondary-fixed": "#dbe5df",
+                    "secondary-container": "#d8e2dc",
+                    "on-surface-variant": "#414844",
+                    "surface-container-high": "#e7e8e9",
+                    "surface-container-lowest": "#ffffff",
+                    "secondary": "#57615c",
+                    "outline": "#717973",
+                    "surface-container": "#edeeef",
+                    "on-tertiary-fixed": "#002113",
+                    "on-secondary-fixed": "#151d1a",
+                    "surface-tint": "#3f6653",
+                    "on-secondary-container": "#5b6560",
+                    "primary-fixed-dim": "#a5d0b9",
+                    "on-primary": "#ffffff",
+                    "error-container": "#ffdad6"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "lg": "24px",
+                    "margin-desktop": "64px",
+                    "xl": "40px",
+                    "sm": "8px",
+                    "xs": "4px",
+                    "unit": "4px",
+                    "margin-mobile": "16px",
+                    "md": "16px",
+                    "max-width": "1200px",
+                    "gutter": "16px"
+            },
+            "fontFamily": {
+                    "headline-lg-mobile": ["Inter"],
+                    "label-caps": ["Inter"],
+                    "button": ["Inter"],
+                    "headline-lg": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "body-sm": ["Inter"],
+                    "headline-md": ["Inter"]
+            },
+            "fontSize": {
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "button": ["15px", {"lineHeight": "20px", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .shadow-level-1 {
+            box-shadow: 0 4px 12px rgba(1, 45, 29, 0.04);
+        }
+        .activity-line::before {
+            content: '';
+            position: absolute;
+            left: 19px;
+            top: 40px;
+            bottom: -24px;
+            width: 2px;
+            background: #d8e2dc;
+        }
+        .activity-line:last-child::before {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-lg">
+<!-- Top AppBar -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-mobile h-16 bg-surface shadow-sm md:px-margin-desktop">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary" data-icon="menu">menu</span>
+<h1 class="font-headline-md text-headline-md font-bold text-primary">Aktivitas Admin</h1>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary" data-icon="notifications">notifications</span>
+</div>
+</header>
+<main class="pt-20 pb-32 max-w-max-width mx-auto px-margin-mobile">
+<!-- Summary Dashboard (Bento-lite) -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+<div class="bg-surface-container-lowest p-md rounded-xl shadow-level-1 border border-outline-variant/20">
+<p class="text-label-caps font-label-caps text-secondary uppercase tracking-wider mb-1">Total Aksi</p>
+<h2 class="text-headline-md font-headline-md text-primary">128</h2>
+</div>
+<div class="bg-surface-container-lowest p-md rounded-xl shadow-level-1 border border-outline-variant/20">
+<p class="text-label-caps font-label-caps text-secondary uppercase tracking-wider mb-1">Disetujui</p>
+<h2 class="text-headline-md font-headline-md text-primary">84</h2>
+</div>
+<div class="bg-surface-container-lowest p-md rounded-xl shadow-level-1 border border-outline-variant/20">
+<p class="text-label-caps font-label-caps text-secondary uppercase tracking-wider mb-1">Ditolak</p>
+<h2 class="text-headline-md font-headline-md text-error">12</h2>
+</div>
+<div class="bg-surface-container-lowest p-md rounded-xl shadow-level-1 border border-outline-variant/20">
+<p class="text-label-caps font-label-caps text-secondary uppercase tracking-wider mb-1">Pending</p>
+<h2 class="text-headline-md font-headline-md text-on-tertiary-fixed-variant">32</h2>
+</div>
+</div>
+<!-- Filter Chips -->
+<div class="flex gap-2 overflow-x-auto pb-4 mb-4 no-scrollbar">
+<button class="px-4 py-2 bg-primary-container text-on-primary-container rounded-full text-label-caps font-label-caps whitespace-nowrap">Semua</button>
+<button class="px-4 py-2 bg-surface-container-high text-secondary rounded-full text-label-caps font-label-caps whitespace-nowrap hover:bg-surface-container-highest transition-colors">Laporan Baru</button>
+<button class="px-4 py-2 bg-surface-container-high text-secondary rounded-full text-label-caps font-label-caps whitespace-nowrap hover:bg-surface-container-highest transition-colors">Pembaruan Status</button>
+<button class="px-4 py-2 bg-surface-container-high text-secondary rounded-full text-label-caps font-label-caps whitespace-nowrap hover:bg-surface-container-highest transition-colors">Komentar</button>
+</div>
+<!-- Chronological Log -->
+<section class="space-y-6 relative">
+<h3 class="text-label-caps font-label-caps text-secondary mb-4">HARI INI - 24 OKTOBER 2023</h3>
+<!-- Activity Item 1 -->
+<div class="relative flex gap-4 activity-line">
+<div class="z-10 w-10 h-10 rounded-full bg-primary-container flex items-center justify-center shrink-0 shadow-sm">
+<span class="material-symbols-outlined text-on-primary-container text-[20px]" data-icon="add_task">add_task</span>
+</div>
+<div class="bg-surface-container-lowest p-md rounded-xl shadow-level-1 border border-outline-variant/20 flex-grow hover:scale-[1.01] transition-transform cursor-pointer">
+<div class="flex justify-between items-start mb-2">
+<span class="px-2 py-1 bg-green-100 text-green-800 text-[10px] font-bold rounded uppercase">Approved</span>
+<span class="text-label-caps font-label-caps text-secondary">10:45 AM</span>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface mb-2">
+<span class="font-bold">Admin Budi</span> menyetujui laporan <span class="text-primary font-semibold">"Tumpukan Sampah di Jl. Merdeka"</span>
+</p>
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-lg overflow-hidden bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="A close-up photograph of a professional urban waste management scene, showing a clean street where a report was recently resolved. The lighting is bright and natural, suggesting a clear day. The color palette is dominated by deep forest greens and clean whites, reflecting a sense of community environmental pride and efficient civic service." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA6XC5w-Xwp9t_XKYpOkH1Kz51pvPMwrxqT214MC3xn-FWlqZOOq5KTqklUpb7Hz6VlTKelrcH4zpJmGPuu9PD9zv8_Ke5RPYWqVuSs6DdGEQb_aM2DWucP_zKa2y6bhXuYmkfrIxdDXBMS1gGWM5wTnepx38ndKivoXkF6UV3E6np3XTEMmSWjrCgcxuIbdunYZROvRCwu0jInTLKzf1kt73W-NRc32gXmPoyAaaWpIgkGVkGqEAFHlNUWV4mO_rvukig0rqpdy4Q">
+</div>
+<span class="text-[12px] text-on-surface-variant italic">Ref ID: #LW-9921</span>
+</div>
+</div>
+</div>
+<!-- Activity Item 2 -->
+<div class="relative flex gap-4 activity-line">
+<div class="z-10 w-10 h-10 rounded-full bg-tertiary-fixed flex items-center justify-center shrink-0 shadow-sm">
+<span class="material-symbols-outlined text-on-tertiary-fixed-variant text-[20px]" data-icon="notifications_active">notifications_active</span>
+</div>
+<div class="bg-surface-container-lowest p-md rounded-xl shadow-level-1 border border-outline-variant/20 flex-grow hover:scale-[1.01] transition-transform cursor-pointer">
+<div class="flex justify-between items-start mb-2">
+<span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-[10px] font-bold rounded uppercase">New Report</span>
+<span class="text-label-caps font-label-caps text-secondary">09:12 AM</span>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface mb-2">
+                        Laporan baru masuk: <span class="font-bold">"Lampu Jalan Mati di Blok C3"</span> dari warga <span class="text-primary underline">Siti Aminah</span>.
+                    </p>
+<div class="flex gap-2">
+<button class="px-3 py-1 bg-primary text-on-primary rounded text-label-caps font-label-caps hover:opacity-90 active:scale-95 transition-all">Tinjau</button>
+<button class="px-3 py-1 bg-surface-container-high text-secondary rounded text-label-caps font-label-caps hover:bg-surface-container-highest transition-colors">Abaikan</button>
+</div>
+</div>
+</div>
+<!-- Activity Item 3 -->
+<div class="relative flex gap-4 activity-line">
+<div class="z-10 w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center shrink-0 shadow-sm">
+<span class="material-symbols-outlined text-on-secondary-container text-[20px]" data-icon="sync">sync</span>
+</div>
+<div class="bg-surface-container-lowest p-md rounded-xl shadow-level-1 border border-outline-variant/20 flex-grow hover:scale-[1.01] transition-transform cursor-pointer">
+<div class="flex justify-between items-start mb-2">
+<span class="px-2 py-1 bg-blue-100 text-blue-800 text-[10px] font-bold rounded uppercase">Status Update</span>
+<span class="text-label-caps font-label-caps text-secondary">08:00 AM</span>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface">
+                        Status laporan <span class="font-bold">#LW-8812</span> diubah menjadi <span class="text-on-tertiary-fixed-variant font-bold">DIPROSES</span> oleh Departemen Kebersihan.
+                    </p>
+</div>
+</div>
+<h3 class="text-label-caps font-label-caps text-secondary pt-4 mb-4">KEMARIN - 23 OKTOBER 2023</h3>
+<!-- Activity Item 4 -->
+<div class="relative flex gap-4 activity-line">
+<div class="z-10 w-10 h-10 rounded-full bg-error-container flex items-center justify-center shrink-0 shadow-sm">
+<span class="material-symbols-outlined text-on-error-container text-[20px]" data-icon="cancel">cancel</span>
+</div>
+<div class="bg-surface-container-lowest p-md rounded-xl shadow-level-1 border border-outline-variant/20 flex-grow hover:scale-[1.01] transition-transform cursor-pointer">
+<div class="flex justify-between items-start mb-2">
+<span class="px-2 py-1 bg-red-100 text-red-800 text-[10px] font-bold rounded uppercase">Rejected</span>
+<span class="text-label-caps font-label-caps text-secondary">16:30 PM</span>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface mb-2">
+<span class="font-bold">Admin Agus</span> menolak laporan <span class="text-primary font-semibold">"Parkir Liar di Depan Toko"</span>.
+                    </p>
+<p class="text-[12px] p-2 bg-surface-container-low rounded italic border-l-4 border-error text-on-surface-variant">
+                        "Alasan: Lokasi di luar yurisdiksi kelurahan kita."
+                    </p>
+</div>
+</div>
+</section>
+<!-- Load More Button -->
+<div class="mt-8 text-center">
+<button class="px-6 py-3 border-2 border-primary text-primary rounded-full text-button font-button hover:bg-primary/5 transition-colors active:scale-95 duration-150">
+                Muat Aktivitas Lainnya
+            </button>
+</div>
+</main>
+<!-- Bottom Navigation -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-2 pb-safe bg-surface-container-lowest shadow-lg border-t border-outline-variant/20 rounded-t-xl">
+<a class="flex flex-col items-center justify-center text-secondary hover:bg-surface-container-high p-2 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-label-caps text-label-caps uppercase">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-4 py-1" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-label-caps text-label-caps uppercase">Activity</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary hover:bg-surface-container-high p-2 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label-caps text-label-caps uppercase">Profile</span>
+</a>
+</nav>
+<script>
+        // Simple micro-interaction for active states
+        document.querySelectorAll('nav a').forEach(navItem => {
+            navItem.addEventListener('click', (e) => {
+                // If this were a real SPA, we'd handle navigation here
+                // For now, let's just show a tap effect
+                navItem.classList.add('scale-90');
+                setTimeout(() => navItem.classList.remove('scale-90'), 200);
+            });
+        });
+        
+        // Add subtle parallax/scroll effect to header
+        window.addEventListener('scroll', () => {
+            const header = document.querySelector('header');
+            if (window.scrollY > 10) {
+                header.classList.add('shadow-md');
+                header.classList.remove('shadow-sm');
+            } else {
+                header.classList.add('shadow-sm');
+                header.classList.remove('shadow-md');
+            }
+        });
+    </script>
+</body></html>

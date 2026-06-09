@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+
+<html lang="id"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Buat Pengumuman - Lapor Warga Admin</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "tertiary-fixed": "#b0f1cc",
+                      "on-secondary": "#ffffff",
+                      "secondary-fixed": "#dbe5df",
+                      "surface-container": "#edeeef",
+                      "on-primary-fixed": "#002114",
+                      "tertiary-fixed-dim": "#94d4b1",
+                      "error": "#ba1a1a",
+                      "surface": "#f8f9fa",
+                      "on-tertiary": "#ffffff",
+                      "surface-dim": "#d9dadb",
+                      "on-background": "#191c1d",
+                      "inverse-surface": "#2e3132",
+                      "tertiary-container": "#00452d",
+                      "surface-variant": "#e1e3e4",
+                      "background": "#f8f9fa",
+                      "on-primary-fixed-variant": "#274e3d",
+                      "inverse-primary": "#a5d0b9",
+                      "secondary": "#57615c",
+                      "on-secondary-container": "#5b6560",
+                      "secondary-fixed-dim": "#bfc9c3",
+                      "outline": "#717973",
+                      "error-container": "#ffdad6",
+                      "outline-variant": "#c1c8c2",
+                      "on-tertiary-fixed-variant": "#0c5136",
+                      "surface-container-low": "#f3f4f5",
+                      "on-error-container": "#93000a",
+                      "primary-fixed": "#c1ecd4",
+                      "primary-container": "#1b4332",
+                      "on-secondary-fixed": "#151d1a",
+                      "surface-container-lowest": "#ffffff",
+                      "primary-fixed-dim": "#a5d0b9",
+                      "on-surface-variant": "#414844",
+                      "on-primary": "#ffffff",
+                      "on-error": "#ffffff",
+                      "on-tertiary-container": "#74b392",
+                      "inverse-on-surface": "#f0f1f2",
+                      "on-secondary-fixed-variant": "#3f4945",
+                      "on-primary-container": "#86af99",
+                      "secondary-container": "#d8e2dc",
+                      "surface-tint": "#3f6653",
+                      "primary": "#012d1d",
+                      "surface-bright": "#f8f9fa",
+                      "surface-container-highest": "#e1e3e4",
+                      "on-surface": "#191c1d",
+                      "on-tertiary-fixed": "#002113",
+                      "tertiary": "#002d1b",
+                      "surface-container-high": "#e7e8e9"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "xs": "4px",
+                      "unit": "4px",
+                      "margin-desktop": "64px",
+                      "max-width": "1200px",
+                      "lg": "24px",
+                      "xl": "40px",
+                      "md": "16px",
+                      "gutter": "16px",
+                      "sm": "8px",
+                      "margin-mobile": "16px"
+              },
+              "fontFamily": {
+                      "button": ["Inter"],
+                      "body-sm": ["Inter"],
+                      "headline-md": ["Inter"],
+                      "headline-lg": ["Inter"],
+                      "label-caps": ["Inter"],
+                      "body-lg": ["Inter"],
+                      "headline-lg-mobile": ["Inter"]
+              },
+              "fontSize": {
+                      "button": ["15px", {"lineHeight": "20px", "fontWeight": "600"}],
+                      "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                      "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "headline-lg-mobile": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700"}]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .chip-active {
+            background-color: #1b4332;
+            color: #86af99;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #bfc9c3;
+            border-radius: 10px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen font-body-lg text-body-lg custom-scrollbar">
+<!-- Navigation Drawer (Desktop Only) -->
+<nav class="hidden lg:flex flex-col fixed left-0 top-0 h-full z-40 py-6 bg-surface-container-low dark:bg-surface-container h-full w-80 rounded-r-xl shadow-md">
+<div class="px-6 mb-8">
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed">Lapor Warga Admin</h1>
+</div>
+<div class="flex flex-col gap-1">
+<a class="text-on-surface-variant hover:bg-surface-variant/30 rounded-full px-4 py-3 mx-2 transition-all flex items-center gap-3" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-body-lg text-body-lg">Dashboard</span>
+</a>
+<a class="bg-primary-container text-on-primary-container font-bold rounded-full px-4 py-3 mx-2 flex items-center gap-3" href="#">
+<span class="material-symbols-outlined">campaign</span>
+<span class="font-body-lg text-body-lg">Announcements</span>
+</a>
+<a class="text-on-surface-variant hover:bg-surface-variant/30 rounded-full px-4 py-3 mx-2 transition-all flex items-center gap-3" href="#">
+<span class="material-symbols-outlined">how_to_vote</span>
+<span class="font-body-lg text-body-lg">Voting</span>
+</a>
+<a class="text-on-surface-variant hover:bg-surface-variant/30 rounded-full px-4 py-3 mx-2 transition-all flex items-center gap-3" href="#">
+<span class="material-symbols-outlined">flag</span>
+<span class="font-body-lg text-body-lg">Reports</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="lg:ml-80 min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky z-30 bg-surface dark:bg-background shadow-sm">
+<div class="flex items-center px-4 h-16 w-full max-w-[1200px] mx-auto">
+<button aria-label="Back" class="mr-4 p-2 rounded-full hover:bg-surface-variant/50 transition-colors active:scale-95 duration-100 text-primary">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h2 class="font-headline-md text-headline-md text-primary font-bold">Buat Pengumuman</h2>
+</div>
+</header>
+<!-- Form Container -->
+<div class="flex-grow w-full max-w-[800px] mx-auto p-margin-mobile md:p-margin-desktop">
+<div class="bg-surface-container-lowest rounded-xl p-md shadow-sm border border-outline-variant/30">
+<form class="space-y-lg" onsubmit="event.preventDefault();">
+<!-- Judul Section -->
+<div class="space-y-xs">
+<label class="font-label-caps text-label-caps text-secondary uppercase tracking-wider px-1" for="title">Judul Pengumuman</label>
+<input class="w-full bg-white border border-outline-variant rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all font-body-lg text-body-lg placeholder:text-outline-variant" id="title" placeholder="Contoh: Kerja Bakti Kebersihan Lingkungan" type="text"/>
+</div>
+<!-- Kategori Section -->
+<div class="space-y-xs">
+<label class="font-label-caps text-label-caps text-secondary uppercase tracking-wider px-1">Kategori</label>
+<div class="flex flex-wrap gap-2">
+<button class="chip-item px-4 py-2 rounded-full border border-outline-variant text-on-surface-variant hover:bg-surface-variant/30 transition-all font-button text-button flex items-center gap-2" onclick="selectChip(this)" type="button">
+<span class="material-symbols-outlined text-[18px]">info</span> Info
+                            </button>
+<button class="chip-item px-4 py-2 rounded-full border border-outline-variant text-on-surface-variant hover:bg-surface-variant/30 transition-all font-button text-button flex items-center gap-2" onclick="selectChip(this)" type="button">
+<span class="material-symbols-outlined text-[18px]">event</span> Kegiatan
+                            </button>
+<button class="chip-item px-4 py-2 rounded-full border border-outline-variant text-on-surface-variant hover:bg-surface-variant/30 transition-all font-button text-button flex items-center gap-2" onclick="selectChip(this)" type="button">
+<span class="material-symbols-outlined text-[18px]">security</span> Keamanan
+                            </button>
+<button class="chip-item px-4 py-2 rounded-full border border-outline-variant text-on-surface-variant hover:bg-surface-variant/30 transition-all font-button text-button flex items-center gap-2 chip-active" onclick="selectChip(this)" type="button">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">warning</span> Darurat
+                            </button>
+</div>
+</div>
+<!-- Isi Section -->
+<div class="space-y-xs">
+<label class="font-label-caps text-label-caps text-secondary uppercase tracking-wider px-1" for="content">Isi Pengumuman</label>
+<textarea class="w-full bg-white border border-outline-variant rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all font-body-lg text-body-lg placeholder:text-outline-variant resize-none" id="content" placeholder="Tulis rincian pengumuman secara detail di sini..." rows="6"></textarea>
+</div>
+<!-- Upload Section -->
+<div class="space-y-xs">
+<label class="font-label-caps text-label-caps text-secondary uppercase tracking-wider px-1">Lampiran Foto</label>
+<div class="relative group cursor-pointer border-2 border-dashed border-outline-variant rounded-xl p-xl flex flex-col items-center justify-center bg-surface-container-low hover:bg-surface-container hover:border-primary transition-all">
+<input accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer" multiple="" type="file"/>
+<div class="bg-primary-container/20 p-4 rounded-full mb-4 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-primary text-[48px]">upload_file</span>
+</div>
+<p class="font-button text-button text-primary">Klik untuk unggah atau seret file</p>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-1">PNG, JPG, JPEG (Maks. 5MB)</p>
+</div>
+<!-- Preview Grid (Placeholder) -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-sm mt-md">
+<div class="aspect-square bg-surface-variant rounded-lg overflow-hidden relative group">
+<img alt="Preview attachment" class="w-full h-full object-cover" data-alt="A high-resolution photograph of a lush green community park with neatly trimmed grass and mature trees under a bright morning sun. The lighting is crisp and natural, highlighting the vibrant forest green tones of the foliage. This image reflects a modern, eco-friendly community aesthetic with a clean and professional atmosphere, maintaining a serene and organized environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDmWp2rfcb6uxw26WnyDueHFW2WhItCPWsJxypmmtIAhOh9WTDcIi_eFcjLRd5URTnTFN0lHzfSNUPAHDc5J3eETKWB6lKDKIIWPTekLNaFlPxmTOg7rUN_Cq5pKnCh0Hkfow0cQxY_M-thHuTse3rwV1b68qfh1kaIFo27nSk3xvdTuhzka81v4e-hU9bJy9V7OH8daTKXnJ21-Zw7nleXkOVixWP29BoIJ71cdi6fIlLXav0ZU4iU7_SF31Uo-d6qlLztvf1lTQE"/>
+<button class="absolute top-1 right-1 bg-error/90 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-[16px]">close</span>
+</button>
+</div>
+<div class="aspect-square border-2 border-outline-variant border-dotted rounded-lg flex items-center justify-center text-outline-variant">
+<span class="material-symbols-outlined">add</span>
+</div>
+</div>
+</div>
+<!-- Submit Button -->
+<div class="pt-lg">
+<button class="w-full bg-primary text-white font-button text-button py-4 rounded-full shadow-md hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-2" type="submit">
+<span class="material-symbols-outlined">send</span>
+                            Publikasikan Pengumuman
+                        </button>
+</div>
+</form>
+</div>
+</div>
+<!-- Footer Decoration -->
+<footer class="w-full max-w-[1200px] mx-auto px-4 py-lg mt-auto">
+<div class="flex items-center justify-between opacity-50">
+<p class="text-body-sm font-body-sm">© 2024 Sistem Informasi Warga Digital</p>
+<div class="flex gap-4">
+<span class="material-symbols-outlined">eco</span>
+<span class="material-symbols-outlined">public</span>
+</div>
+</div>
+</footer>
+</main>
+<script>
+        function selectChip(element) {
+            // Remove active class from all chips
+            document.querySelectorAll('.chip-item').forEach(chip => {
+                chip.classList.remove('chip-active');
+                const icon = chip.querySelector('.material-symbols-outlined');
+                if (icon) icon.style.fontVariationSettings = "'FILL' 0";
+            });
+            // Add active class to clicked chip
+            element.classList.add('chip-active');
+            const icon = element.querySelector('.material-symbols-outlined');
+            if (icon) icon.style.fontVariationSettings = "'FILL' 1";
+        }
+
+        // Lightweight interaction for file input
+        const dropZone = document.querySelector('.relative.group');
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('border-primary', 'bg-primary-container/10');
+        });
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('border-primary', 'bg-primary-container/10');
+        });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-primary', 'bg-primary-container/10');
+            alert('File dropped! (Simulation)');
+        });
+    </script>
+</body></html>

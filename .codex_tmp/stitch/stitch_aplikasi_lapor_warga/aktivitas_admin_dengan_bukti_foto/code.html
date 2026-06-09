@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+
+<html lang="id" style=""><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Aktivitas Admin - Lapor Warga</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-background": "#191c1d",
+                        "secondary": "#57615c",
+                        "on-error": "#ffffff",
+                        "on-tertiary-fixed-variant": "#0c5136",
+                        "on-tertiary-container": "#74b392",
+                        "surface-container-high": "#e7e8e9",
+                        "primary": "#012d1d",
+                        "surface-container-low": "#f3f4f5",
+                        "on-primary-fixed": "#002114",
+                        "tertiary": "#002d1b",
+                        "outline": "#717973",
+                        "secondary-container": "#d8e2dc",
+                        "surface-variant": "#e1e3e4",
+                        "on-tertiary-fixed": "#002113",
+                        "on-secondary-fixed": "#151d1a",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-dim": "#d9dadb",
+                        "on-surface": "#191c1d",
+                        "inverse-on-surface": "#f0f1f2",
+                        "secondary-fixed": "#dbe5df",
+                        "on-primary-fixed-variant": "#274e3d",
+                        "inverse-primary": "#a5d0b9",
+                        "error": "#ba1a1a",
+                        "primary-fixed": "#c1ecd4",
+                        "on-secondary": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "on-primary-container": "#86af99",
+                        "surface-bright": "#f8f9fa",
+                        "surface": "#f8f9fa",
+                        "surface-container": "#edeeef",
+                        "inverse-surface": "#2e3132",
+                        "secondary-fixed-dim": "#bfc9c3",
+                        "on-secondary-container": "#5b6560",
+                        "tertiary-container": "#00452d",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed-dim": "#94d4b1",
+                        "tertiary-fixed": "#b0f1cc",
+                        "primary-container": "#1b4332",
+                        "on-secondary-fixed-variant": "#3f4945",
+                        "primary-fixed-dim": "#a5d0b9",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-highest": "#e1e3e4",
+                        "background": "#f8f9fa",
+                        "surface-tint": "#3f6653",
+                        "on-surface-variant": "#414844",
+                        "outline-variant": "#c1c8c2",
+                        "error-container": "#ffdad6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-mobile": "16px",
+                        "xs": "4px",
+                        "sm": "8px",
+                        "md": "16px",
+                        "lg": "24px",
+                        "gutter": "16px",
+                        "xl": "40px",
+                        "margin-desktop": "64px",
+                        "unit": "4px",
+                        "max-width": "1200px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "button": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "body-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "button": ["15px", {"lineHeight": "20px", "fontWeight": "600"}],
+                        "headline-lg-mobile": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                        "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .card-shadow {
+            box-shadow: 0 4px 12px 0 rgba(1, 45, 29, 0.04);
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-background text-on-surface min-h-screen">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky z-50 bg-surface shadow-sm">
+<div class="flex items-center px-4 h-16 w-full max-w-[1200px] mx-auto justify-between">
+<div class="flex items-center gap-4">
+<button class="p-2 rounded-full hover:bg-surface-variant/50 transition-colors active:scale-95 duration-100">
+<span class="material-symbols-outlined text-primary" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="font-headline-md text-headline-md font-bold text-primary">Aktivitas Admin</h1>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-2 rounded-full hover:bg-surface-variant/50 transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="search">search</span>
+</button>
+<button class="p-2 rounded-full hover:bg-surface-variant/50 transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Sidebar Navigation (Desktop) -->
+<aside class="hidden lg:flex flex-col fixed left-0 top-0 h-full z-40 py-6 bg-surface-container-low w-80 rounded-r-xl shadow-md">
+<div class="px-6 mb-8">
+<span class="font-headline-md text-headline-md font-bold text-primary">Lapor Warga Admin</span>
+</div>
+<nav class="flex flex-col gap-1">
+<a class="text-on-surface-variant hover:bg-surface-variant/30 rounded-full px-4 py-3 mx-2 transition-all flex items-center gap-3 font-body-lg text-body-lg" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+                Dashboard
+            </a>
+<a class="bg-primary-container text-on-primary-container font-bold rounded-full px-4 py-3 mx-2 flex items-center gap-3 font-body-lg text-body-lg" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+                Aktivitas
+            </a>
+<a class="text-on-surface-variant hover:bg-surface-variant/30 rounded-full px-4 py-3 mx-2 transition-all flex items-center gap-3 font-body-lg text-body-lg" href="#">
+<span class="material-symbols-outlined" data-icon="how_to_vote">how_to_vote</span>
+                Voting
+            </a>
+<a class="text-on-surface-variant hover:bg-surface-variant/30 rounded-full px-4 py-3 mx-2 transition-all flex items-center gap-3 font-body-lg text-body-lg" href="#">
+<span class="material-symbols-outlined" data-icon="campaign">campaign</span>
+                Pengumuman
+            </a>
+<a class="text-on-surface-variant hover:bg-surface-variant/30 rounded-full px-4 py-3 mx-2 transition-all flex items-center gap-3 font-body-lg text-body-lg" href="#">
+<span class="material-symbols-outlined" data-icon="flag">flag</span>
+                Reports
+            </a>
+</nav>
+</aside>
+<main class="max-w-[1200px] mx-auto px-4 md:px-lg lg:pl-[340px] pt-md pb-24">
+<!-- Tab System -->
+<div class="flex gap-2 mb-lg overflow-x-auto pb-2 no-scrollbar">
+<button class="px-6 py-2 rounded-full text-on-primary font-button text-button whitespace-nowrap active:scale-95 transition-transform bg-primary-container">Semua</button>
+<button class="px-6 py-2 rounded-full bg-secondary-container text-on-secondary-container font-button text-button whitespace-nowrap hover:bg-secondary-fixed-dim transition-colors active:scale-95">Laporan</button>
+<button class="px-6 py-2 rounded-full bg-secondary-container text-on-secondary-container font-button text-button whitespace-nowrap hover:bg-secondary-fixed-dim transition-colors active:scale-95">Komunitas</button>
+</div>
+<!-- Activity Timeline -->
+<div class="flex flex-col gap-4">
+<!-- Group 1: Today -->
+<div>
+<h3 class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider mb-4 px-1">Hari Ini</h3>
+<div class="flex flex-col gap-4">
+<!-- Activity Card 1 -->
+<div class="bg-surface-container-lowest p-md rounded-xl card-shadow border border-surface-variant/20 group hover:border-primary/20 transition-all cursor-pointer">
+<div class="flex gap-4">
+<div class="w-12 h-12 rounded-xl bg-primary-container/10 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-primary" data-icon="engineering">engineering</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start gap-2">
+<h4 class="font-headline-md text-[16px] leading-tight text-on-surface mb-1 truncate">Laporan Kerusakan Jalan Selesai</h4>
+<span class="font-body-sm text-body-sm text-on-surface-variant shrink-0">10:45</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary mb-3">Tim teknis telah diberangkatkan ke Jl. Merdeka No. 12 untuk perbaikan lubang jalan.</p><div class="mb-3 rounded-lg overflow-hidden border border-surface-variant/20 w-full h-32 bg-surface-container-low">https://lh3.googleusercontent.com/aida/AP1WRLuIque1_REGOYKqDTlQmbTeQh5RdY6oxYnmnCYEXDZRVijqSvfR3PHc8bcSVcNDe3V0IGz1R2LqQ8hIkHzxIw29ZQDA4gv-XRbMvzvK0esofYx58l5RSt8W-eXmCjaJ1STf9BvGWUa9MLzggkXFOAPUMwDfniSvKHmbrX5ifb7YNkb-oYnLhPq2ph4cB1TeVeHINr-dYuKARFpGcTDTMzFZ72KRuCpnz3OI9qD8aekbrGI9jfjM6ARxbPw</div>
+<div class="flex items-center gap-2">
+<span class="px-3 py-1 rounded-full bg-error-container/20 text-on-error-container font-label-caps text-[10px] uppercase font-bold tracking-wide">Selesai</span>
+<span class="font-body-sm text-[12px] text-outline">• Petugas: Andi Wijaya</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Activity Card 2 -->
+<div class="bg-surface-container-lowest p-md rounded-xl card-shadow border border-surface-variant/20 group hover:border-primary/20 transition-all cursor-pointer">
+<div class="flex gap-4">
+<div class="w-12 h-12 rounded-xl bg-tertiary-container/10 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-tertiary" data-icon="campaign">campaign</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start gap-2">
+<h4 class="font-headline-md text-[16px] leading-tight text-on-surface mb-1 truncate">Pengumuman Kerja Bakti diterbitkan</h4>
+<span class="font-body-sm text-body-sm text-on-surface-variant shrink-0">08:20</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary mb-3">Agenda kebersihan lingkungan untuk hari Minggu depan telah disiarkan ke seluruh warga.</p>
+<div class="flex items-center gap-2">
+<span class="px-3 py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-caps text-[10px] uppercase font-bold tracking-wide">Publikasi</span>
+<span class="font-body-sm text-[12px] text-outline">• Target: RT 05 &amp; RT 06</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Group 2: Yesterday -->
+<div class="mt-lg">
+<h3 class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider mb-4 px-1">Kemarin</h3>
+<div class="flex flex-col gap-4">
+<!-- Activity Card 3 -->
+<div class="bg-surface-container-lowest p-md rounded-xl card-shadow border border-surface-variant/20 group hover:border-primary/20 transition-all cursor-pointer">
+<div class="flex gap-4">
+<div class="w-12 h-12 rounded-xl bg-secondary-container/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-on-secondary-container" data-icon="how_to_vote">how_to_vote</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start gap-2">
+<h4 class="font-headline-md text-[16px] leading-tight text-on-surface mb-1 truncate">Voting Pembangunan Taman selesai</h4>
+<span class="font-body-sm text-body-sm text-on-surface-variant shrink-0">16:00</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary mb-3">Hasil akhir: 85% warga menyetujui desain konsep taman ramah anak.</p>
+<div class="flex items-center gap-2">
+<span class="px-3 py-1 rounded-full bg-error-container/20 text-on-error-container font-label-caps text-[10px] uppercase font-bold tracking-wide">Selesai</span>
+<span class="font-body-sm text-[12px] text-outline">• Total Partisipan: 142</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Activity Card 4 -->
+<div class="bg-surface-container-lowest p-md rounded-xl card-shadow border border-surface-variant/20 group hover:border-primary/20 transition-all cursor-pointer">
+<div class="flex gap-4">
+<div class="w-12 h-12 rounded-xl bg-primary-container/10 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-primary" data-icon="done_all">done_all</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start gap-2">
+<h4 class="font-headline-md text-[16px] leading-tight text-on-surface mb-1 truncate">Verifikasi Akun Warga Baru</h4>
+<span class="font-body-sm text-body-sm text-on-surface-variant shrink-0">14:15</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary mb-3">5 permohonan akun warga baru telah diverifikasi dan diaktifkan.</p>
+<div class="flex items-center gap-2">
+<span class="px-3 py-1 rounded-full bg-primary-fixed text-on-primary-fixed-variant font-label-caps text-[10px] uppercase font-bold tracking-wide">Berhasil</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Activity Card 5 -->
+<div class="bg-surface-container-lowest p-md rounded-xl card-shadow border border-surface-variant/20 group hover:border-primary/20 transition-all cursor-pointer relative overflow-hidden">
+<div class="flex gap-4">
+<div class="w-12 h-12 rounded-xl bg-error-container/10 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-error" data-icon="report">report</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start gap-2">
+<h4 class="font-headline-md text-[16px] leading-tight text-on-surface mb-1 truncate">Laporan Darurat: Pipa Bocor</h4>
+<span class="font-body-sm text-body-sm text-on-surface-variant shrink-0">09:10</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary mb-3">Warga melaporkan pipa air utama pecah di area parkir blok B.</p>
+<div class="flex items-center gap-2">
+<span class="px-3 py-1 rounded-full bg-error-container text-on-error-container font-label-caps text-[10px] uppercase font-bold tracking-wide">Prioritas Tinggi</span>
+<span class="font-body-sm text-[12px] text-outline">• Status: Direferensikan ke PDAM</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Bar (Mobile) -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 bg-surface h-16 flex items-center justify-around px-4 z-50 shadow-[0_-1px_3px_rgba(0,0,0,0.05)]"><a class="flex flex-col items-center justify-center gap-1 text-on-surface-variant" href="#"><span class="material-symbols-outlined" data-icon="home">home</span><span class="text-[10px] font-medium">Beranda</span></a><a class="flex flex-col items-center justify-center gap-1 text-on-surface-variant" href="#"><span class="material-symbols-outlined" data-icon="how_to_vote">how_to_vote</span><span class="text-[10px] font-medium">Voting</span></a><a class="flex flex-col items-center justify-center gap-1 text-primary" href="#"><span class="material-symbols-outlined" data-icon="history" style="font-variation-settings: 'FILL' 1;">history</span><span class="text-[10px] font-bold">Aktivitas</span></a><a class="flex flex-col items-center justify-center gap-1 text-on-surface-variant" href="#"><span class="material-symbols-outlined" data-icon="person">person</span><span class="text-[10px] font-medium">Profil</span></a></nav>
+<!-- FAB for quick action (Optional but helps UX) -->
+<button class="fixed bottom-20 md:bottom-8 right-6 w-14 h-14 text-on-primary rounded-2xl shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all z-40 bg-primary-container">
+<span class="material-symbols-outlined text-[28px]" data-icon="add">add</span>
+</button>
+<script>
+        // Micro-interactions
+        document.querySelectorAll('button, a').forEach(el => {
+            el.addEventListener('click', (e) => {
+                // Handle ripple or active state logic if needed
+            });
+        });
+
+        // Toggle active tab style
+        const tabs = document.querySelectorAll('.flex.gap-2 button');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => {
+                    t.classList.remove('bg-primary', 'text-on-primary');
+                    t.classList.add('bg-secondary-container', 'text-on-secondary-container');
+                });
+                tab.classList.remove('bg-secondary-container', 'text-on-secondary-container');
+                tab.classList.add('bg-primary', 'text-on-primary');
+            });
+        });
+    </script>
+</body></html>

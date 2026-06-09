@@ -1,0 +1,303 @@
+<!DOCTYPE html><html lang="id" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;display=swap" rel="stylesheet">
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .status-badge-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .7; }
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "inverse-primary": "#a5d0b9",
+                      "background": "#f8f9fa",
+                      "tertiary": "#002d1b",
+                      "on-secondary-fixed-variant": "#3f4945",
+                      "on-tertiary-container": "#74b392",
+                      "surface-variant": "#e1e3e4",
+                      "on-surface-variant": "#414844",
+                      "secondary": "#57615c",
+                      "on-surface": "#191c1d",
+                      "on-secondary-container": "#5b6560",
+                      "secondary-fixed-dim": "#bfc9c3",
+                      "on-primary-fixed": "#002114",
+                      "surface-bright": "#f8f9fa",
+                      "surface-tint": "#3f6653",
+                      "primary-fixed-dim": "#a5d0b9",
+                      "on-error": "#ffffff",
+                      "secondary-fixed": "#dbe5df",
+                      "surface-container-low": "#f3f4f5",
+                      "error": "#ba1a1a",
+                      "surface-container": "#edeeef",
+                      "on-primary-container": "#86af99",
+                      "tertiary-fixed": "#b0f1cc",
+                      "surface": "#f8f9fa",
+                      "on-primary-fixed-variant": "#274e3d",
+                      "on-tertiary-fixed-variant": "#0c5136",
+                      "on-tertiary-fixed": "#002113",
+                      "on-background": "#191c1d",
+                      "inverse-surface": "#2e3132",
+                      "inverse-on-surface": "#f0f1f2",
+                      "surface-container-highest": "#e1e3e4",
+                      "on-primary": "#ffffff",
+                      "outline": "#717973",
+                      "tertiary-fixed-dim": "#94d4b1",
+                      "surface-container-high": "#e7e8e9",
+                      "primary-container": "#1b4332",
+                      "surface-dim": "#d9dadb",
+                      "surface-container-lowest": "#ffffff",
+                      "on-secondary-fixed": "#151d1a",
+                      "error-container": "#ffdad6",
+                      "secondary-container": "#d8e2dc",
+                      "primary": "#012d1d",
+                      "on-tertiary": "#ffffff",
+                      "tertiary-container": "#00452d",
+                      "on-secondary": "#ffffff",
+                      "on-error-container": "#93000a",
+                      "primary-fixed": "#c1ecd4",
+                      "outline-variant": "#c1c8c2"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "unit": "4px",
+                      "sm": "8px",
+                      "xs": "4px",
+                      "margin-desktop": "64px",
+                      "xl": "40px",
+                      "max-width": "1200px",
+                      "md": "16px",
+                      "lg": "24px",
+                      "gutter": "16px",
+                      "margin-mobile": "16px"
+              },
+              "fontFamily": {
+                      "headline-lg-mobile": ["Inter"],
+                      "body-lg": ["Inter"],
+                      "label-caps": ["Inter"],
+                      "headline-md": ["Inter"],
+                      "button": ["Inter"],
+                      "body-sm": ["Inter"],
+                      "headline-lg": ["Inter"]
+              },
+              "fontSize": {
+                      "headline-lg-mobile": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                      "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                      "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "button": ["15px", {"lineHeight": "20px", "fontWeight": "600"}],
+                      "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface md:mb-0">
+<!-- Top AppBar (Admin Detail Context) -->
+<header class="fixed top-0 left-0 w-full z-50 bg-surface shadow-sm h-16 flex items-center px-4 md:px-margin-desktop">
+<div class="flex items-center gap-4 w-full max-w-max-width mx-auto">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors" onclick="history.back()">
+<span class="material-symbols-outlined text-primary">arrow_back</span>
+</button>
+<h1 class="font-headline-md text-headline-md font-bold text-primary">Detail Laporan</h1>
+<div class="ml-auto flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant">more_vert</span>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-24 pb-12 px-margin-mobile md:px-margin-desktop max-w-max-width mx-auto">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+<!-- Left Column: Details & Evidence -->
+<div class="lg:col-span-8 space-y-gutter">
+<!-- Status & Priority Card -->
+<div class="bg-surface-container-lowest p-md rounded-xl shadow-sm border border-outline-variant/10 flex flex-wrap items-center justify-between gap-4">
+<div class="flex items-center gap-3">
+<div class="px-3 py-1 bg-error-container text-on-error-container rounded-full flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">error</span>
+<span class="font-label-caps text-label-caps">PRIORITAS TINGGI</span>
+</div>
+<div class="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full flex items-center gap-2 status-badge-pulse">
+<span class="material-symbols-outlined text-[18px]">pending_actions</span>
+<span class="font-label-caps text-label-caps">MENUNGGU TINDAKAN</span>
+</div>
+</div>
+<div class="text-on-surface-variant font-body-sm text-body-sm italic">
+                        ID: #LW-2023-0892
+                    </div>
+</div>
+<!-- Reporter & Content Card -->
+<div class="bg-surface-container-lowest p-md rounded-xl shadow-sm space-y-6">
+<!-- Reporter Identity -->
+<div class="flex items-center gap-4 border-b border-outline-variant/20 pb-4">
+<div class="w-12 h-12 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold">
+                            AS
+                        </div>
+<div>
+<p class="font-headline-md text-headline-md text-primary">Bpk. Ahmad Subarjo</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">schedule</span>
+                                Dilaporkan pada: 24 Okt 2023, 19:45 WIB
+                            </p>
+</div>
+</div>
+<!-- Category & Description -->
+<div class="space-y-3">
+<div class="inline-flex items-center gap-2 px-3 py-1 bg-surface-container-high rounded-lg text-primary font-semibold text-body-sm">
+<span class="material-symbols-outlined text-[20px]">lightbulb</span>
+                            Infrastruktur - Lampu Jalan Mati
+                        </div>
+<p class="font-body-lg text-body-lg text-on-surface leading-relaxed">
+                            Lampu jalan di sepanjang Jl. Merdeka No. 45 hingga No. 50 sudah padam selama 3 malam terakhir. Hal ini menyebabkan area tersebut sangat gelap dan rawan terjadi tindak kriminalitas. Mohon segera dilakukan perbaikan demi kenyamanan warga sekitar.
+                        </p>
+</div>
+<!-- Photo Evidence -->
+<div class="rounded-xl overflow-hidden shadow-md group relative">
+<img alt="Bukti Foto Lampu Jalan Mati" class="w-full h-[300px] md:h-[450px] object-cover transition-transform duration-500 group-hover:scale-105" data-alt="A cinematic, high-contrast photograph of a suburban street at dusk, where the streetlights are conspicuously dark against a deep indigo sky. The lighting is moody and naturalistic, emphasizing the shadows and the isolation of the neighborhood. The visual style is crisp and professional, with a focus on documenting urban decay under a somber, civic-minded atmosphere with forest green undertones in the shadows." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBvkbNaP0iWZW9YSNiMzqjtGRX6eDtBYNVgIzoJT1DMwvPii0YO6Ielw9JyGWCyB1iBAtTxSxuDim5FVMYTEzsirab0VGuh1qDVrw8x_Q3BWk6tC5MEMsZ48JoE-4IrvsCtEqdaQbbe6QpW9kgMBTOOJyUp8TCJDLi7Umc45GgiFnEQz-XfWDkC8VKlKfKZY9MuBIzcYGjURh4UAvK7J0ZDpwKHBUyANrAnb7wkj4But-IJsb1XT1xGpnNzt-BbCOnhI_XH_IgQGgs">
+<div class="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors pointer-events-none"></div>
+<div class="absolute bottom-4 right-4 bg-black/60 backdrop-blur-md text-white px-3 py-1 rounded-lg text-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">zoom_in</span>
+                            Klik untuk memperbesar
+                        </div>
+</div>
+</div>
+</div>
+<!-- Right Column: Location & Admin Actions -->
+<div class="lg:col-span-4 space-y-gutter">
+<!-- Location Card -->
+<div class="bg-surface-container-lowest p-md rounded-xl shadow-sm space-y-4">
+<h3 class="font-headline-md text-headline-md text-primary flex items-center gap-2">
+<span class="material-symbols-outlined">location_on</span>
+                        Lokasi Kejadian
+                    </h3>
+<div class="rounded-lg overflow-hidden h-40 bg-surface-container-high relative">
+<!-- Simulated Map -->
+<img alt="Map Location" class="w-full h-full object-cover opacity-80" data-alt="A clean, minimalist digital map interface showing a suburban grid layout in the city of Jakarta. The aesthetic uses a neutral color palette with subtle highlights in deep forest green to mark the specific reporting location. The overall look is modern and functional, reminiscent of a high-end logistics or civic management dashboard, emphasizing clarity and geographic precision." data-location="Jakarta, Indonesia" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDcRbK6vktq3i8rF4H-LyT1K4zNPCvyymPY9wF3NKI3QW09T95kP9U-WTie3D5SgmMJ1lmYYX5kdqr21tRezCbr9B_cQBJ9Sua7dfKIdyXsDDsa7QL8NJKbhsvu86LPnH1rVDbPP4HJ4_K_mPEgnWzZKf4FKxg5ftNl0g7jPAnERISzoGRkhou6lNeWBkJA4GKVrkAkfHc50BhhJaykWIQX23412p56lvEQ1LUQM8wUsb7BUxTYbOqeZJbXocLI_7f5p1FEUHlR0AU">
+<div class="absolute inset-0 flex items-center justify-center">
+<span class="material-symbols-outlined text-error text-4xl" style="font-variation-settings: 'FILL' 1;">location_on</span>
+</div>
+</div>
+<div class="space-y-2">
+<p class="font-body-sm text-body-sm text-on-surface">
+                            Jl. Merdeka No. 47, RT.05/RW.02, Kel. Mampang Prapatan, Jakarta Selatan
+                        </p>
+<button class="w-full py-2 border border-outline text-primary font-button rounded-lg flex items-center justify-center gap-2 hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[20px]">map</span>
+                            Buka di Google Maps
+                        </button>
+</div>
+</div>
+<!-- Admin Action Control -->
+<div class="bg-primary-container text-white p-md rounded-xl shadow-lg space-y-4">
+<h3 class="font-headline-md text-headline-md text-on-primary-container flex items-center gap-2">
+<span class="material-symbols-outlined">admin_panel_settings</span>
+                        Panel Admin
+                    </h3>
+<div class="space-y-3">
+<label class="block font-label-caps text-label-caps text-on-primary-container">CATATAN INTERNAL / UPDATE WARGA</label>
+<textarea class="w-full bg-white/10 border border-white/20 rounded-lg p-3 text-white placeholder-white/50 focus:ring-2 focus:ring-on-primary-container outline-none min-h-[100px]" placeholder="Tulis update atau instruksi tindak lanjut di sini..."></textarea>
+</div>
+<div class="grid grid-cols-1 gap-3">
+<div class="space-y-3 mb-4">
+    <label class="block font-label-caps text-label-caps text-on-primary-container">UNGGAH BUKTI SELESAI (OPSIONAL)</label>
+    <div class="w-full border-2 border-dashed border-white/30 rounded-lg p-4 flex flex-col items-center justify-center gap-2 bg-white/5 hover:bg-white/10 transition-colors cursor-pointer">
+        <span class="material-symbols-outlined text-3xl">add_a_photo</span>
+        <span class="font-body-sm text-body-sm">Ambil Foto atau Pilih Gambar</span>
+    </div>
+</div><button class="w-full py-3 bg-white text-primary font-bold rounded-lg flex items-center justify-center gap-2 hover:bg-on-primary-container transition-all active:scale-[0.98]">
+<span class="material-symbols-outlined">play_arrow</span>
+                            Tindak Lanjut
+                        </button>
+<div class="flex gap-2">
+<button class="flex-1 py-3 bg-surface-container-highest/20 text-white font-bold rounded-lg border border-white/30 flex items-center justify-center gap-2 hover:bg-white/10 transition-colors">
+<span class="material-symbols-outlined">check_circle</span>
+                                Selesai
+                            </button>
+<button class="flex-1 py-3 bg-error text-white font-bold rounded-lg flex items-center justify-center gap-2 hover:bg-red-700 transition-colors">
+<span class="material-symbols-outlined">close</span>
+                                Tolak
+                            </button>
+</div>
+</div>
+</div>
+<!-- History Timeline (Additional Context) -->
+<div class="p-md bg-surface-container-low rounded-xl border border-outline-variant/30">
+<h3 class="font-label-caps text-label-caps text-on-surface-variant mb-4">RIWAYAT LAPORAN</h3>
+<div class="space-y-4 relative before:absolute before:left-2 before:top-2 before:bottom-2 before:w-[2px] before:bg-outline-variant">
+<div class="relative pl-8">
+<div class="absolute left-0 top-1 w-4 h-4 rounded-full bg-primary border-4 border-white shadow-sm"></div>
+<p class="text-body-sm font-bold">Laporan Diterima</p>
+<p class="text-xs text-on-surface-variant">24 Okt 2023, 19:45</p>
+</div>
+<div class="relative pl-8">
+<div class="absolute left-0 top-1 w-4 h-4 rounded-full bg-surface-variant border-4 border-white shadow-sm"></div>
+<p class="text-body-sm font-bold text-on-surface-variant">Verifikasi Admin</p>
+<p class="text-xs text-on-surface-variant">Menunggu antrean...</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation (Mobile Only - Based on Shared Components) -->
+
+<script>
+        // Micro-interactions
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', function() {
+                this.classList.add('scale-95');
+                setTimeout(() => this.classList.remove('scale-95'), 150);
+            });
+        });
+
+        // Simple text area focus effect
+        const textarea = document.querySelector('textarea');
+        textarea.addEventListener('focus', () => {
+            textarea.parentElement.parentElement.classList.add('ring-2', 'ring-white/20');
+        });
+        textarea.addEventListener('blur', () => {
+            textarea.parentElement.parentElement.classList.remove('ring-2', 'ring-white/20');
+        });
+    </script>
+
+
+
+
+
+
+</body></html>
