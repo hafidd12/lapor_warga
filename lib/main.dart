@@ -56,14 +56,6 @@ class _HomeScreenWrapperState extends State<HomeScreenWrapper> {
   int _currentCitizenIndex = 0;
   int _currentAdminIndex = 0;
 
-  // Citizen tabs
-  final List<Widget> _citizenScreens = [
-    const DashboardWargaScreen(),
-    const HalamanReportScreen(showBackButton: false),
-    const AktivitasLaporanScreen(),
-    const ProfilWargaScreen(),
-  ];
-
   // Admin tabs (added Warga management and Aktivitas)
   final List<Widget> _adminScreens = [
     const DashboardAdminScreen(),
@@ -71,6 +63,18 @@ class _HomeScreenWrapperState extends State<HomeScreenWrapper> {
     const AktivitasAdminScreen(),
     const ProfilAdminScreen(),
   ];
+
+  List<Widget> get _citizenScreens {
+    return [
+      const DashboardWargaScreen(),
+      HalamanReportScreen(
+        showBackButton: false,
+        onBackPressed: () => setState(() => _currentCitizenIndex = 0),
+      ),
+      const AktivitasLaporanScreen(),
+      const ProfilWargaScreen(),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {

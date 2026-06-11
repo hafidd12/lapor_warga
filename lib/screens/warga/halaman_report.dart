@@ -6,9 +6,13 @@ import '../../theme.dart';
 
 class HalamanReportScreen extends StatefulWidget {
   final bool showBackButton;
+  final VoidCallback? onBackPressed;
 
-  const HalamanReportScreen({Key? key, this.showBackButton = true})
-    : super(key: key);
+  const HalamanReportScreen({
+    Key? key,
+    this.showBackButton = true,
+    this.onBackPressed,
+  }) : super(key: key);
 
   @override
   State<HalamanReportScreen> createState() => _HalamanReportScreenState();
@@ -70,22 +74,40 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
     }
   }
 
+  void _handleBack() {
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+      return;
+    }
+
+    widget.onBackPressed?.call();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
+        toolbarHeight: 80,
+        leadingWidth: 64,
+        centerTitle: false,
+        titleSpacing: 0,
         title: const Text(
           'Report',
           style: TextStyle(
             color: AppTheme.primaryColor,
             fontWeight: FontWeight.bold,
+            fontSize: 22,
           ),
         ),
         backgroundColor: AppTheme.surfaceColor,
         foregroundColor: AppTheme.primaryColor,
         elevation: 0.5,
-        automaticallyImplyLeading: widget.showBackButton,
+        automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: _handleBack,
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_none_outlined),
