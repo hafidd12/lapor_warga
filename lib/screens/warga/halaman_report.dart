@@ -85,6 +85,7 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
 
     _titleController.clear();
     _descriptionController.clear();
+    _formKey.currentState?.reset();
     setState(() {
       _selectedCategory = null;
       _selectedPriority = null;
