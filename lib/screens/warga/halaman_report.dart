@@ -6,9 +6,13 @@ import '../../theme.dart';
 
 class HalamanReportScreen extends StatefulWidget {
   final bool showBackButton;
+  final VoidCallback? onBackPressed;
 
-  const HalamanReportScreen({Key? key, this.showBackButton = true})
-    : super(key: key);
+  const HalamanReportScreen({
+    Key? key,
+    this.showBackButton = true,
+    this.onBackPressed,
+  }) : super(key: key);
 
   @override
   State<HalamanReportScreen> createState() => _HalamanReportScreenState();
@@ -20,16 +24,7 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
   final _descriptionController = TextEditingController();
 
   String _selectedCategory = 'Infrastruktur';
-  final List<String> _categories = const [
-    'Infrastruktur',
-    'Kebersihan',
-    'Keamanan',
-    'Penerangan Jalan',
-    'Sosial & Tetangga',
-    'Lainnya',
-  ];
-
-  ReportPriority _selectedPriority = ReportPriority.medium;
+  ReportPriority _selectedPriority = ReportPriority.low;
   bool _hasMockImage = false;
 
   @override
@@ -61,7 +56,7 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
     _descriptionController.clear();
     setState(() {
       _selectedCategory = 'Infrastruktur';
-      _selectedPriority = ReportPriority.medium;
+      _selectedPriority = ReportPriority.low;
       _hasMockImage = false;
     });
 
@@ -70,22 +65,38 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
     }
   }
 
+  void _handleBack() {
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+      return;
+    }
+
+    widget.onBackPressed?.call();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
+        toolbarHeight: 80,
+        leadingWidth: 64,
         title: const Text(
           'Report',
           style: TextStyle(
             color: AppTheme.primaryColor,
             fontWeight: FontWeight.bold,
+            fontSize: 22,
           ),
         ),
         backgroundColor: AppTheme.surfaceColor,
         foregroundColor: AppTheme.primaryColor,
         elevation: 0.5,
-        automaticallyImplyLeading: widget.showBackButton,
+        automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: _handleBack,
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_none_outlined),
@@ -95,7 +106,7 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
       ),
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(16, 20, 16, 28),
+        padding: const EdgeInsets.fromLTRB(16, 28, 16, 32),
         child: Form(
           key: _formKey,
           child: Column(
@@ -116,34 +127,12 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
                   },
                 ),
               ),
-              const SizedBox(height: 16),
-              _formSection(
-                label: 'Kategori',
-                child: DropdownButtonFormField<String>(
-                  value: _selectedCategory,
-                  icon: const Icon(
-                    Icons.keyboard_arrow_down,
-                    color: AppTheme.primaryColor,
-                  ),
-                  decoration: _inputDecoration('Pilih kategori laporan'),
-                  items: _categories.map((category) {
-                    return DropdownMenuItem(
-                      value: category,
-                      child: Text(category),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() => _selectedCategory = value);
-                    }
-                  },
-                ),
-              ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 28),
               _formSection(
                 label: 'Detail Laporan',
                 child: TextFormField(
                   controller: _descriptionController,
+                  minLines: 5,
                   maxLines: 5,
                   decoration: _inputDecoration(
                     'Ceritakan detail kejadian atau masalah yang Anda temukan...',
@@ -159,11 +148,11 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
                   },
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 28),
               _formSection(
                 label: 'Prioritas',
                 child: Container(
-                  padding: const EdgeInsets.all(4),
+                  padding: const EdgeInsets.all(5),
                   decoration: BoxDecoration(
                     color: AppTheme.surfaceContainerLow,
                     borderRadius: BorderRadius.circular(10),
@@ -177,120 +166,122 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 28),
               _formSection(
                 label: 'Unggah Foto',
                 child: GestureDetector(
                   onTap: () => setState(() => _hasMockImage = !_hasMockImage),
                   child: AspectRatio(
-                    aspectRatio: 16 / 9,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: AppTheme.surfaceContainerLow.withOpacity(0.35),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: _hasMockImage
-                              ? AppTheme.primaryColor
-                              : AppTheme.outlineVariantColor,
-                          width: _hasMockImage ? 2 : 1.5,
-                        ),
+                    aspectRatio: 1.98,
+                    child: CustomPaint(
+                      painter: _DashedBorderPainter(
+                        color: _hasMockImage
+                            ? AppTheme.primaryColor
+                            : AppTheme.outlineVariantColor,
                       ),
-                      child: _hasMockImage
-                          ? Stack(
-                              children: [
-                                const Center(
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.check_circle,
-                                        color: AppTheme.statusLow,
-                                        size: 42,
-                                      ),
-                                      SizedBox(height: 8),
-                                      Text(
-                                        'Foto kejadian sudah dipilih',
-                                        style: TextStyle(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: AppTheme.surfaceContainerLow.withOpacity(0.28),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: _hasMockImage
+                            ? Stack(
+                                children: [
+                                  const Center(
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.check_circle_outline,
                                           color: AppTheme.primaryColor,
-                                          fontWeight: FontWeight.bold,
+                                          size: 42,
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Positioned(
-                                  right: 10,
-                                  top: 10,
-                                  child: CircleAvatar(
-                                    radius: 16,
-                                    backgroundColor: AppTheme.statusHigh
-                                        .withOpacity(0.9),
-                                    child: const Icon(
-                                      Icons.close,
-                                      size: 18,
-                                      color: Colors.white,
+                                        SizedBox(height: 10),
+                                        Text(
+                                          'Foto kejadian sudah dipilih',
+                                          style: TextStyle(
+                                            color: AppTheme.textSecondaryColor,
+                                            fontWeight: FontWeight.w800,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                ),
-                              ],
-                            )
-                          : const Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.add_a_photo_outlined,
-                                  color: AppTheme.outlineColor,
-                                  size: 44,
-                                ),
-                                SizedBox(height: 8),
-                                Text(
-                                  'Pilih Foto Kejadian',
-                                  style: TextStyle(
-                                    color: AppTheme.outlineColor,
-                                    fontWeight: FontWeight.bold,
+                                  Positioned(
+                                    right: 10,
+                                    top: 10,
+                                    child: CircleAvatar(
+                                      radius: 16,
+                                      backgroundColor: AppTheme.statusHigh
+                                          .withOpacity(0.9),
+                                      child: const Icon(
+                                        Icons.close,
+                                        size: 18,
+                                        color: Colors.white,
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
+                                ],
+                              )
+                            : const Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.add_a_photo_outlined,
+                                    color: AppTheme.outlineColor,
+                                    size: 44,
+                                  ),
+                                  SizedBox(height: 12),
+                                  Text(
+                                    'Pilih Foto Kejadian',
+                                    style: TextStyle(
+                                      color: AppTheme.textSecondaryColor,
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                      ),
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 28),
               _formSection(
                 label: 'Pilih Lokasi',
                 child: AspectRatio(
-                  aspectRatio: 16 / 9,
+                  aspectRatio: 1.78,
                   child: Container(
                     decoration: BoxDecoration(
-                      color: AppTheme.secondaryContainerColor.withOpacity(0.55),
-                      borderRadius: BorderRadius.circular(16),
+                      color: AppTheme.primaryColor,
+                      borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: AppTheme.outlineVariantColor),
                     ),
+                    clipBehavior: Clip.antiAlias,
                     child: Stack(
                       children: [
                         Positioned.fill(
-                          child: CustomPaint(painter: _MapGridPainter()),
+                          child: CustomPaint(
+                            painter: _LocationPreviewPainter(),
+                          ),
                         ),
                         Center(
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 10,
+                              horizontal: 20,
+                              vertical: 11,
                             ),
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(100),
-                              border: Border.all(
-                                color: AppTheme.outlineVariantColor,
-                              ),
+                              border: Border.all(color: AppTheme.outlineColor),
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppTheme.primaryColor.withOpacity(
-                                    0.08,
-                                  ),
-                                  blurRadius: 14,
-                                  offset: const Offset(0, 6),
+                                  color: Colors.black.withOpacity(0.16),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 3),
                                 ),
                               ],
                             ),
@@ -300,14 +291,15 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
                                 Icon(
                                   Icons.location_on,
                                   color: AppTheme.primaryColor,
-                                  size: 20,
+                                  size: 24,
                                 ),
-                                SizedBox(width: 6),
+                                SizedBox(width: 10),
                                 Text(
                                   'Tentukan Titik Lokasi',
                                   style: TextStyle(
                                     color: AppTheme.primaryColor,
                                     fontWeight: FontWeight.bold,
+                                    fontSize: 16,
                                   ),
                                 ),
                               ],
@@ -319,24 +311,25 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 48),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primaryColor,
                     foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    elevation: 5,
+                    shadowColor: Colors.black.withOpacity(0.24),
+                    padding: const EdgeInsets.symmetric(vertical: 20),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                   ),
                   onPressed: _handleSubmit,
-                  icon: const Icon(Icons.send_outlined),
+                  icon: const Icon(Icons.send_outlined, size: 24),
                   label: const Text(
                     'Kirim Laporan',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                 ),
               ),
@@ -352,7 +345,12 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
       hintText: hint,
       fillColor: Colors.white,
       filled: true,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      hintStyle: const TextStyle(
+        color: Color(0xFFB7BFB9),
+        fontSize: 16,
+        height: 1.45,
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
         borderSide: const BorderSide(color: AppTheme.outlineVariantColor),
@@ -371,18 +369,18 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
   Widget _formSection({required String label, required Widget child}) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(18, 20, 18, 22),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: AppTheme.outlineVariantColor.withOpacity(0.35),
         ),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primaryColor.withOpacity(0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.035),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -393,12 +391,12 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
             label.toUpperCase(),
             style: const TextStyle(
               color: AppTheme.secondaryColor,
-              fontSize: 12,
+              fontSize: 13,
               fontWeight: FontWeight.bold,
-              letterSpacing: 0.6,
+              letterSpacing: 1.2,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           child,
         ],
       ),
@@ -413,7 +411,7 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 160),
           alignment: Alignment.center,
-          padding: const EdgeInsets.symmetric(vertical: 10),
+          padding: const EdgeInsets.symmetric(vertical: 11),
           decoration: BoxDecoration(
             color: isSelected ? Colors.white : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
@@ -433,8 +431,8 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
               color: isSelected
                   ? AppTheme.primaryColor
                   : AppTheme.textSecondaryColor,
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              fontSize: 15,
             ),
           ),
         ),
@@ -443,36 +441,153 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
   }
 }
 
-class _MapGridPainter extends CustomPainter {
+class _DashedBorderPainter extends CustomPainter {
+  final Color color;
+
+  const _DashedBorderPainter({required this.color});
+
   @override
   void paint(Canvas canvas, Size size) {
+    final radius = Radius.circular(14);
+    final rect = Offset.zero & size;
+    final rrect = RRect.fromRectAndRadius(rect.deflate(1), radius);
+    final path = Path()..addRRect(rrect);
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1.7
+      ..style = PaintingStyle.stroke;
+
+    for (final metric in path.computeMetrics()) {
+      var distance = 0.0;
+      const dash = 7.0;
+      const gap = 6.0;
+      while (distance < metric.length) {
+        canvas.drawPath(metric.extractPath(distance, distance + dash), paint);
+        distance += dash + gap;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashedBorderPainter oldDelegate) {
+    return oldDelegate.color != color;
+  }
+}
+
+class _LocationPreviewPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final sidePaint = Paint()..color = const Color(0xFF0B3D31);
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, size.width * 0.28, size.height),
+      sidePaint,
+    );
+    canvas.drawRect(
+      Rect.fromLTWH(size.width * 0.72, 0, size.width * 0.28, size.height),
+      sidePaint,
+    );
+
+    final mapRect = Rect.fromLTWH(
+      size.width * 0.30,
+      -size.height * 0.08,
+      size.width * 0.40,
+      size.height * 1.18,
+    );
+    final mapPaint = Paint()..color = const Color(0xFFD8DDD8);
+    canvas.drawRect(mapRect, mapPaint);
+
+    final waterPaint = Paint()..color = const Color(0xFF438A85);
+    canvas.drawPath(
+      Path()
+        ..moveTo(mapRect.left, size.height * 0.82)
+        ..cubicTo(
+          mapRect.left + 26,
+          size.height * 0.68,
+          mapRect.left + 64,
+          size.height * 0.82,
+          mapRect.right,
+          size.height * 0.70,
+        )
+        ..lineTo(mapRect.right, size.height)
+        ..lineTo(mapRect.left, size.height)
+        ..close(),
+      waterPaint,
+    );
+
+    final parkPaint = Paint()..color = const Color(0xFF8EC39B);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(mapRect.left + 12, size.height * 0.58, 42, 34),
+        const Radius.circular(6),
+      ),
+      parkPaint,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(mapRect.right - 48, size.height * 0.10, 44, 40),
+        const Radius.circular(6),
+      ),
+      parkPaint,
+    );
+
     final roadPaint = Paint()
-      ..color = Colors.white.withOpacity(0.75)
-      ..strokeWidth = 6
+      ..color = Colors.white.withOpacity(0.78)
+      ..strokeWidth = 3.2
       ..strokeCap = StrokeCap.round;
     final minorPaint = Paint()
-      ..color = AppTheme.outlineVariantColor.withOpacity(0.5)
-      ..strokeWidth = 2
+      ..color = const Color(0xFFAEB7B0)
+      ..strokeWidth = 1.1
       ..strokeCap = StrokeCap.round;
 
-    for (var i = 1; i < 4; i++) {
-      final y = size.height * i / 4;
-      canvas.drawLine(Offset(10, y), Offset(size.width - 10, y), minorPaint);
+    for (var i = 0; i < 8; i++) {
+      final y = size.height * (i + 1) / 9;
+      canvas.drawLine(
+        Offset(mapRect.left, y),
+        Offset(mapRect.right, y + 10),
+        minorPaint,
+      );
     }
-    for (var i = 1; i < 4; i++) {
-      final x = size.width * i / 4;
-      canvas.drawLine(Offset(x, 10), Offset(x, size.height - 10), minorPaint);
+    for (var i = 0; i < 6; i++) {
+      final x = mapRect.left + mapRect.width * (i + 1) / 7;
+      canvas.drawLine(Offset(x, 0), Offset(x - 8, size.height), minorPaint);
     }
 
     canvas.drawLine(
-      Offset(size.width * 0.1, size.height * 0.72),
-      Offset(size.width * 0.9, size.height * 0.28),
+      Offset(mapRect.left + 4, size.height * 0.28),
+      Offset(mapRect.right - 4, size.height * 0.50),
       roadPaint,
     );
     canvas.drawLine(
-      Offset(size.width * 0.22, size.height * 0.1),
-      Offset(size.width * 0.74, size.height * 0.9),
+      Offset(mapRect.left + mapRect.width * 0.72, 0),
+      Offset(mapRect.left + mapRect.width * 0.36, size.height),
       roadPaint,
+    );
+    canvas.drawLine(
+      Offset(mapRect.left + 10, size.height * 0.72),
+      Offset(mapRect.right - 6, size.height * 0.36),
+      roadPaint,
+    );
+
+    final pinOffset = Offset(size.width * 0.545, size.height * 0.34);
+    final pinPaint = Paint()..color = const Color(0xFF10B981);
+    canvas.drawCircle(pinOffset, 7, pinPaint);
+    canvas.drawCircle(pinOffset, 3, Paint()..color = Colors.white);
+    canvas.drawPath(
+      Path()
+        ..moveTo(pinOffset.dx - 5, pinOffset.dy + 5)
+        ..lineTo(pinOffset.dx + 5, pinOffset.dy + 5)
+        ..lineTo(pinOffset.dx, pinOffset.dy + 17)
+        ..close(),
+      pinPaint,
+    );
+
+    final phonePaint = Paint()
+      ..color = AppTheme.primaryColor
+      ..strokeWidth = 3
+      ..style = PaintingStyle.stroke;
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(mapRect.inflate(7), const Radius.circular(16)),
+      phonePaint,
     );
   }
 
