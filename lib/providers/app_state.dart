@@ -24,25 +24,33 @@ class AppState with ChangeNotifier {
   List<AppUser> get allWarga =>
       _registeredUsers.where((u) => u.role == UserRole.warga).toList();
   List<AppUser> get verifiedWarga => _registeredUsers
-      .where((u) =>
-          u.role == UserRole.warga &&
-          u.verificationStatus == VerificationStatus.verified)
+      .where(
+        (u) =>
+            u.role == UserRole.warga &&
+            u.verificationStatus == VerificationStatus.verified,
+      )
       .toList();
   List<AppUser> get pendingWarga => _registeredUsers
-      .where((u) =>
-          u.role == UserRole.warga &&
-          u.verificationStatus == VerificationStatus.pending)
+      .where(
+        (u) =>
+            u.role == UserRole.warga &&
+            u.verificationStatus == VerificationStatus.pending,
+      )
       .toList();
   List<AppUser> get rejectedWarga => _registeredUsers
-      .where((u) =>
-          u.role == UserRole.warga &&
-          u.verificationStatus == VerificationStatus.rejected)
+      .where(
+        (u) =>
+            u.role == UserRole.warga &&
+            u.verificationStatus == VerificationStatus.rejected,
+      )
       .toList();
 
   // Completed reports with photos
   List<Report> get completedReportsWithPhotos => _reports
-      .where((r) =>
-          r.status == ReportStatus.resolved && r.completionPhotoUrl != null)
+      .where(
+        (r) =>
+            r.status == ReportStatus.resolved && r.completionPhotoUrl != null,
+      )
       .toList();
 
   void _loadMockData() {
@@ -116,18 +124,20 @@ class AppState with ChangeNotifier {
     ]);
 
     // Mock RT admin
-    _registeredUsers.add(AppUser(
-      id: 'admin-1',
-      name: 'Pak Harto',
-      email: 'admin@lapor.com',
-      role: UserRole.admin,
-      avatarUrl: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Harto',
-      verificationStatus: VerificationStatus.verified,
-      phone: '081200000001',
-      jabatan: 'Ketua RT 05',
-      rtRw: '005/002',
-      registeredAt: DateTime.now().subtract(const Duration(days: 60)),
-    ));
+    _registeredUsers.add(
+      AppUser(
+        id: 'admin-1',
+        name: 'Pak Harto',
+        email: 'admin@lapor.com',
+        role: UserRole.admin,
+        avatarUrl: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Harto',
+        verificationStatus: VerificationStatus.verified,
+        phone: '081200000001',
+        jabatan: 'Ketua RT 05',
+        rtRw: '005/002',
+        registeredAt: DateTime.now().subtract(const Duration(days: 60)),
+      ),
+    );
 
     // Mock Announcements
     _announcements.addAll([
@@ -163,15 +173,11 @@ class AppState with ChangeNotifier {
         id: 'poll-2',
         question:
             'Setujukan Anda jika area samping balai RT dijadikan taman bermain anak?',
-        options: [
-          'Sangat Setuju',
-          'Setuju',
-          'Kurang Setuju / Ada Usulan Lain'
-        ],
+        options: ['Sangat Setuju', 'Setuju', 'Kurang Setuju / Ada Usulan Lain'],
         votes: {
           'Sangat Setuju': 32,
           'Setuju': 15,
-          'Kurang Setuju / Ada Usulan Lain': 2
+          'Kurang Setuju / Ada Usulan Lain': 2,
         },
         userVotes: {},
       ),
@@ -267,8 +273,9 @@ class AppState with ChangeNotifier {
     }
 
     // Find user by email
-    final userIndex =
-        _registeredUsers.indexWhere((u) => u.email == email.toLowerCase());
+    final userIndex = _registeredUsers.indexWhere(
+      (u) => u.email == email.toLowerCase(),
+    );
 
     if (userIndex == -1) {
       return {'success': false, 'message': 'Akun tidak ditemukan'};
@@ -367,17 +374,19 @@ class AppState with ChangeNotifier {
     final index = _registeredUsers.indexWhere((u) => u.id == userId);
     if (index != -1) {
       final user = _registeredUsers[index];
-      _registeredUsers[index] =
-          user.copyWith(verificationStatus: VerificationStatus.verified);
+      _registeredUsers[index] = user.copyWith(
+        verificationStatus: VerificationStatus.verified,
+      );
 
       _activities.insert(
-          0,
-          AdminActivity(
-            id: 'act-${DateTime.now().millisecondsSinceEpoch}',
-            description: 'Memverifikasi warga baru: ${user.name}',
-            type: 'verification',
-            createdAt: DateTime.now(),
-          ));
+        0,
+        AdminActivity(
+          id: 'act-${DateTime.now().millisecondsSinceEpoch}',
+          description: 'Memverifikasi warga baru: ${user.name}',
+          type: 'verification',
+          createdAt: DateTime.now(),
+        ),
+      );
 
       notifyListeners();
     }
@@ -387,17 +396,19 @@ class AppState with ChangeNotifier {
     final index = _registeredUsers.indexWhere((u) => u.id == userId);
     if (index != -1) {
       final user = _registeredUsers[index];
-      _registeredUsers[index] =
-          user.copyWith(verificationStatus: VerificationStatus.rejected);
+      _registeredUsers[index] = user.copyWith(
+        verificationStatus: VerificationStatus.rejected,
+      );
 
       _activities.insert(
-          0,
-          AdminActivity(
-            id: 'act-${DateTime.now().millisecondsSinceEpoch}',
-            description: 'Menolak pendaftaran warga: ${user.name}',
-            type: 'verification',
-            createdAt: DateTime.now(),
-          ));
+        0,
+        AdminActivity(
+          id: 'act-${DateTime.now().millisecondsSinceEpoch}',
+          description: 'Menolak pendaftaran warga: ${user.name}',
+          type: 'verification',
+          createdAt: DateTime.now(),
+        ),
+      );
 
       notifyListeners();
     }
@@ -410,13 +421,14 @@ class AppState with ChangeNotifier {
       _registeredUsers.removeAt(index);
 
       _activities.insert(
-          0,
-          AdminActivity(
-            id: 'act-${DateTime.now().millisecondsSinceEpoch}',
-            description: 'Mengeluarkan warga: ${user.name}',
-            type: 'warga_removed',
-            createdAt: DateTime.now(),
-          ));
+        0,
+        AdminActivity(
+          id: 'act-${DateTime.now().millisecondsSinceEpoch}',
+          description: 'Mengeluarkan warga: ${user.name}',
+          type: 'warga_removed',
+          createdAt: DateTime.now(),
+        ),
+      );
 
       notifyListeners();
     }
@@ -426,8 +438,14 @@ class AppState with ChangeNotifier {
   // Citizen Actions
   // ============================================
 
-  void addReport(String title, String description, String category,
-      ReportPriority priority) {
+  void addReport(
+    String title,
+    String description,
+    String category,
+    ReportPriority priority, {
+    String? reportPhotoUrl,
+    String? locationLabel,
+  }) {
     if (_currentUser == null) return;
 
     final newReport = Report(
@@ -441,6 +459,8 @@ class AppState with ChangeNotifier {
       createdAt: DateTime.now(),
       votesCount: 0,
       upvotedByUserIds: [],
+      reportPhotoUrl: reportPhotoUrl,
+      locationLabel: locationLabel,
     );
 
     _reports.insert(0, newReport);
@@ -493,10 +513,7 @@ class AppState with ChangeNotifier {
       userVotes[userId] = option;
       votes[option] = (votes[option] ?? 0) + 1;
 
-      _polls[index] = poll.copyWith(
-        votes: votes,
-        userVotes: userVotes,
-      );
+      _polls[index] = poll.copyWith(votes: votes, userVotes: userVotes);
       notifyListeners();
     }
   }
@@ -526,15 +543,16 @@ class AppState with ChangeNotifier {
       );
 
       _activities.insert(
-          0,
-          AdminActivity(
-            id: 'act-${DateTime.now().millisecondsSinceEpoch}',
-            description: 'Menyelesaikan laporan "${report.title}"',
-            type: 'report_completed',
-            createdAt: DateTime.now(),
-            photoUrl: photoUrl,
-            relatedId: reportId,
-          ));
+        0,
+        AdminActivity(
+          id: 'act-${DateTime.now().millisecondsSinceEpoch}',
+          description: 'Menyelesaikan laporan "${report.title}"',
+          type: 'report_completed',
+          createdAt: DateTime.now(),
+          photoUrl: photoUrl,
+          relatedId: reportId,
+        ),
+      );
 
       notifyListeners();
     }
@@ -552,14 +570,15 @@ class AppState with ChangeNotifier {
     _announcements.insert(0, newAnn);
 
     _activities.insert(
-        0,
-        AdminActivity(
-          id: 'act-${DateTime.now().millisecondsSinceEpoch}',
-          description: 'Membuat pengumuman: $title',
-          type: 'announcement',
-          createdAt: DateTime.now(),
-          relatedId: newAnn.id,
-        ));
+      0,
+      AdminActivity(
+        id: 'act-${DateTime.now().millisecondsSinceEpoch}',
+        description: 'Membuat pengumuman: $title',
+        type: 'announcement',
+        createdAt: DateTime.now(),
+        relatedId: newAnn.id,
+      ),
+    );
 
     notifyListeners();
   }
@@ -580,14 +599,15 @@ class AppState with ChangeNotifier {
     _polls.insert(0, newPoll);
 
     _activities.insert(
-        0,
-        AdminActivity(
-          id: 'act-${DateTime.now().millisecondsSinceEpoch + 1}',
-          description: 'Membuat voting: $question',
-          type: 'poll',
-          createdAt: DateTime.now(),
-          relatedId: newPoll.id,
-        ));
+      0,
+      AdminActivity(
+        id: 'act-${DateTime.now().millisecondsSinceEpoch + 1}',
+        description: 'Membuat voting: $question',
+        type: 'poll',
+        createdAt: DateTime.now(),
+        relatedId: newPoll.id,
+      ),
+    );
 
     notifyListeners();
   }
