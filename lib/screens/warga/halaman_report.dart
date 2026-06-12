@@ -23,7 +23,7 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
 
-  String _selectedCategory = 'Infrastruktur';
+  String? _selectedCategory;
   final List<String> _categories = const [
     'Infrastruktur',
     'Kebersihan',
@@ -33,8 +33,14 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
     'Lainnya',
   ];
 
-  ReportPriority _selectedPriority = ReportPriority.medium;
+  ReportPriority? _selectedPriority;
   bool _hasMockImage = false;
+  bool _hasSelectedLocation = false;
+  bool _showValidationErrors = false;
+
+  static const String _mockReportPhotoUrl = 'mock://laporan/foto-kejadian.jpg';
+  static const String _mockLocationLabel =
+      'Titik laporan dipilih - RT 05 / RW 02';
 
   @override
   void dispose() {
@@ -44,14 +50,30 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
   }
 
   void _handleSubmit() {
-    if (!_formKey.currentState!.validate()) return;
+    setState(() => _showValidationErrors = true);
+
+    final isFormValid = _formKey.currentState!.validate();
+    final isAttachmentValid =
+        _selectedPriority != null && _hasMockImage && _hasSelectedLocation;
+
+    if (!isFormValid || !isAttachmentValid) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Lengkapi semua data laporan terlebih dahulu.'),
+          backgroundColor: AppTheme.statusHigh,
+        ),
+      );
+      return;
+    }
 
     final state = Provider.of<AppState>(context, listen: false);
     state.addReport(
       _titleController.text.trim(),
       _descriptionController.text.trim(),
-      _selectedCategory,
-      _selectedPriority,
+      _selectedCategory!,
+      _selectedPriority!,
+      reportPhotoUrl: _mockReportPhotoUrl,
+      locationLabel: _mockLocationLabel,
     );
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -63,10 +85,13 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
 
     _titleController.clear();
     _descriptionController.clear();
+    _formKey.currentState?.reset();
     setState(() {
-      _selectedCategory = 'Infrastruktur';
-      _selectedPriority = ReportPriority.medium;
+      _selectedCategory = null;
+      _selectedPriority = null;
       _hasMockImage = false;
+      _hasSelectedLocation = false;
+      _showValidationErrors = false;
     });
 
     if (widget.showBackButton && Navigator.of(context).canPop()) {
@@ -120,6 +145,9 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
         padding: const EdgeInsets.fromLTRB(16, 20, 16, 28),
         child: Form(
           key: _formKey,
+          autovalidateMode: _showValidationErrors
+              ? AutovalidateMode.onUserInteraction
+              : AutovalidateMode.disabled,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -134,6 +162,9 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
                     if (value == null || value.trim().isEmpty) {
                       return 'Judul laporan tidak boleh kosong';
                     }
+                    if (value.trim().length < 5) {
+                      return 'Judul laporan minimal 5 karakter';
+                    }
                     return null;
                   },
                 ),
@@ -143,6 +174,7 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
                 label: 'Kategori',
                 child: DropdownButtonFormField<String>(
                   value: _selectedCategory,
+                  hint: const Text('Pilih kategori laporan'),
                   icon: const Icon(
                     Icons.keyboard_arrow_down,
                     color: AppTheme.primaryColor,
@@ -158,6 +190,12 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
                     if (value != null) {
                       setState(() => _selectedCategory = value);
                     }
+                  },
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Kategori laporan wajib dipilih';
+                    }
+                    return null;
                   },
                 ),
               ),
@@ -184,55 +222,215 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
               const SizedBox(height: 16),
               _formSection(
                 label: 'Prioritas',
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: AppTheme.surfaceContainerLow,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Row(
-                    children: [
-                      _prioritySegment(ReportPriority.low, 'Rendah'),
-                      _prioritySegment(ReportPriority.medium, 'Sedang'),
-                      _prioritySegment(ReportPriority.high, 'Tinggi'),
-                    ],
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: AppTheme.surfaceContainerLow,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        children: [
+                          _prioritySegment(ReportPriority.low, 'Rendah'),
+                          _prioritySegment(ReportPriority.medium, 'Sedang'),
+                          _prioritySegment(ReportPriority.high, 'Tinggi'),
+                        ],
+                      ),
+                    ),
+                    _validationMessage(
+                      _showValidationErrors && _selectedPriority == null
+                          ? 'Prioritas laporan wajib dipilih'
+                          : null,
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 16),
               _formSection(
                 label: 'Unggah Foto',
-                child: GestureDetector(
-                  onTap: () => setState(() => _hasMockImage = !_hasMockImage),
-                  child: AspectRatio(
-                    aspectRatio: 16 / 9,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: AppTheme.surfaceContainerLow.withOpacity(0.35),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: _hasMockImage
-                              ? AppTheme.primaryColor
-                              : AppTheme.outlineVariantColor,
-                          width: _hasMockImage ? 2 : 1.5,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    GestureDetector(
+                      onTap: () => setState(() => _hasMockImage = true),
+                      child: AspectRatio(
+                        aspectRatio: 16 / 9,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: AppTheme.surfaceContainerLow.withOpacity(
+                              0.35,
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: _hasMockImage
+                                  ? AppTheme.primaryColor
+                                  : AppTheme.outlineVariantColor,
+                              width: _hasMockImage ? 2 : 1.5,
+                            ),
+                          ),
+                          child: _hasMockImage
+                              ? Stack(
+                                  children: [
+                                    const Center(
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.check_circle,
+                                            color: AppTheme.statusLow,
+                                            size: 42,
+                                          ),
+                                          SizedBox(height: 8),
+                                          Text(
+                                            'Foto kejadian sudah dipilih',
+                                            style: TextStyle(
+                                              color: AppTheme.primaryColor,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          SizedBox(height: 4),
+                                          Text(
+                                            'foto-kejadian.jpg',
+                                            style: TextStyle(
+                                              color:
+                                                  AppTheme.textSecondaryColor,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Positioned(
+                                      right: 10,
+                                      top: 10,
+                                      child: GestureDetector(
+                                        onTap: () => setState(
+                                          () => _hasMockImage = false,
+                                        ),
+                                        child: CircleAvatar(
+                                          radius: 16,
+                                          backgroundColor: AppTheme.statusHigh
+                                              .withOpacity(0.9),
+                                          child: const Icon(
+                                            Icons.close,
+                                            size: 18,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : const Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.add_a_photo_outlined,
+                                      color: AppTheme.outlineColor,
+                                      size: 44,
+                                    ),
+                                    SizedBox(height: 8),
+                                    Text(
+                                      'Pilih Foto Kejadian',
+                                      style: TextStyle(
+                                        color: AppTheme.outlineColor,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                         ),
                       ),
-                      child: _hasMockImage
-                          ? Stack(
-                              children: [
-                                const Center(
-                                  child: Column(
+                    ),
+                    _validationMessage(
+                      _showValidationErrors && !_hasMockImage
+                          ? 'Foto kejadian wajib dipilih'
+                          : null,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              _formSection(
+                label: 'Pilih Lokasi',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    GestureDetector(
+                      onTap: () => setState(() => _hasSelectedLocation = true),
+                      child: AspectRatio(
+                        aspectRatio: 16 / 9,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: AppTheme.secondaryContainerColor.withOpacity(
+                              0.55,
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: _hasSelectedLocation
+                                  ? AppTheme.primaryColor
+                                  : AppTheme.outlineVariantColor,
+                              width: _hasSelectedLocation ? 2 : 1,
+                            ),
+                          ),
+                          child: Stack(
+                            children: [
+                              Positioned.fill(
+                                child: CustomPaint(painter: _MapGridPainter()),
+                              ),
+                              if (_hasSelectedLocation)
+                                const Positioned(
+                                  right: 12,
+                                  top: 12,
+                                  child: CircleAvatar(
+                                    radius: 15,
+                                    backgroundColor: AppTheme.statusLow,
+                                    child: Icon(
+                                      Icons.check,
+                                      size: 17,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              Center(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(100),
+                                    border: Border.all(
+                                      color: _hasSelectedLocation
+                                          ? AppTheme.primaryColor
+                                          : AppTheme.outlineVariantColor,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: AppTheme.primaryColor
+                                            .withOpacity(0.08),
+                                        blurRadius: 14,
+                                        offset: const Offset(0, 6),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Icon(
-                                        Icons.check_circle,
-                                        color: AppTheme.statusLow,
-                                        size: 42,
+                                      const Icon(
+                                        Icons.location_on,
+                                        color: AppTheme.primaryColor,
+                                        size: 20,
                                       ),
-                                      SizedBox(height: 8),
+                                      const SizedBox(width: 6),
                                       Text(
-                                        'Foto kejadian sudah dipilih',
-                                        style: TextStyle(
+                                        _hasSelectedLocation
+                                            ? 'Lokasi Dipilih'
+                                            : 'Tentukan Titik Lokasi',
+                                        style: const TextStyle(
                                           color: AppTheme.primaryColor,
                                           fontWeight: FontWeight.bold,
                                         ),
@@ -240,105 +438,30 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
                                     ],
                                   ),
                                 ),
-                                Positioned(
-                                  right: 10,
-                                  top: 10,
-                                  child: CircleAvatar(
-                                    radius: 16,
-                                    backgroundColor: AppTheme.statusHigh
-                                        .withOpacity(0.9),
-                                    child: const Icon(
-                                      Icons.close,
-                                      size: 18,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            )
-                          : const Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.add_a_photo_outlined,
-                                  color: AppTheme.outlineColor,
-                                  size: 44,
-                                ),
-                                SizedBox(height: 8),
-                                Text(
-                                  'Pilih Foto Kejadian',
-                                  style: TextStyle(
-                                    color: AppTheme.outlineColor,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              _formSection(
-                label: 'Pilih Lokasi',
-                child: AspectRatio(
-                  aspectRatio: 16 / 9,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: AppTheme.secondaryContainerColor.withOpacity(0.55),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppTheme.outlineVariantColor),
-                    ),
-                    child: Stack(
-                      children: [
-                        Positioned.fill(
-                          child: CustomPaint(painter: _MapGridPainter()),
-                        ),
-                        Center(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 10,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(100),
-                              border: Border.all(
-                                color: AppTheme.outlineVariantColor,
                               ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppTheme.primaryColor.withOpacity(
-                                    0.08,
-                                  ),
-                                  blurRadius: 14,
-                                  offset: const Offset(0, 6),
-                                ),
-                              ],
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.location_on,
-                                  color: AppTheme.primaryColor,
-                                  size: 20,
-                                ),
-                                SizedBox(width: 6),
-                                Text(
-                                  'Tentukan Titik Lokasi',
-                                  style: TextStyle(
-                                    color: AppTheme.primaryColor,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
+                            ],
                           ),
                         ),
-                      ],
+                      ),
                     ),
-                  ),
+                    if (_hasSelectedLocation)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 8),
+                        child: Text(
+                          _mockLocationLabel,
+                          style: TextStyle(
+                            color: AppTheme.textSecondaryColor,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    _validationMessage(
+                      _showValidationErrors && !_hasSelectedLocation
+                          ? 'Lokasi laporan wajib ditentukan'
+                          : null,
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 24),
@@ -423,6 +546,22 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
           const SizedBox(height: 10),
           child,
         ],
+      ),
+    );
+  }
+
+  Widget _validationMessage(String? message) {
+    if (message == null) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, left: 4),
+      child: Text(
+        message,
+        style: const TextStyle(
+          color: AppTheme.statusHigh,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }

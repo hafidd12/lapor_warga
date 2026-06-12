@@ -143,6 +143,20 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
                     ),
                     const SizedBox(height: 8),
                     _metadataRow(Icons.category_outlined, report.category),
+                    if (report.locationLabel != null) ...[
+                      const SizedBox(height: 8),
+                      _metadataRow(
+                        Icons.location_on_outlined,
+                        report.locationLabel!,
+                      ),
+                    ],
+                    if (report.reportPhotoUrl != null) ...[
+                      const SizedBox(height: 8),
+                      _metadataRow(
+                        Icons.photo_camera_outlined,
+                        'Foto kejadian terlampir',
+                      ),
+                    ],
                     const SizedBox(height: 20),
                     Text(
                       'Deskripsi Laporan',

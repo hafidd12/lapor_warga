@@ -1,4 +1,5 @@
 enum UserRole { warga, admin }
+
 enum VerificationStatus { pending, verified, rejected }
 
 class AppUser {
@@ -62,6 +63,7 @@ class AppUser {
 }
 
 enum ReportPriority { low, medium, high }
+
 enum ReportStatus { submitted, processed, resolved }
 
 class Report {
@@ -75,6 +77,8 @@ class Report {
   final DateTime createdAt;
   final int votesCount;
   final List<String> upvotedByUserIds;
+  final String? reportPhotoUrl;
+  final String? locationLabel;
   final String? completionPhotoUrl;
   final DateTime? completedAt;
   final String? completedBy;
@@ -90,6 +94,8 @@ class Report {
     required this.createdAt,
     this.votesCount = 0,
     this.upvotedByUserIds = const [],
+    this.reportPhotoUrl,
+    this.locationLabel,
     this.completionPhotoUrl,
     this.completedAt,
     this.completedBy,
@@ -106,6 +112,8 @@ class Report {
     DateTime? createdAt,
     int? votesCount,
     List<String>? upvotedByUserIds,
+    String? reportPhotoUrl,
+    String? locationLabel,
     String? completionPhotoUrl,
     DateTime? completedAt,
     String? completedBy,
@@ -121,6 +129,8 @@ class Report {
       createdAt: createdAt ?? this.createdAt,
       votesCount: votesCount ?? this.votesCount,
       upvotedByUserIds: upvotedByUserIds ?? this.upvotedByUserIds,
+      reportPhotoUrl: reportPhotoUrl ?? this.reportPhotoUrl,
+      locationLabel: locationLabel ?? this.locationLabel,
       completionPhotoUrl: completionPhotoUrl ?? this.completionPhotoUrl,
       completedAt: completedAt ?? this.completedAt,
       completedBy: completedBy ?? this.completedBy,
@@ -181,7 +191,8 @@ class Poll {
 class AdminActivity {
   final String id;
   final String description;
-  final String type; // 'verification', 'announcement', 'report_completed', 'poll', 'warga_removed'
+  final String
+  type; // 'verification', 'announcement', 'report_completed', 'poll', 'warga_removed'
   final DateTime createdAt;
   final String? photoUrl;
   final String? relatedId;

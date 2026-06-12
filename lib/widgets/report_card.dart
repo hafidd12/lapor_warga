@@ -233,6 +233,19 @@ class ReportCard extends StatelessWidget {
             height: 1.35,
           ),
         ),
+        if (report.locationLabel != null || report.reportPhotoUrl != null) ...[
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: [
+              if (report.locationLabel != null)
+                _metadataChip(Icons.location_on_outlined, 'Lokasi dipilih'),
+              if (report.reportPhotoUrl != null)
+                _metadataChip(Icons.photo_camera_outlined, 'Foto terlampir'),
+            ],
+          ),
+        ],
         const SizedBox(height: 12),
         Row(
           children: [
@@ -253,6 +266,31 @@ class ReportCard extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+
+  Widget _metadataChip(IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(100),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: AppTheme.primaryColor),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppTheme.textSecondaryColor,
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
