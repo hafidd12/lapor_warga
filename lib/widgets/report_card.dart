@@ -215,11 +215,12 @@ class ReportCard extends StatelessWidget {
           report.title,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
             color: AppTheme.primaryColor,
             fontSize: 16,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w800,
             height: 1.25,
+            letterSpacing: -0.05,
           ),
         ),
         const SizedBox(height: 4),
@@ -227,10 +228,11 @@ class ReportCard extends StatelessWidget {
           report.description,
           maxLines: descriptionMaxLines,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             color: AppTheme.textSecondaryColor,
             fontSize: 13,
-            height: 1.35,
+            fontWeight: FontWeight.w500,
+            height: 1.4,
           ),
         ),
         const SizedBox(height: 12),
@@ -244,7 +246,7 @@ class ReportCard extends StatelessWidget {
                 style: const TextStyle(
                   color: AppTheme.outlineColor,
                   fontSize: 11,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
