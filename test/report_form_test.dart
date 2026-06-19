@@ -40,8 +40,8 @@ void main() {
     await tester.tap(find.text('Tinggi'));
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.text('Pilih Foto Kejadian'));
-    await tester.tap(find.text('Pilih Foto Kejadian'));
+    await tester.ensureVisible(find.text('Upload atau Foto Laporan'));
+    await tester.tap(find.text('Upload atau Foto Laporan'));
     await tester.pumpAndSettle();
 
     await tester.ensureVisible(find.text('Tentukan Titik Lokasi'));
@@ -72,7 +72,7 @@ void main() {
     expect(find.text('foto-kejadian.jpg'), findsNothing);
     expect(find.text('Lokasi Dipilih'), findsNothing);
     expect(find.text('Pilih kategori laporan'), findsOneWidget);
-    expect(find.text('Pilih Foto Kejadian'), findsOneWidget);
+    expect(find.text('Upload atau Foto Laporan'), findsOneWidget);
     expect(find.text('Tentukan Titik Lokasi'), findsOneWidget);
   });
 }

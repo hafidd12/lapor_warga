@@ -10,6 +10,8 @@ class AppUser {
   final String avatarUrl;
   final VerificationStatus verificationStatus;
   final String? ktpNumber;
+  final String? registrationCode; // Kode Registrasi RT
+  final String? ktpImagePath; // Path foto KTP
   final String? phone;
   final String? rtRw;
   final String? address;
@@ -24,6 +26,8 @@ class AppUser {
     required this.avatarUrl,
     this.verificationStatus = VerificationStatus.pending,
     this.ktpNumber,
+    this.registrationCode,
+    this.ktpImagePath,
     this.phone,
     this.rtRw,
     this.address,
@@ -39,6 +43,8 @@ class AppUser {
     String? avatarUrl,
     VerificationStatus? verificationStatus,
     String? ktpNumber,
+    String? registrationCode,
+    String? ktpImagePath,
     String? phone,
     String? rtRw,
     String? address,
@@ -53,6 +59,8 @@ class AppUser {
       avatarUrl: avatarUrl ?? this.avatarUrl,
       verificationStatus: verificationStatus ?? this.verificationStatus,
       ktpNumber: ktpNumber ?? this.ktpNumber,
+      registrationCode: registrationCode ?? this.registrationCode,
+      ktpImagePath: ktpImagePath ?? this.ktpImagePath,
       phone: phone ?? this.phone,
       rtRw: rtRw ?? this.rtRw,
       address: address ?? this.address,
@@ -205,4 +213,44 @@ class AdminActivity {
     this.photoUrl,
     this.relatedId,
   });
+}
+
+class RegistrationCode {
+  final String id;
+  final String code; // Kode unik, misal "RT05-XY7K"
+  final String rtRw; // Nomor RT/RW terkait, misal "005/002"
+  final String createdBy; // ID admin yang membuat
+  final String createdByName; // Nama admin yang membuat
+  final DateTime createdAt;
+  final bool isActive;
+
+  RegistrationCode({
+    required this.id,
+    required this.code,
+    required this.rtRw,
+    required this.createdBy,
+    required this.createdByName,
+    required this.createdAt,
+    this.isActive = true,
+  });
+
+  RegistrationCode copyWith({
+    String? id,
+    String? code,
+    String? rtRw,
+    String? createdBy,
+    String? createdByName,
+    DateTime? createdAt,
+    bool? isActive,
+  }) {
+    return RegistrationCode(
+      id: id ?? this.id,
+      code: code ?? this.code,
+      rtRw: rtRw ?? this.rtRw,
+      createdBy: createdBy ?? this.createdBy,
+      createdByName: createdByName ?? this.createdByName,
+      createdAt: createdAt ?? this.createdAt,
+      isActive: isActive ?? this.isActive,
+    );
+  }
 }

@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
@@ -172,6 +173,80 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
                         color: AppTheme.textPrimaryColor,
                       ),
                     ),
+                    if (report.reportPhotoUrl != null &&
+                        report.reportPhotoUrl!.trim().isNotEmpty) ...[
+                      const SizedBox(height: 24),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.photo_camera_outlined,
+                            size: 20,
+                            color: AppTheme.primaryColor,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Foto Kejadian',
+                            style: theme.textTheme.headlineMedium?.copyWith(
+                              fontSize: 16,
+                              color: AppTheme.primaryColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      GestureDetector(
+                        onTap: () => _showPhotoPreview(
+                          context,
+                          report.reportPhotoUrl!,
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: SizedBox(
+                            height: 200,
+                            width: double.infinity,
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                _buildReportImageWidget(report.reportPhotoUrl!),
+                                Positioned(
+                                  right: 12,
+                                  bottom: 12,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.6),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.zoom_in,
+                                          color: Colors.white,
+                                          size: 16,
+                                        ),
+                                        SizedBox(width: 6),
+                                        Text(
+                                          'Perbesar',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                     if (hasCompletionPhoto) ...[
                       const SizedBox(height: 24),
                       Row(
@@ -325,7 +400,7 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
                 child: InteractiveViewer(
                   minScale: 1,
                   maxScale: 4,
-                  child: Image.network(photoUrl, fit: BoxFit.contain),
+                  child: _buildReportImageWidget(photoUrl, fit: BoxFit.contain),
                 ),
               ),
               Positioned(
@@ -572,6 +647,41 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildReportImageWidget(String path, {BoxFit fit = BoxFit.cover}) {
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return Image.network(
+        path,
+        fit: fit,
+        errorBuilder: (context, error, stackTrace) => _buildErrorImagePlaceholder(),
+      );
+    } else if (path.startsWith('mock://')) {
+      return Image.network(
+        'https://picsum.photos/seed/laporan/600/400',
+        fit: fit,
+        errorBuilder: (context, error, stackTrace) => _buildErrorImagePlaceholder(),
+      );
+    } else {
+      return Image.file(
+        File(path),
+        fit: fit,
+        errorBuilder: (context, error, stackTrace) => _buildErrorImagePlaceholder(),
+      );
+    }
+  }
+
+  Widget _buildErrorImagePlaceholder() {
+    return Container(
+      color: AppTheme.surfaceContainerHigh,
+      child: const Center(
+        child: Icon(
+          Icons.photo_outlined,
+          color: AppTheme.outlineColor,
+          size: 34,
+        ),
       ),
     );
   }

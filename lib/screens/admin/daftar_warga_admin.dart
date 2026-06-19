@@ -255,7 +255,7 @@ class _DaftarWargaAdminScreenState extends State<DaftarWargaAdminScreen>
             ),
             child: Column(
               children: [
-                _buildInfoRow('NIK', warga.ktpNumber ?? '-'),
+                _buildInfoRow('Kode Reg.', warga.registrationCode ?? warga.ktpNumber ?? '-'),
                 const SizedBox(height: 6),
                 _buildInfoRow('No. HP', warga.phone ?? '-'),
                 const SizedBox(height: 6),

@@ -1,7 +1,5 @@
 # Task List Tim Lapor Warga
 
-<<<<<<< HEAD
-
 ## Hafid21
 
 - [x] Auth & Onboarding
@@ -82,4 +80,4 @@
   - [ ] Table relationships
   - [ ] Migration setup
   - [ ] Database integration
-  - [ ] Database testing > > > > > > > update-tasks
+  - [ ] Database testing

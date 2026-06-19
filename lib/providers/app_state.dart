@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import '../models/models.dart';
 
@@ -8,6 +9,7 @@ class AppState with ChangeNotifier {
   final List<Announcement> _announcements = [];
   final List<Poll> _polls = [];
   final List<AdminActivity> _activities = [];
+  final List<RegistrationCode> _registrationCodes = [];
 
   AppState() {
     _loadMockData();
@@ -19,6 +21,7 @@ class AppState with ChangeNotifier {
   List<Poll> get polls => List.unmodifiable(_polls);
   List<AppUser> get registeredUsers => List.unmodifiable(_registeredUsers);
   List<AdminActivity> get activities => List.unmodifiable(_activities);
+  List<RegistrationCode> get registrationCodes => List.unmodifiable(_registrationCodes);
 
   // Warga queries
   List<AppUser> get allWarga =>
@@ -64,6 +67,7 @@ class AppState with ChangeNotifier {
         avatarUrl: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Budi',
         verificationStatus: VerificationStatus.verified,
         ktpNumber: '3201234567890001',
+        registrationCode: 'RT05-001',
         phone: '081234567890',
         rtRw: '005/002',
         address: 'Jl. Mawar No. 10',
@@ -77,6 +81,7 @@ class AppState with ChangeNotifier {
         avatarUrl: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Siti',
         verificationStatus: VerificationStatus.verified,
         ktpNumber: '3201234567890002',
+        registrationCode: 'RT05-002',
         phone: '081234567891',
         rtRw: '005/002',
         address: 'Jl. Melati No. 5',
@@ -90,6 +95,7 @@ class AppState with ChangeNotifier {
         avatarUrl: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Rian',
         verificationStatus: VerificationStatus.verified,
         ktpNumber: '3201234567890003',
+        registrationCode: 'RT05-003',
         phone: '081234567892',
         rtRw: '005/002',
         address: 'Jl. Kenanga No. 8',
@@ -103,6 +109,7 @@ class AppState with ChangeNotifier {
         avatarUrl: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Dewi',
         verificationStatus: VerificationStatus.pending,
         ktpNumber: '3201234567890004',
+        registrationCode: 'RT05-004',
         phone: '081234567893',
         rtRw: '005/002',
         address: 'Jl. Anggrek No. 3',
@@ -116,6 +123,7 @@ class AppState with ChangeNotifier {
         avatarUrl: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Ahmad',
         verificationStatus: VerificationStatus.pending,
         ktpNumber: '3201234567890005',
+        registrationCode: 'RT05-005',
         phone: '081234567894',
         rtRw: '005/002',
         address: 'Jl. Dahlia No. 12',
@@ -260,6 +268,27 @@ class AppState with ChangeNotifier {
         relatedId: 'poll-1',
       ),
     ]);
+    // Mock Registration Codes
+    _registrationCodes.addAll([
+      RegistrationCode(
+        id: 'regcode-1',
+        code: 'RT05-XY7K',
+        rtRw: '005/002',
+        createdBy: 'admin-1',
+        createdByName: 'Pak Harto',
+        createdAt: DateTime.now().subtract(const Duration(days: 50)),
+        isActive: true,
+      ),
+      RegistrationCode(
+        id: 'regcode-2',
+        code: 'RT05-AB3M',
+        rtRw: '005/002',
+        createdBy: 'admin-1',
+        createdByName: 'Pak Harto',
+        createdAt: DateTime.now().subtract(const Duration(days: 30)),
+        isActive: true,
+      ),
+    ]);
   }
 
   // ============================================
@@ -312,10 +341,11 @@ class AppState with ChangeNotifier {
     required String name,
     required String email,
     required String password,
-    required String ktpNumber,
+    required String registrationCode,
     required String phone,
     required String rtRw,
     required String address,
+    String? ktpImagePath,
   }) {
     final newUser = AppUser(
       id: 'user-${DateTime.now().millisecondsSinceEpoch}',
@@ -324,7 +354,8 @@ class AppState with ChangeNotifier {
       role: UserRole.warga,
       avatarUrl: 'https://api.dicebear.com/7.x/adventurer/svg?seed=$name',
       verificationStatus: VerificationStatus.pending,
-      ktpNumber: ktpNumber,
+      registrationCode: registrationCode,
+      ktpImagePath: ktpImagePath,
       phone: phone,
       rtRw: rtRw,
       address: address,
@@ -363,6 +394,80 @@ class AppState with ChangeNotifier {
 
   void logout() {
     _currentUser = null;
+    notifyListeners();
+  }
+
+  // ============================================
+  // Registration Code Management
+  // ============================================
+
+  /// Generate a random registration code like "RT05-XY7K"
+  String generateRegistrationCode(String rtRw) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    final random = Random();
+    final rtPart = 'RT${rtRw.split('/').first.replaceAll(RegExp(r'^0+'), '')}';
+    final randomPart = String.fromCharCodes(
+      Iterable.generate(
+        4,
+        (_) => chars.codeUnitAt(random.nextInt(chars.length)),
+      ),
+    );
+    return '$rtPart-$randomPart';
+  }
+
+  /// Add a new registration code (manual or auto-generated)
+  void addRegistrationCode({
+    required String code,
+    required String rtRw,
+  }) {
+    if (_currentUser == null) return;
+
+    final newCode = RegistrationCode(
+      id: 'regcode-${DateTime.now().millisecondsSinceEpoch}',
+      code: code.toUpperCase(),
+      rtRw: rtRw,
+      createdBy: _currentUser!.id,
+      createdByName: _currentUser!.name,
+      createdAt: DateTime.now(),
+      isActive: true,
+    );
+    _registrationCodes.add(newCode);
+    notifyListeners();
+  }
+
+  /// Look up a registration code → returns the rtRw if found and active, null otherwise
+  String? lookupRegistrationCode(String code) {
+    final trimmed = code.trim().toUpperCase();
+    final match = _registrationCodes.where(
+      (rc) => rc.code.toUpperCase() == trimmed && rc.isActive,
+    );
+    if (match.isNotEmpty) {
+      return match.first.rtRw;
+    }
+    return null;
+  }
+
+  /// Get all registration codes created by the current admin
+  List<RegistrationCode> get myRegistrationCodes {
+    if (_currentUser == null) return [];
+    return _registrationCodes
+        .where((rc) => rc.createdBy == _currentUser!.id)
+        .toList();
+  }
+
+  /// Toggle active status of a registration code
+  void toggleRegistrationCodeActive(String codeId) {
+    final index = _registrationCodes.indexWhere((rc) => rc.id == codeId);
+    if (index != -1) {
+      final code = _registrationCodes[index];
+      _registrationCodes[index] = code.copyWith(isActive: !code.isActive);
+      notifyListeners();
+    }
+  }
+
+  /// Delete a registration code
+  void deleteRegistrationCode(String codeId) {
+    _registrationCodes.removeWhere((rc) => rc.id == codeId);
     notifyListeners();
   }
 

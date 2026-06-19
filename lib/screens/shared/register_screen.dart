@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../models/models.dart';
 import '../../providers/app_state.dart';
@@ -22,18 +24,218 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _confirmPasswordController = TextEditingController();
 
   // Warga-specific
-  final _ktpController = TextEditingController();
+  final _registrationCodeController = TextEditingController();
   final _rtRwController = TextEditingController();
   final _addressController = TextEditingController();
+
+  // KTP Image
+  File? _ktpImageFile;
+  final ImagePicker _imagePicker = ImagePicker();
 
   // RT-specific
   final _jabatanController = TextEditingController();
   final _wilayahController = TextEditingController();
+  final _rtRegistrationCodeController = TextEditingController();
 
   bool _obscureText = true;
   bool _obscureConfirmText = true;
   bool _isLoading = false;
   bool _agreeToTerms = false;
+
+  // Warga: code lookup status
+  bool _codeFound = false;
+  bool _codeLookupAttempted = false;
+  String? _foundRtRw;
+
+  Future<void> _pickKtpImage(ImageSource source) async {
+    try {
+      final pickedFile = await _imagePicker.pickImage(
+        source: source,
+        maxWidth: 1920,
+        maxHeight: 1080,
+        imageQuality: 85,
+      );
+      if (pickedFile != null) {
+        setState(() {
+          _ktpImageFile = File(pickedFile.path);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal mengambil gambar: $e'),
+            backgroundColor: AppTheme.statusHigh,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showKtpImageSourcePicker() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppTheme.outlineVariantColor,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Upload Foto KTP',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimaryColor,
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Pilih sumber foto KTP Anda',
+              style: TextStyle(
+                fontSize: 12,
+                color: AppTheme.secondaryColor,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildImageSourceOption(
+                    icon: Icons.camera_alt_rounded,
+                    label: 'Kamera',
+                    subtitle: 'Foto langsung',
+                    color: AppTheme.primaryColor,
+                    onTap: () {
+                      Navigator.pop(context);
+                      _pickKtpImage(ImageSource.camera);
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildImageSourceOption(
+                    icon: Icons.photo_library_rounded,
+                    label: 'Galeri',
+                    subtitle: 'Pilih dari galeri',
+                    color: AppTheme.tertiaryFixedDim,
+                    onTap: () {
+                      Navigator.pop(context);
+                      _pickKtpImage(ImageSource.gallery);
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImageSourceOption({
+    required IconData icon,
+    required String label,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: color.withOpacity(0.2),
+          ),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 28),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              subtitle,
+              style: const TextStyle(
+                fontSize: 10,
+                color: AppTheme.secondaryColor,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // For warga: listen to registration code changes and auto-fill RT/RW
+    if (widget.isWarga) {
+      _registrationCodeController.addListener(_onRegistrationCodeChanged);
+    }
+  }
+
+  void _onRegistrationCodeChanged() {
+    final code = _registrationCodeController.text.trim();
+    if (code.isEmpty) {
+      setState(() {
+        _codeFound = false;
+        _codeLookupAttempted = false;
+        _foundRtRw = null;
+        _rtRwController.text = '';
+      });
+      return;
+    }
+
+    final state = Provider.of<AppState>(context, listen: false);
+    final rtRw = state.lookupRegistrationCode(code);
+
+    setState(() {
+      _codeLookupAttempted = code.length >= 4; // Only show feedback after 4+ chars
+      if (rtRw != null) {
+        _codeFound = true;
+        _foundRtRw = rtRw;
+        _rtRwController.text = rtRw;
+      } else {
+        _codeFound = false;
+        _foundRtRw = null;
+        _rtRwController.text = '';
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -42,11 +244,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _phoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _ktpController.dispose();
+    _registrationCodeController.dispose();
     _rtRwController.dispose();
     _addressController.dispose();
     _jabatanController.dispose();
     _wilayahController.dispose();
+    _rtRegistrationCodeController.dispose();
     super.dispose();
   }
 
@@ -74,10 +277,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
             name: _nameController.text,
             email: _emailController.text,
             password: _passwordController.text,
-            ktpNumber: _ktpController.text,
+            registrationCode: _registrationCodeController.text,
             phone: _phoneController.text,
             rtRw: _rtRwController.text,
             address: _addressController.text,
+            ktpImagePath: _ktpImageFile?.path,
           );
           // Warga goes to waiting verification
           Navigator.of(context)
@@ -91,6 +295,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
             jabatan: _jabatanController.text,
             rtRw: _wilayahController.text,
           );
+          // Save registration code if provided
+          final regCode = _rtRegistrationCodeController.text.trim();
+          if (regCode.isNotEmpty) {
+            state.addRegistrationCode(
+              code: regCode,
+              rtRw: _wilayahController.text,
+            );
+          }
           // RT goes directly to home
           Navigator.of(context)
               .pushNamedAndRemoveUntil('/home', (route) => false);
@@ -333,20 +545,234 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                             // Role-specific fields
                             if (widget.isWarga) ...[
-                              // KTP Number
-                              _buildInputLabel('NIK / NOMOR KTP'),
+                              // Kode Registrasi RT
+                              _buildInputLabel('KODE REGISTRASI RT'),
                               const SizedBox(height: 4),
-                              _buildTextFormField(
-                                controller: _ktpController,
-                                hintText: '320123456789xxxx',
-                                prefixIcon: Icons.credit_card_outlined,
-                                keyboardType: TextInputType.number,
+                              TextFormField(
+                                controller: _registrationCodeController,
+                                textCapitalization: TextCapitalization.characters,
+                                style: const TextStyle(
+                                    fontSize: 14,
+                                    color: AppTheme.textPrimaryColor),
+                                decoration: _buildInputDecoration(
+                                  hintText: 'Masukkan kode dari RT (misal: RT05-XY7K)',
+                                  prefixIcon: Icons.vpn_key_outlined,
+                                  suffixIcon: _codeLookupAttempted
+                                      ? Padding(
+                                          padding: const EdgeInsets.only(right: 8),
+                                          child: Icon(
+                                            _codeFound
+                                                ? Icons.check_circle_rounded
+                                                : Icons.error_outline_rounded,
+                                            color: _codeFound
+                                                ? AppTheme.statusLow
+                                                : AppTheme.statusHigh,
+                                            size: 20,
+                                          ),
+                                        )
+                                      : null,
+                                ),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
-                                    return 'NIK wajib diisi';
+                                    return 'Kode registrasi wajib diisi';
+                                  }
+                                  if (!_codeFound) {
+                                    return 'Kode registrasi tidak ditemukan';
                                   }
                                   return null;
                                 },
+                              ),
+                              if (_codeLookupAttempted) ...[
+                                const SizedBox(height: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: _codeFound
+                                        ? AppTheme.statusLow.withOpacity(0.08)
+                                        : AppTheme.statusHigh.withOpacity(0.08),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: _codeFound
+                                          ? AppTheme.statusLow.withOpacity(0.2)
+                                          : AppTheme.statusHigh.withOpacity(0.2),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        _codeFound
+                                            ? Icons.check_circle_outline
+                                            : Icons.warning_amber_rounded,
+                                        size: 14,
+                                        color: _codeFound
+                                            ? AppTheme.statusLow
+                                            : AppTheme.statusHigh,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          _codeFound
+                                              ? 'Kode valid! RT/RW: $_foundRtRw — terisi otomatis'
+                                              : 'Kode registrasi tidak ditemukan. Pastikan kode dari RT Anda benar.',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: _codeFound
+                                                ? AppTheme.statusLow
+                                                : AppTheme.statusHigh,
+                                            height: 1.3,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                              const SizedBox(height: 14),
+
+                              // Upload Foto KTP
+                              _buildInputLabel('FOTO KTP'),
+                              const SizedBox(height: 4),
+                              GestureDetector(
+                                onTap: _showKtpImageSourcePicker,
+                                child: Container(
+                                  width: double.infinity,
+                                  height: _ktpImageFile != null ? null : 130,
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.primaryFixed.withOpacity(0.06),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: _ktpImageFile != null
+                                          ? AppTheme.primaryColor.withOpacity(0.4)
+                                          : AppTheme.outlineVariantColor,
+                                      width: 1.5,
+                                      style: _ktpImageFile != null
+                                          ? BorderStyle.solid
+                                          : BorderStyle.none,
+                                    ),
+                                  ),
+                                  child: _ktpImageFile != null
+                                      ? Stack(
+                                          children: [
+                                            ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(11),
+                                              child: Image.file(
+                                                _ktpImageFile!,
+                                                width: double.infinity,
+                                                fit: BoxFit.cover,
+                                              ),
+                                            ),
+                                            Positioned(
+                                              top: 8,
+                                              right: 8,
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  _buildKtpActionButton(
+                                                    icon: Icons.edit_rounded,
+                                                    color: AppTheme.primaryColor,
+                                                    onTap: _showKtpImageSourcePicker,
+                                                  ),
+                                                  const SizedBox(width: 6),
+                                                  _buildKtpActionButton(
+                                                    icon: Icons.delete_rounded,
+                                                    color: AppTheme.statusHigh,
+                                                    onTap: () {
+                                                      setState(() {
+                                                        _ktpImageFile = null;
+                                                      });
+                                                    },
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            Positioned(
+                                              bottom: 0,
+                                              left: 0,
+                                              right: 0,
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(
+                                                    horizontal: 12, vertical: 8),
+                                                decoration: BoxDecoration(
+                                                  borderRadius:
+                                                      const BorderRadius.vertical(
+                                                    bottom: Radius.circular(11),
+                                                  ),
+                                                  gradient: LinearGradient(
+                                                    begin: Alignment.topCenter,
+                                                    end: Alignment.bottomCenter,
+                                                    colors: [
+                                                      Colors.transparent,
+                                                      Colors.black.withOpacity(0.6),
+                                                    ],
+                                                  ),
+                                                ),
+                                                child: const Row(
+                                                  children: [
+                                                    Icon(Icons.check_circle,
+                                                        size: 14,
+                                                        color: Colors.white),
+                                                    SizedBox(width: 6),
+                                                    Text(
+                                                      'Foto KTP berhasil diupload',
+                                                      style: TextStyle(
+                                                        fontSize: 11,
+                                                        color: Colors.white,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        )
+                                      : Container(
+                                          decoration: BoxDecoration(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                          ),
+                                          child: CustomPaint(
+                                            painter: _DashedBorderPainter(
+                                              color: AppTheme.outlineVariantColor,
+                                              borderRadius: 12,
+                                            ),
+                                            child: const Center(
+                                              child: Column(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                children: [
+                                                  Icon(
+                                                    Icons.add_a_photo_rounded,
+                                                    size: 32,
+                                                    color: AppTheme.primaryColor,
+                                                  ),
+                                                  SizedBox(height: 8),
+                                                  Text(
+                                                    'Upload atau Foto KTP',
+                                                    style: TextStyle(
+                                                      fontSize: 13,
+                                                      fontWeight: FontWeight.w600,
+                                                      color: AppTheme.primaryColor,
+                                                    ),
+                                                  ),
+                                                  SizedBox(height: 2),
+                                                  Text(
+                                                    'Tap untuk mengambil foto atau pilih dari galeri',
+                                                    style: TextStyle(
+                                                      fontSize: 10,
+                                                      color:
+                                                          AppTheme.secondaryColor,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                ),
                               ),
                               const SizedBox(height: 14),
 
@@ -363,11 +789,33 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       children: [
                                         _buildInputLabel('RT/RW'),
                                         const SizedBox(height: 4),
-                                        _buildTextFormField(
+                                        TextFormField(
                                           controller: _rtRwController,
-                                          hintText: '005/002',
-                                          prefixIcon:
-                                              Icons.location_on_outlined,
+                                          readOnly: _codeFound,
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: _codeFound
+                                                ? AppTheme.primaryColor
+                                                : AppTheme.textPrimaryColor,
+                                            fontWeight: _codeFound
+                                                ? FontWeight.bold
+                                                : FontWeight.normal,
+                                          ),
+                                          decoration: _buildInputDecoration(
+                                            hintText: _codeFound ? '' : '005/002',
+                                            prefixIcon:
+                                                Icons.location_on_outlined,
+                                            suffixIcon: _codeFound
+                                                ? const Padding(
+                                                    padding: EdgeInsets.only(right: 8),
+                                                    child: Icon(
+                                                      Icons.lock_rounded,
+                                                      size: 16,
+                                                      color: AppTheme.primaryColor,
+                                                    ),
+                                                  )
+                                                : null,
+                                          ),
                                           validator: (value) {
                                             if (value == null ||
                                                 value.isEmpty) {
@@ -437,6 +885,108 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   }
                                   return null;
                                 },
+                              ),
+                              const SizedBox(height: 14),
+
+                              // Kode Registrasi Warga
+                              _buildInputLabel('KODE REGISTRASI UNTUK WARGA'),
+                              const SizedBox(height: 4),
+                              const Text(
+                                'Buat kode registrasi yang akan digunakan warga untuk mendaftar ke RT Anda. Anda bisa mengisi sendiri atau generate otomatis.',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: AppTheme.secondaryColor,
+                                  height: 1.3,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    child: TextFormField(
+                                      controller: _rtRegistrationCodeController,
+                                      textCapitalization: TextCapitalization.characters,
+                                      style: const TextStyle(
+                                          fontSize: 14,
+                                          color: AppTheme.textPrimaryColor,
+                                          fontWeight: FontWeight.w600,
+                                          letterSpacing: 1.2),
+                                      decoration: _buildInputDecoration(
+                                        hintText: 'RT05-XXXX',
+                                        prefixIcon: Icons.vpn_key_outlined,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  SizedBox(
+                                    height: 48,
+                                    child: ElevatedButton.icon(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: AppTheme.primaryFixed,
+                                        foregroundColor: AppTheme.primaryColor,
+                                        elevation: 0,
+                                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                      ),
+                                      onPressed: () {
+                                        final rtRw = _wilayahController.text.trim();
+                                        if (rtRw.isEmpty) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(
+                                              content: Text('Isi Nomor RT/RW terlebih dahulu'),
+                                              backgroundColor: AppTheme.statusMedium,
+                                            ),
+                                          );
+                                          return;
+                                        }
+                                        final state = Provider.of<AppState>(context, listen: false);
+                                        final code = state.generateRegistrationCode(rtRw);
+                                        _rtRegistrationCodeController.text = code;
+                                      },
+                                      icon: const Icon(Icons.auto_awesome, size: 16),
+                                      label: const Text(
+                                        'Generate',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.primaryFixed.withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: AppTheme.primaryColor.withOpacity(0.15),
+                                  ),
+                                ),
+                                child: const Row(
+                                  children: [
+                                    Icon(Icons.info_outline,
+                                        size: 14,
+                                        color: AppTheme.primaryColor),
+                                    SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        'Bagikan kode ini ke warga agar mereka bisa mendaftar ke RT Anda. Opsional — bisa juga dibuat nanti dari Profil.',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: AppTheme.primaryColor,
+                                          height: 1.3,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                               const SizedBox(height: 14),
                             ],
@@ -740,4 +1290,77 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ),
     );
   }
+
+  Widget _buildKtpActionButton({
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.9),
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.15),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Icon(icon, size: 16, color: color),
+      ),
+    );
+  }
+}
+
+class _DashedBorderPainter extends CustomPainter {
+  final Color color;
+  final double borderRadius;
+  final double dashWidth;
+  final double dashSpace;
+  final double strokeWidth;
+
+  _DashedBorderPainter({
+    required this.color,
+    this.borderRadius = 12,
+    this.dashWidth = 6,
+    this.dashSpace = 4,
+    this.strokeWidth = 1.5,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = strokeWidth
+      ..style = PaintingStyle.stroke;
+
+    final path = Path()
+      ..addRRect(RRect.fromRectAndRadius(
+        Rect.fromLTWH(0, 0, size.width, size.height),
+        Radius.circular(borderRadius),
+      ));
+
+    final dashPath = Path();
+    for (final metric in path.computeMetrics()) {
+      double distance = 0;
+      while (distance < metric.length) {
+        final end = distance + dashWidth;
+        dashPath.addPath(
+          metric.extractPath(distance, end.clamp(0, metric.length)),
+          Offset.zero,
+        );
+        distance = end + dashSpace;
+      }
+    }
+
+    canvas.drawPath(dashPath, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
