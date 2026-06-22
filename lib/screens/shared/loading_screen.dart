@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../models/models.dart';
+import '../../providers/app_state.dart';
 import '../../theme.dart';
 import 'login_screen.dart';
 
@@ -72,21 +75,54 @@ class _LoadingScreenState extends State<LoadingScreen> with SingleTickerProvider
       if (tick >= totalTicks) {
         timer.cancel();
         // Give a tiny buffer before navigating
-        Future.delayed(const Duration(milliseconds: 300), () {
-          if (mounted) {
-            Navigator.of(context).pushReplacement(
-              PageRouteBuilder(
-                pageBuilder: (context, animation, secondaryAnimation) => const LoginScreen(),
-                transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                  return FadeTransition(opacity: animation, child: child);
-                },
-                transitionDuration: const Duration(milliseconds: 500),
-              ),
-            );
-          }
+        Future.delayed(const Duration(milliseconds: 300), () async {
+          if (!mounted) return;
+          await _navigateAfterSessionCheck();
         });
       }
     });
+  }
+
+  Future<void> _navigateAfterSessionCheck() async {
+    AppState state;
+    try {
+      state = Provider.of<AppState>(context, listen: false);
+    } catch (_) {
+      _navigateToLogin();
+      return;
+    }
+
+    final hasSession = await state.restoreSession();
+
+    if (!mounted) return;
+
+    if (!hasSession) {
+      _navigateToLogin();
+      return;
+    }
+
+    final user = state.currentUser;
+    if (user?.role == UserRole.warga &&
+        user?.verificationStatus != VerificationStatus.verified) {
+      Navigator.of(context).pushReplacementNamed('/waiting-verification');
+    } else {
+      Navigator.of(context).pushReplacementNamed('/home');
+    }
+  }
+
+  void _navigateToLogin() {
+    if (!mounted) return;
+
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            const LoginScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+        transitionDuration: const Duration(milliseconds: 500),
+      ),
+    );
   }
 
   @override

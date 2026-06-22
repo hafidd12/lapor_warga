@@ -35,6 +35,32 @@ class AppUser {
     this.registeredAt,
   });
 
+  factory AppUser.fromProfileRow(Map<String, dynamic> row) {
+    final name = _stringValue(row['name']) ?? 'Pengguna';
+    final email = _stringValue(row['email']) ?? '';
+    final avatarUrl = _stringValue(row['avatar_url']) ??
+        'https://api.dicebear.com/7.x/adventurer/svg?seed=$name';
+
+    return AppUser(
+      id: _stringValue(row['id']) ?? '',
+      name: name,
+      email: email,
+      role: _parseUserRole(row['role']),
+      avatarUrl: avatarUrl,
+      verificationStatus: _parseVerificationStatus(
+        row['verification_status'],
+      ),
+      ktpNumber: _stringValue(row['ktp_number']),
+      registrationCode: _stringValue(row['registration_code']),
+      ktpImagePath: _stringValue(row['ktp_image_path']),
+      phone: _stringValue(row['phone']),
+      rtRw: _stringValue(row['rt_rw']),
+      address: _stringValue(row['address']),
+      jabatan: _stringValue(row['jabatan']),
+      registeredAt: _dateTimeValue(row['registered_at']),
+    );
+  }
+
   AppUser copyWith({
     String? id,
     String? name,
@@ -67,6 +93,36 @@ class AppUser {
       jabatan: jabatan ?? this.jabatan,
       registeredAt: registeredAt ?? this.registeredAt,
     );
+  }
+
+  static String? _stringValue(dynamic value) {
+    if (value == null) return null;
+    final text = value.toString().trim();
+    return text.isEmpty ? null : text;
+  }
+
+  static DateTime? _dateTimeValue(dynamic value) {
+    if (value == null) return null;
+    if (value is DateTime) return value;
+    return DateTime.tryParse(value.toString());
+  }
+
+  static UserRole _parseUserRole(dynamic value) {
+    final text = value?.toString().toLowerCase().trim();
+    return text == 'admin' ? UserRole.admin : UserRole.warga;
+  }
+
+  static VerificationStatus _parseVerificationStatus(dynamic value) {
+    final text = value?.toString().toLowerCase().trim();
+    switch (text) {
+      case 'verified':
+        return VerificationStatus.verified;
+      case 'rejected':
+        return VerificationStatus.rejected;
+      case 'pending':
+      default:
+        return VerificationStatus.pending;
+    }
   }
 }
 

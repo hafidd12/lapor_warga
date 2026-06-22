@@ -1,9 +1,12 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import '../models/models.dart';
+import '../services/auth_service.dart';
+import '../services/supabase_service.dart';
 
 class AppState with ChangeNotifier {
   AppUser? _currentUser;
+  final AuthService? _authService;
   final List<AppUser> _registeredUsers = [];
   final List<Report> _reports = [];
   final List<Announcement> _announcements = [];
@@ -11,7 +14,7 @@ class AppState with ChangeNotifier {
   final List<AdminActivity> _activities = [];
   final List<RegistrationCode> _registrationCodes = [];
 
-  AppState() {
+  AppState({AuthService? authService}) : _authService = authService {
     _loadMockData();
   }
 
@@ -294,6 +297,80 @@ class AppState with ChangeNotifier {
   // ============================================
   // Authentication Actions
   // ============================================
+
+  AuthService get _activeAuthService => _authService ?? AuthService();
+
+  void _setCurrentUser(AppUser? user) {
+    _currentUser = user;
+    notifyListeners();
+  }
+
+  Future<Map<String, dynamic>> loginWithSupabase(
+    String email,
+    String password,
+  ) async {
+    if (email.isEmpty || password.isEmpty) {
+      return {'success': false, 'message': 'Email dan password wajib diisi'};
+    }
+
+    if (!SupabaseService.isInitialized) {
+      return {
+        'success': false,
+        'message': 'Konfigurasi Supabase belum aktif',
+      };
+    }
+
+    try {
+      final user = await _activeAuthService.signInWithPassword(
+        email: email,
+        password: password,
+      );
+      _setCurrentUser(user);
+
+      return {
+        'success': true,
+        'role': user.role,
+        'verificationStatus': user.verificationStatus,
+      };
+    } on AuthServiceException catch (error) {
+      return {'success': false, 'message': error.message};
+    } catch (_) {
+      return {
+        'success': false,
+        'message': 'Login gagal. Silakan coba lagi.',
+      };
+    }
+  }
+
+  Future<bool> restoreSession() async {
+    if (!SupabaseService.isInitialized) return false;
+
+    try {
+      final user = await _activeAuthService.getCurrentUserProfile();
+      if (user == null) {
+        _setCurrentUser(null);
+        return false;
+      }
+
+      _setCurrentUser(user);
+      return true;
+    } catch (_) {
+      _setCurrentUser(null);
+      return false;
+    }
+  }
+
+  Future<void> logoutFromSupabase() async {
+    if (SupabaseService.isInitialized) {
+      try {
+        await _activeAuthService.signOut();
+      } catch (_) {
+        // Local state still needs to be cleared even if remote sign out fails.
+      }
+    }
+
+    _setCurrentUser(null);
+  }
 
   /// Returns a map with 'success', 'role', 'verificationStatus'
   Map<String, dynamic> login(String email, String password) {
