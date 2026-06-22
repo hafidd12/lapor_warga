@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'services/supabase_service.dart';
 import 'theme.dart';
 import 'models/models.dart';
 import 'providers/app_state.dart';
@@ -15,7 +16,10 @@ import 'screens/admin/daftar_warga_admin.dart';
 import 'screens/admin/aktivitas_admin.dart';
 import 'screens/admin/profil_admin.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await SupabaseService.initialize();
+
   runApp(
     ChangeNotifierProvider(
       create: (context) => AppState(),
