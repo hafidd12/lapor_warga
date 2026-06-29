@@ -1,5 +1,5 @@
+import 'package:flutter/foundation.dart';
 import 'dart:math';
-import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../services/auth_service.dart';
 import '../services/supabase_service.dart';
@@ -24,7 +24,8 @@ class AppState with ChangeNotifier {
   List<Poll> get polls => List.unmodifiable(_polls);
   List<AppUser> get registeredUsers => List.unmodifiable(_registeredUsers);
   List<AdminActivity> get activities => List.unmodifiable(_activities);
-  List<RegistrationCode> get registrationCodes => List.unmodifiable(_registrationCodes);
+  List<RegistrationCode> get registrationCodes =>
+      List.unmodifiable(_registrationCodes);
 
   // Warga queries
   List<AppUser> get allWarga =>
@@ -314,10 +315,7 @@ class AppState with ChangeNotifier {
     }
 
     if (!SupabaseService.isInitialized) {
-      return {
-        'success': false,
-        'message': 'Konfigurasi Supabase belum aktif',
-      };
+      return {'success': false, 'message': 'Konfigurasi Supabase belum aktif'};
     }
 
     try {
@@ -335,10 +333,7 @@ class AppState with ChangeNotifier {
     } on AuthServiceException catch (error) {
       return {'success': false, 'message': error.message};
     } catch (_) {
-      return {
-        'success': false,
-        'message': 'Login gagal. Silakan coba lagi.',
-      };
+      return {'success': false, 'message': 'Login gagal. Silakan coba lagi.'};
     }
   }
 
@@ -370,6 +365,87 @@ class AppState with ChangeNotifier {
     }
 
     _setCurrentUser(null);
+  }
+
+  Future<String?> lookupRegistrationCodeRemote(String code) async {
+    if (code.trim().isEmpty) return null;
+
+    if (!SupabaseService.isInitialized) {
+      return null;
+    }
+
+    try {
+      return await _activeAuthService.lookupActiveRegistrationCodeRtRw(code);
+    } catch (error, stackTrace) {
+      debugPrint(error.toString());
+      debugPrint(stackTrace.toString());
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>> registerWargaWithSupabase({
+    required String name,
+    required String email,
+    required String password,
+    required String registrationCode,
+    required String ktpNumber,
+    required String phone,
+    required String address,
+    required Uint8List ktpImageBytes,
+    required String ktpImageName,
+  }) async {
+    debugPrint(
+      'app_state email received="$email" '
+      'length=${email.length} '
+      'codeUnits=${email.codeUnits}',
+    );
+    if (name.trim().isEmpty ||
+        email.trim().isEmpty ||
+        password.isEmpty ||
+        registrationCode.trim().isEmpty ||
+        ktpNumber.trim().isEmpty ||
+        phone.trim().isEmpty ||
+        address.trim().isEmpty ||
+        ktpImageName.trim().isEmpty ||
+        ktpImageBytes.isEmpty) {
+      return {'success': false, 'message': 'Semua data registrasi wajib diisi'};
+    }
+
+    if (!SupabaseService.isInitialized) {
+      return {'success': false, 'message': 'Konfigurasi Supabase belum aktif'};
+    }
+
+    try {
+      final user = await _activeAuthService.registerWargaWithSupabase(
+        name: name,
+        email: email,
+        password: password,
+        registrationCode: registrationCode,
+        ktpNumber: ktpNumber,
+        phone: phone,
+        address: address,
+        ktpImageBytes: ktpImageBytes,
+        ktpImageName: ktpImageName,
+      );
+      _setCurrentUser(user);
+
+      return {
+        'success': true,
+        'role': user.role,
+        'verificationStatus': user.verificationStatus,
+      };
+    } on AuthServiceException catch (error) {
+      return {'success': false, 'message': error.message};
+    } catch (error, stackTrace) {
+      debugPrint(error.toString());
+      debugPrint(stackTrace.toString());
+      return {
+        'success': false,
+        'message': 'Registrasi gagal. Silakan coba lagi.',
+        'debugMessage': error.toString(),
+        'debugStackTrace': stackTrace.toString(),
+      };
+    }
   }
 
   /// Returns a map with 'success', 'role', 'verificationStatus'
@@ -493,10 +569,7 @@ class AppState with ChangeNotifier {
   }
 
   /// Add a new registration code (manual or auto-generated)
-  void addRegistrationCode({
-    required String code,
-    required String rtRw,
-  }) {
+  void addRegistrationCode({required String code, required String rtRw}) {
     if (_currentUser == null) return;
 
     final newCode = RegistrationCode(
