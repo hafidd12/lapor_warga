@@ -31,6 +31,16 @@
   - [x] Custom button
   - [x] App theme sesuai arah desain Stitch
   - [x] Mock data dan app state
+- [x] UI Improvement Home / Dashboard
+  - [x] Tambahkan logo aplikasi pada header dashboard warga
+  - [x] Tambahkan logo aplikasi pada header dashboard admin / RT
+  - [x] Buat asset logo dari desain Stitch
+  - [x] Daftarkan asset logo di `pubspec.yaml`
+  - [x] Tambahkan fallback icon jika asset logo gagal dimuat
+  - [x] Ganti typography aplikasi ke Inter
+  - [x] Perbaiki hierarchy typography pada greeting, section title, dan card laporan
+  - [x] Jalankan `flutter pub get`
+  - [x] Jalankan `flutter test`
 
 ## Daffa-spec
 
