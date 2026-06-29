@@ -23,13 +23,7 @@ class DashboardWargaScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text(
-          'Lapor Warga',
-          style: TextStyle(
-            color: AppTheme.primaryColor,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        title: const _DashboardHeaderTitle(),
         backgroundColor: Colors.white,
         elevation: 0.5,
         scrolledUnderElevation: 1,
@@ -57,25 +51,28 @@ class DashboardWargaScreen extends StatelessWidget {
                   Text(
                     'Halo, ${user?.name ?? "Warga"}',
                     style: theme.textTheme.headlineLarge?.copyWith(
-                      fontSize: 24,
+                      fontSize: 25,
                       color: AppTheme.primaryColor,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.2,
+                      height: 1.18,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Row(
-                    children: const [
-                      Icon(
+                    children: [
+                      const Icon(
                         Icons.location_on_outlined,
-                        size: 16,
+                        size: 17,
                         color: AppTheme.textSecondaryColor,
                       ),
-                      SizedBox(width: 4),
+                      const SizedBox(width: 5),
                       Text(
                         'Wilayah RT 05 / RW 02',
-                        style: TextStyle(
+                        style: theme.textTheme.bodyMedium?.copyWith(
                           color: AppTheme.textSecondaryColor,
-                          fontSize: 13,
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
@@ -91,9 +88,10 @@ class DashboardWargaScreen extends StatelessWidget {
                     Text(
                       'Bukti Selesai dari RT',
                       style: theme.textTheme.headlineMedium?.copyWith(
-                        fontSize: 18,
+                        fontSize: 18.5,
                         color: AppTheme.textPrimaryColor,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.1,
                       ),
                     ),
                     const Icon(
@@ -128,18 +126,19 @@ class DashboardWargaScreen extends StatelessWidget {
                   Text(
                     'Pengumuman Terbaru',
                     style: theme.textTheme.headlineMedium?.copyWith(
-                      fontSize: 18,
+                      fontSize: 18.5,
                       color: AppTheme.textPrimaryColor,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.1,
                     ),
                   ),
                   GestureDetector(
                     onTap: () {},
-                    child: const Text(
+                    child: Text(
                       'Lihat Semua',
-                      style: TextStyle(
+                      style: theme.textTheme.labelLarge?.copyWith(
                         color: AppTheme.primaryColor,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w700,
                         fontSize: 13,
                       ),
                     ),
@@ -261,21 +260,26 @@ class DashboardWargaScreen extends StatelessWidget {
                                     children: [
                                       Text(
                                         ann.title,
-                                        style: const TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.bold,
-                                          color: AppTheme.textPrimaryColor,
-                                        ),
+                                        style: theme.textTheme.bodyLarge
+                                            ?.copyWith(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w700,
+                                              color: AppTheme.textPrimaryColor,
+                                              height: 1.25,
+                                            ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
                                         ann.content,
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          color: AppTheme.textSecondaryColor,
-                                        ),
+                                        style: theme.textTheme.bodyMedium
+                                            ?.copyWith(
+                                              fontSize: 12,
+                                              color:
+                                                  AppTheme.textSecondaryColor,
+                                              height: 1.35,
+                                            ),
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
                                       ),
@@ -315,9 +319,10 @@ class DashboardWargaScreen extends StatelessWidget {
               Text(
                 'Laporan Saya',
                 style: theme.textTheme.headlineMedium?.copyWith(
-                  fontSize: 18,
+                  fontSize: 18.5,
                   color: AppTheme.textPrimaryColor,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.1,
                 ),
               ),
               const SizedBox(height: 12),
@@ -344,9 +349,10 @@ class DashboardWargaScreen extends StatelessWidget {
               Text(
                 'Voting Lingkungan',
                 style: theme.textTheme.headlineMedium?.copyWith(
-                  fontSize: 18,
+                  fontSize: 18.5,
                   color: AppTheme.textPrimaryColor,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.1,
                 ),
               ),
               const SizedBox(height: 12),
@@ -692,10 +698,11 @@ class DashboardWargaScreen extends StatelessWidget {
                     report.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       color: AppTheme.primaryColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 14.5,
+                      height: 1.25,
                     ),
                   ),
                   const SizedBox(height: 5),
@@ -703,7 +710,7 @@ class DashboardWargaScreen extends StatelessWidget {
                     'Dikirim oleh ${report.completedBy ?? 'RT'}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: AppTheme.textSecondaryColor,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -737,5 +744,39 @@ class DashboardWargaScreen extends StatelessWidget {
       return months[month - 1];
     }
     return '';
+  }
+}
+
+class _DashboardHeaderTitle extends StatelessWidget {
+  const _DashboardHeaderTitle();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Image.asset(
+          'assets/images/logo_lapor_warga_icon.png',
+          width: 28,
+          height: 28,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) {
+            return const Icon(
+              Icons.eco,
+              size: 28,
+              color: AppTheme.primaryColor,
+            );
+          },
+        ),
+        const SizedBox(width: 9),
+        Text(
+          'Lapor Warga',
+          style: Theme.of(context).appBarTheme.titleTextStyle?.copyWith(
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ],
+    );
   }
 }
