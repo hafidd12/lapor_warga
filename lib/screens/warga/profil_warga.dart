@@ -112,8 +112,9 @@ class ProfilWargaScreen extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
-                onPressed: () {
-                  state.logout();
+                onPressed: () async {
+                  await state.logoutFromSupabase();
+                  if (!context.mounted) return;
                   Navigator.of(context).pushReplacementNamed('/login');
                 },
                 child: const Text('Keluar dari Aplikasi', style: TextStyle(fontWeight: FontWeight.bold)),

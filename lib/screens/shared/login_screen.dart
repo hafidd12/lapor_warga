@@ -28,49 +28,47 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _handleLogin() {
+  Future<void> _handleLogin() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
         _isLoading = true;
       });
 
-      Future.delayed(const Duration(milliseconds: 1000), () {
-        if (!mounted) return;
+      final state = Provider.of<AppState>(context, listen: false);
+      final result = await state.loginWithSupabase(
+        _emailController.text,
+        _passwordController.text,
+      );
 
-        final state = Provider.of<AppState>(context, listen: false);
-        final result = state.login(
-          _emailController.text,
-          _passwordController.text,
-        );
+      if (!mounted) return;
 
-        setState(() {
-          _isLoading = false;
-        });
-
-        if (result['success'] == true) {
-          final role = result['role'] as UserRole;
-          final verStatus =
-              result['verificationStatus'] as VerificationStatus;
-
-          if (role == UserRole.warga &&
-              verStatus != VerificationStatus.verified) {
-            // Warga not yet verified
-            Navigator.of(context)
-                .pushReplacementNamed('/waiting-verification');
-          } else {
-            // Verified warga or admin
-            Navigator.of(context).pushReplacementNamed('/home');
-          }
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                  result['message'] ?? 'Login Gagal! Periksa email dan password.'),
-              backgroundColor: AppTheme.statusHigh,
-            ),
-          );
-        }
+      setState(() {
+        _isLoading = false;
       });
+
+      if (result['success'] == true) {
+        final role = result['role'] as UserRole;
+        final verStatus =
+            result['verificationStatus'] as VerificationStatus;
+
+        if (role == UserRole.warga &&
+            verStatus != VerificationStatus.verified) {
+          // Warga not yet verified
+          Navigator.of(context)
+              .pushReplacementNamed('/waiting-verification');
+        } else {
+          // Verified warga or admin
+          Navigator.of(context).pushReplacementNamed('/home');
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                result['message'] ?? 'Login Gagal! Periksa email dan password.'),
+            backgroundColor: AppTheme.statusHigh,
+          ),
+        );
+      }
     }
   }
 
