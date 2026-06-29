@@ -76,7 +76,7 @@ class AppTheme {
         outline: outlineColor,
         outlineVariant: outlineVariantColor,
       ),
-      textTheme: interTextTheme.copyWith(
+      textTheme: GoogleFonts.interTextTheme().copyWith(
         headlineLarge: GoogleFonts.inter(
           fontSize: 32,
           fontWeight: FontWeight.w800,
@@ -84,31 +84,31 @@ class AppTheme {
           height: 1.2,
           letterSpacing: -0.2,
         ),
-        headlineMedium: GoogleFonts.inter(
+        headlineMedium: GoogleFonts.poppins(
           fontSize: 20,
           fontWeight: FontWeight.w700,
           color: textPrimaryColor,
           height: 1.25,
         ),
-        bodyLarge: GoogleFonts.inter(
+        bodyLarge: GoogleFonts.poppins(
           fontSize: 16,
           fontWeight: FontWeight.w500,
           color: textPrimaryColor,
           height: 1.45,
         ),
-        bodyMedium: GoogleFonts.inter(
+        bodyMedium: GoogleFonts.poppins(
           fontSize: 14,
           fontWeight: FontWeight.w500,
           color: textSecondaryColor,
           height: 1.45,
         ),
-        labelLarge: GoogleFonts.inter(
+        labelLarge: GoogleFonts.poppins(
           fontSize: 15,
           fontWeight: FontWeight.w700,
           color: textPrimaryColor,
           height: 1.25,
         ),
-        labelSmall: GoogleFonts.inter(
+        labelSmall: GoogleFonts.poppins(
           fontSize: 12,
           fontWeight: FontWeight.w700,
           letterSpacing: 0.3,
@@ -121,7 +121,7 @@ class AppTheme {
         elevation: 0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(16)),
+          borderRadius: BorderRadius.all(Radius.circular(24)),
         ),
       ),
       appBarTheme: AppBarTheme(

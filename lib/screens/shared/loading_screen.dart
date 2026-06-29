@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:in_app_update/in_app_update.dart';
 import 'package:provider/provider.dart';
 import '../../models/models.dart';
 import '../../providers/app_state.dart';
@@ -8,41 +8,19 @@ import '../../theme.dart';
 import 'login_screen.dart';
 
 class LoadingScreen extends StatefulWidget {
-  const LoadingScreen({Key? key}) : super(key: key);
+  const LoadingScreen({super.key});
 
   @override
-  _LoadingScreenState createState() => _LoadingScreenState();
+  State<LoadingScreen> createState() => LoadingScreenState();
 }
 
-class _LoadingScreenState extends State<LoadingScreen> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _glowAnimation;
-  
-  double _progressValue = 0.0;
-  int _textIndex = 0;
+class LoadingScreenState extends State<LoadingScreen> {
   Timer? _timer;
-
-  final List<String> _loadingTexts = [
-    "Menyiapkan modul pelaporan...",
-    "Menghubungkan ke pusat data...",
-    "Memverifikasi identitas warga...",
-    "Menghubungkan komunitas...",
-    "Hampir selesai...",
-    "Sistem Siap"
-  ];
+  StreamSubscription<InstallStatus>? _installUpdateSubscription;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat(reverse: true);
-    
-    _glowAnimation = Tween<double>(begin: 0.85, end: 1.05).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-
     // Simulate progress load
     _startProgressSimulation();
   }
@@ -50,37 +28,146 @@ class _LoadingScreenState extends State<LoadingScreen> with SingleTickerProvider
   void _startProgressSimulation() {
     const int totalTicks = 50; // Ticks of progress
     int tick = 0;
-    
+
     _timer = Timer.periodic(const Duration(milliseconds: 60), (timer) {
       tick++;
-      setState(() {
-        _progressValue = tick / totalTicks;
-        
-        // Update texts based on progress range
-        if (_progressValue < 0.2) {
-          _textIndex = 0;
-        } else if (_progressValue < 0.4) {
-          _textIndex = 1;
-        } else if (_progressValue < 0.6) {
-          _textIndex = 2;
-        } else if (_progressValue < 0.8) {
-          _textIndex = 3;
-        } else if (_progressValue < 0.95) {
-          _textIndex = 4;
-        } else {
-          _textIndex = 5;
-        }
-      });
 
       if (tick >= totalTicks) {
         timer.cancel();
         // Give a tiny buffer before navigating
         Future.delayed(const Duration(milliseconds: 300), () async {
           if (!mounted) return;
-          await _navigateAfterSessionCheck();
+          await _runStartupFlow();
         });
       }
     });
+  }
+
+  Future<void> _runStartupFlow() async {
+    final updateHandled = await _checkAndHandleAppUpdate();
+    if (!mounted || updateHandled) return;
+
+    await _navigateAfterSessionCheck();
+  }
+
+  Future<bool> _checkAndHandleAppUpdate() async {
+    try {
+      final updateInfo = await InAppUpdate.checkForUpdate();
+
+      if (updateInfo.updateAvailability != UpdateAvailability.updateAvailable) {
+        return false;
+      }
+
+      if (updateInfo.flexibleUpdateAllowed) {
+        final shouldUpdate = await _showUpdateDialog(
+          title: 'Pembaruan Tersedia',
+          message:
+              'Versi baru aplikasi tersedia di Google Play. Pembaruan akan diunduh di latar belakang dan dipasang setelah selesai.',
+          confirmText: 'Perbarui',
+          cancelText: 'Nanti',
+        );
+
+        if (!shouldUpdate) {
+          return false;
+        }
+
+        return await _startFlexibleUpdateFlow();
+      }
+
+      if (updateInfo.immediateUpdateAllowed) {
+        final shouldUpdate = await _showUpdateDialog(
+          title: 'Pembaruan Wajib',
+          message:
+              'Versi baru aplikasi tersedia dan perlu dipasang sebelum melanjutkan.',
+          confirmText: 'Perbarui Sekarang',
+          cancelText: 'Nanti',
+        );
+
+        if (!shouldUpdate) {
+          return false;
+        }
+
+        return await _performImmediateUpdateFlow();
+      }
+
+      return false;
+    } catch (error) {
+      debugPrint('In-app update check failed: $error');
+      return false;
+    }
+  }
+
+  Future<bool> _showUpdateDialog({
+    required String title,
+    required String message,
+    required String confirmText,
+    required String cancelText,
+  }) async {
+    if (!mounted) return false;
+
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(title),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(cancelText),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(confirmText),
+            ),
+          ],
+        );
+      },
+    );
+
+    return result ?? false;
+  }
+
+  Future<bool> _startFlexibleUpdateFlow() async {
+    try {
+      final result = await InAppUpdate.startFlexibleUpdate();
+      if (result != AppUpdateResult.success) {
+        return false;
+      }
+
+      _installUpdateSubscription?.cancel();
+
+      _installUpdateSubscription = InAppUpdate.installUpdateListener.listen(
+        (status) async {
+          if (status == InstallStatus.downloaded) {
+            try {
+              await InAppUpdate.completeFlexibleUpdate();
+            } catch (error) {
+              debugPrint('Complete flexible update failed: $error');
+            }
+          }
+        },
+        onError: (error) {
+          debugPrint('Flexible update listener failed: $error');
+        },
+      );
+
+      return false;
+    } catch (error) {
+      debugPrint('Flexible update failed: $error');
+      return false;
+    }
+  }
+
+  Future<bool> _performImmediateUpdateFlow() async {
+    try {
+      final result = await InAppUpdate.performImmediateUpdate();
+      return result == AppUpdateResult.success;
+    } catch (error) {
+      debugPrint('Immediate update failed: $error');
+      return false;
+    }
   }
 
   Future<void> _navigateAfterSessionCheck() async {
@@ -127,194 +214,72 @@ class _LoadingScreenState extends State<LoadingScreen> with SingleTickerProvider
 
   @override
   void dispose() {
-    _controller.dispose();
     _timer?.cancel();
+    _installUpdateSubscription?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
-      backgroundColor: AppTheme.primaryContainerColor,
-      body: Stack(
-        children: [
-          // Background soft spots
-          Positioned(
-            top: -50,
-            left: -50,
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppTheme.primaryFixed.withOpacity(0.08),
-              ),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 90, sigmaY: 90),
-                child: const SizedBox(),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: -50,
-            right: -50,
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppTheme.tertiaryFixed.withOpacity(0.08),
-              ),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 90, sigmaY: 90),
-                child: const SizedBox(),
-              ),
-            ),
-          ),
-
-          SafeArea(
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Logo Section
-                    ScaleTransition(
-                      scale: _glowAnimation,
-                      child: Container(
-                        width: 130,
-                        height: 130,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(32),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
-                              blurRadius: 24,
-                              offset: const Offset(0, 12),
-                            ),
-                          ],
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.eco,
-                            size: 80,
-                            color: AppTheme.primaryContainerColor,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-
-                    // App Title
-                    Text(
-                      'Lapor Warga',
-                      style: theme.textTheme.headlineLarge?.copyWith(
-                        color: Colors.white,
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-
-                    // Subtitle
-                    Text(
-                      'MENUJU LINGKUNGAN YANG LEBIH BAIK',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: Colors.white.withOpacity(0.7),
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                    const SizedBox(height: 72),
-
-                    // Progress Track Concept
-                    SizedBox(
-                      width: 200,
-                      child: Column(
-                        children: [
-                          Container(
-                            height: 4,
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                            child: Align(
-                              alignment: Alignment.centerLeft,
-                              child: FractionallySizedBox(
-                                widthFactor: _progressValue,
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.primaryFixed,
-                                    borderRadius: BorderRadius.circular(2),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: AppTheme.primaryFixed.withOpacity(0.5),
-                                        blurRadius: 4,
-                                        spreadRadius: 1,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 200),
-                            child: Text(
-                              _loadingTexts[_textIndex],
-                              key: ValueKey<int>(_textIndex),
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: _textIndex == 5
-                                    ? AppTheme.primaryFixed
-                                    : Colors.white.withOpacity(0.7),
-                                letterSpacing: 0.2,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          // Footer
-          const Positioned(
-            bottom: 40,
-            left: 0,
-            right: 0,
-            child: Row(
+      backgroundColor: AppTheme.primaryColor,
+      body: SafeArea(
+        child: SizedBox.expand(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.public, color: Colors.white54, size: 16),
-                SizedBox(width: 8),
-                Text(
-                  'SUARA WARGA, SOLUSI BERSAMA',
+                const _SplashLogo(),
+                const SizedBox(height: 28),
+                const Text(
+                  'Lapor Warga',
+                  textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.0,
-                    color: Colors.white54,
+                    color: Colors.white,
+                    fontSize: 28,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Suara Warga, Solusi Bersama',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.8),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 22),
+                const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
                 ),
               ],
             ),
           ),
-        ],
+        ),
       ),
+    );
+  }
+}
+
+class _SplashLogo extends StatelessWidget {
+  const _SplashLogo();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 120,
+      height: 120,
+      alignment: Alignment.center,
+      child: const Icon(Icons.eco_rounded, size: 86, color: Colors.white),
     );
   }
 }

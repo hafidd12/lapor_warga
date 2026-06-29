@@ -1,4 +1,5 @@
-import 'dart:io';
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
@@ -37,7 +38,8 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
   ];
 
   ReportPriority? _selectedPriority;
-  File? _reportImageFile;
+  Uint8List? _reportImageBytes;
+  String? _reportImageName;
   final ImagePicker _imagePicker = ImagePicker();
 
   String? _customLocationLabel;
@@ -48,7 +50,15 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
   static const String _mockLocationLabel =
       'Titik laporan dipilih - RT 05 / RW 02';
 
-  bool get _isTesting => Platform.environment.containsKey('FLUTTER_TEST');
+  static final Uint8List _mockReportImageBytes = base64Decode(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO7+4j8AAAAASUVORK5CYII=',
+  );
+
+  bool get _isTesting {
+    final bindingName = WidgetsBinding.instance.runtimeType.toString();
+    return bindingName.contains('TestWidgetsFlutterBinding') ||
+        bindingName.contains('AutomatedTestWidgetsFlutterBinding');
+  }
 
   @override
   void dispose() {
@@ -63,7 +73,7 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
     final isFormValid = _formKey.currentState!.validate();
     final isAttachmentValid =
         _selectedPriority != null &&
-        _reportImageFile != null &&
+        _reportImageBytes != null &&
         _hasSelectedLocation;
 
     if (!isFormValid || !isAttachmentValid) {
@@ -79,7 +89,9 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
     final state = Provider.of<AppState>(context, listen: false);
     final reportPhotoUrl = _isTesting
         ? _mockReportPhotoUrl
-        : _reportImageFile?.path;
+        : (_reportImageBytes != null && _reportImageName != null
+            ? _buildDataUrl(_reportImageBytes!, _reportImageName!)
+            : null);
     final locationLabel = _isTesting
         ? _mockLocationLabel
         : _customLocationLabel;
@@ -106,7 +118,8 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
     setState(() {
       _selectedCategory = null;
       _selectedPriority = null;
-      _reportImageFile = null;
+      _reportImageBytes = null;
+      _reportImageName = null;
       _customLocationLabel = null;
       _hasSelectedLocation = false;
       _showValidationErrors = false;
@@ -135,8 +148,10 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
         imageQuality: 85,
       );
       if (pickedFile != null) {
+        final bytes = await pickedFile.readAsBytes();
         setState(() {
-          _reportImageFile = File(pickedFile.path);
+          _reportImageBytes = bytes;
+          _reportImageName = pickedFile.name;
         });
       }
     } catch (e) {
@@ -154,7 +169,8 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
   void _showImageSourcePicker() {
     if (_isTesting) {
       setState(() {
-        _reportImageFile = File('mock_image_path');
+        _reportImageBytes = _mockReportImageBytes;
+        _reportImageName = 'foto-kejadian.jpg';
       });
       return;
     }
@@ -693,46 +709,30 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
                       onTap: _showImageSourcePicker,
                       child: Container(
                         width: double.infinity,
-                        height: _reportImageFile != null ? null : 130,
+                        height: _reportImageBytes != null ? null : 130,
                         decoration: BoxDecoration(
                           color: AppTheme.primaryFixed.withOpacity(0.06),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: _reportImageFile != null
-                                ? AppTheme.primaryColor.withOpacity(0.4)
-                                : AppTheme.outlineVariantColor,
+                                  color: _reportImageBytes != null
+                                      ? AppTheme.primaryColor.withOpacity(0.4)
+                                      : AppTheme.outlineVariantColor,
                             width: 1.5,
-                            style: _reportImageFile != null
+                            style: _reportImageBytes != null
                                 ? BorderStyle.solid
                                 : BorderStyle.none,
                           ),
                         ),
-                        child: _reportImageFile != null
+                        child: _reportImageBytes != null
                             ? Stack(
                                 children: [
                                   ClipRRect(
                                     borderRadius: BorderRadius.circular(11),
-                                    child: _isTesting
-                                        ? Container(
-                                            width: double.infinity,
-                                            height: 150,
-                                            color: AppTheme.primaryFixed
-                                                .withOpacity(0.18),
-                                            child: const Center(
-                                              child: Text(
-                                                'foto-kejadian.jpg',
-                                                style: TextStyle(
-                                                  color: AppTheme.primaryColor,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                            ),
-                                          )
-                                        : Image.file(
-                                            _reportImageFile!,
-                                            width: double.infinity,
-                                            fit: BoxFit.cover,
-                                          ),
+                                    child: Image.memory(
+                                      _reportImageBytes!,
+                                      width: double.infinity,
+                                      fit: BoxFit.cover,
+                                    ),
                                   ),
                                   Positioned(
                                     top: 8,
@@ -751,7 +751,8 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
                                           color: AppTheme.statusHigh,
                                           onTap: () {
                                             setState(() {
-                                              _reportImageFile = null;
+                                              _reportImageBytes = null;
+                                              _reportImageName = null;
                                             });
                                           },
                                         ),
@@ -847,7 +848,7 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
                       ),
                     ),
                     _validationMessage(
-                      _showValidationErrors && _reportImageFile == null
+                      _showValidationErrors && _reportImageBytes == null
                           ? 'Foto kejadian wajib dipilih'
                           : null,
                     ),
@@ -994,6 +995,19 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
         ),
       ),
     );
+  }
+
+  String _buildDataUrl(Uint8List bytes, String fileName) {
+    final mimeType = _mimeTypeFromFileName(fileName);
+    return 'data:$mimeType;base64,${base64Encode(bytes)}';
+  }
+
+  String _mimeTypeFromFileName(String fileName) {
+    final lower = fileName.toLowerCase();
+    if (lower.endsWith('.png')) return 'image/png';
+    if (lower.endsWith('.webp')) return 'image/webp';
+    if (lower.endsWith('.gif')) return 'image/gif';
+    return 'image/jpeg';
   }
 
   InputDecoration _inputDecoration(String hint) {

@@ -16,8 +16,8 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController(text: 'budi@lapor.com');
-  final _passwordController = TextEditingController(text: 'password123');
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _obscureText = true;
   bool _isLoading = false;
 
@@ -411,7 +411,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                         CrossAxisAlignment.start,
                                     children: const [
                                       Text(
-                                        'AKUN DEMO:',
+                                        'AKUN DEMO',
                                         style: TextStyle(
                                           fontSize: 9,
                                           fontWeight: FontWeight.bold,
@@ -421,7 +421,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       ),
                                       SizedBox(height: 4),
                                       Text(
-                                        'Warga: budi@lapor.com\nAdmin RT: admin@lapor.com',
+                                        'Warga\nEmail : user@gmail.com\nPassword : 12345678\n\nAdmin RT\nEmail : agus@gmail.com\nPassword : 12345678',
                                         style: TextStyle(
                                           fontSize: 11,
                                           color:
