@@ -3,38 +3,38 @@ import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   // Brand Colors
-  static const Color primaryColor = Color(0xFF012D1D); // Deep Forest Green
-  static const Color primaryContainerColor = Color(0xFF1B4332);
-  static const Color onPrimaryContainerColor = Color(0xFF86AF99);
-  
-  static const Color secondaryColor = Color(0xFF57615C);
-  static const Color secondaryContainerColor = Color(0xFFD8E2DC);
-  static const Color onSecondaryContainerColor = Color(0xFF5B6560);
+  static const Color primaryColor = Color(0xFF0B6B3A);
+  static const Color primaryContainerColor = Color(0xFFE4F3EA);
+  static const Color onPrimaryContainerColor = Color(0xFF0B6B3A);
 
-  static const Color tertiaryColor = Color(0xFF002D1B);
-  static const Color tertiaryContainerColor = Color(0xFF00452D);
-  static const Color onTertiaryContainerColor = Color(0xFF74B392);
-  
-  static const Color backgroundColor = Color(0xFFF8F9FA); // Soft Earthy Light Grey
-  static const Color surfaceColor = Color(0xFFF8F9FA);
+  static const Color secondaryColor = Color(0xFF3E6A58);
+  static const Color secondaryContainerColor = Color(0xFFEAF3EE);
+  static const Color onSecondaryContainerColor = Color(0xFF446455);
+
+  static const Color tertiaryColor = Color(0xFF0E5230);
+  static const Color tertiaryContainerColor = Color(0xFFDDF3E8);
+  static const Color onTertiaryContainerColor = Color(0xFF2B6B49);
+
+  static const Color backgroundColor = Color(0xFFFFFFFF);
+  static const Color surfaceColor = Color(0xFFFFFFFF);
   static const Color surfaceContainerLowest = Color(0xFFFFFFFF);
-  static const Color surfaceContainerLow = Color(0xFFF3F4F5);
-  static const Color surfaceContainer = Color(0xFFEDEEEF);
-  static const Color surfaceContainerHigh = Color(0xFFE7E8E9);
-  static const Color surfaceContainerHighest = Color(0xFFE1E3E4);
-  static const Color surfaceVariantColor = Color(0xFFE1E3E4);
-  
-  static const Color textPrimaryColor = Color(0xFF191C1D);
-  static const Color textSecondaryColor = Color(0xFF414844); // on-surface-variant
-  static const Color outlineColor = Color(0xFF717973);
-  static const Color outlineVariantColor = Color(0xFFC1C8C2);
+  static const Color surfaceContainerLow = Color(0xFFF5F7F6);
+  static const Color surfaceContainer = Color(0xFFEFF4F0);
+  static const Color surfaceContainerHigh = Color(0xFFE6ECE8);
+  static const Color surfaceContainerHighest = Color(0xFFDCE4DF);
+  static const Color surfaceVariantColor = Color(0xFFE8EEEA);
+
+  static const Color textPrimaryColor = Color(0xFF15211A);
+  static const Color textSecondaryColor = Color(0xFF5B6A62);
+  static const Color outlineColor = Color(0xFF87948D);
+  static const Color outlineVariantColor = Color(0xFFD7E1DB);
 
   // Status Colors (from Stitch specifications)
   static const Color statusHigh = Color(0xFFBA1A1A); // High Priority Red
   static const Color statusHighContainer = Color(0xFFFFDAD6);
   static const Color statusMedium = Color(0xFFF97316); // Amber/Orange
   static const Color statusLow = Color(0xFF10B981); // Mint Green/Low Priority
-  
+
   // Tonal fixed colors
   static const Color primaryFixed = Color(0xFFC1ECD4);
   static const Color primaryFixedDim = Color(0xFFA5D0B9);
@@ -69,34 +69,34 @@ class AppTheme {
         outline: outlineColor,
         outlineVariant: outlineVariantColor,
       ),
-      textTheme: GoogleFonts.interTextTheme().copyWith(
-        headlineLarge: GoogleFonts.inter(
+      textTheme: GoogleFonts.poppinsTextTheme().copyWith(
+        headlineLarge: GoogleFonts.poppins(
           fontSize: 32,
           fontWeight: FontWeight.bold,
           color: textPrimaryColor,
           letterSpacing: -0.02,
         ),
-        headlineMedium: GoogleFonts.inter(
+        headlineMedium: GoogleFonts.poppins(
           fontSize: 20,
           fontWeight: FontWeight.w600,
           color: textPrimaryColor,
         ),
-        bodyLarge: GoogleFonts.inter(
+        bodyLarge: GoogleFonts.poppins(
           fontSize: 16,
           fontWeight: FontWeight.normal,
           color: textPrimaryColor,
         ),
-        bodyMedium: GoogleFonts.inter(
+        bodyMedium: GoogleFonts.poppins(
           fontSize: 14,
           fontWeight: FontWeight.normal,
           color: textSecondaryColor,
         ),
-        labelLarge: GoogleFonts.inter(
+        labelLarge: GoogleFonts.poppins(
           fontSize: 15,
           fontWeight: FontWeight.bold,
           color: textPrimaryColor,
         ),
-        labelSmall: GoogleFonts.inter(
+        labelSmall: GoogleFonts.poppins(
           fontSize: 12,
           fontWeight: FontWeight.w600,
           letterSpacing: 0.05,
@@ -108,7 +108,7 @@ class AppTheme {
         elevation: 0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(16)),
+          borderRadius: BorderRadius.all(Radius.circular(24)),
         ),
       ),
       appBarTheme: const AppBarTheme(

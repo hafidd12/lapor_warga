@@ -1,5 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
+import 'package:in_app_update/in_app_update.dart';
 import 'services/supabase_service.dart';
 import 'theme.dart';
 import 'models/models.dart';
@@ -37,15 +41,136 @@ class LaporWargaApp extends StatelessWidget {
       title: 'Lapor Warga',
       theme: AppTheme.lightTheme,
       debugShowCheckedModeBanner: false,
+      home: const AppStartupGate(child: AppRouter()),
+    );
+  }
+}
+
+class AppRouter extends StatelessWidget {
+  const AppRouter({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Navigator(
       initialRoute: '/',
-      routes: {
-        '/': (context) => const LoadingScreen(),
-        '/login': (context) => const LoginScreen(),
-        '/home': (context) => const HomeScreenWrapper(),
-        '/buat-laporan': (context) => const HalamanReportScreen(),
-        '/waiting-verification': (context) => const WaitingVerificationScreen(),
+      onGenerateRoute: (settings) {
+        switch (settings.name) {
+          case '/':
+            return MaterialPageRoute(
+              builder: (context) => const LoadingScreen(),
+              settings: settings,
+            );
+          case '/login':
+            return MaterialPageRoute(
+              builder: (context) => const LoginScreen(),
+              settings: settings,
+            );
+          case '/home':
+            return MaterialPageRoute(
+              builder: (context) => const HomeScreenWrapper(),
+              settings: settings,
+            );
+          case '/buat-laporan':
+            return MaterialPageRoute(
+              builder: (context) => const HalamanReportScreen(),
+              settings: settings,
+            );
+          case '/waiting-verification':
+            return MaterialPageRoute(
+              builder: (context) => const WaitingVerificationScreen(),
+              settings: settings,
+            );
+          default:
+            return MaterialPageRoute(
+              builder: (context) => const LoadingScreen(),
+              settings: settings,
+            );
+        }
       },
     );
+  }
+}
+
+class AppStartupGate extends StatefulWidget {
+  const AppStartupGate({Key? key, required this.child}) : super(key: key);
+
+  final Widget child;
+
+  @override
+  State<AppStartupGate> createState() => _AppStartupGateState();
+}
+
+class _AppStartupGateState extends State<AppStartupGate> {
+  bool _checkedForUpdate = false;
+  StreamSubscription<InstallStatus>? _installStatusSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _checkForAppUpdate();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _installStatusSubscription?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _checkForAppUpdate() async {
+    if (_checkedForUpdate) return;
+    _checkedForUpdate = true;
+
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
+      return;
+    }
+
+    try {
+      final updateInfo = await InAppUpdate.checkForUpdate();
+
+      if (updateInfo.updateAvailability != UpdateAvailability.updateAvailable) {
+        return;
+      }
+
+      if (updateInfo.flexibleUpdateAllowed) {
+        final result = await InAppUpdate.startFlexibleUpdate();
+        if (result == AppUpdateResult.success) {
+          _listenForFlexibleCompletion();
+        }
+        return;
+      }
+
+      if (updateInfo.immediateUpdateAllowed) {
+        await InAppUpdate.performImmediateUpdate();
+      }
+    } catch (_) {
+      // If Play services or the install source does not support updates,
+      // let the app continue normally.
+    }
+  }
+
+  void _listenForFlexibleCompletion() {
+    if (_installStatusSubscription != null) return;
+
+    _installStatusSubscription = InAppUpdate.installUpdateListener.listen((
+      status,
+    ) async {
+      if (status == InstallStatus.downloaded) {
+        try {
+          await InAppUpdate.completeFlexibleUpdate();
+        } catch (_) {
+          // Ignore completion errors and keep the app usable.
+        }
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.child;
   }
 }
 
@@ -106,67 +231,79 @@ class _HomeScreenWrapperState extends State<HomeScreenWrapper> {
       return Scaffold(
         body: _citizenScreens[_currentCitizenIndex],
         bottomNavigationBar: Container(
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 14),
           decoration: BoxDecoration(
             color: AppTheme.surfaceContainerLowest,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-            border: Border(
-              top: BorderSide(
-                color: AppTheme.outlineVariantColor.withOpacity(0.35),
-              ),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: AppTheme.outlineVariantColor.withOpacity(0.45),
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 12,
-                offset: const Offset(0, -4),
+                color: Colors.black.withOpacity(0.06),
+                blurRadius: 18,
+                offset: const Offset(0, 6),
               ),
             ],
           ),
-          child: NavigationBar(
-            selectedIndex: _currentCitizenIndex,
-            onDestinationSelected: (index) {
-              setState(() {
-                _currentCitizenIndex = index;
-              });
-            },
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            indicatorColor: AppTheme.primaryContainerColor,
-            labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-            destinations: const [
-              NavigationDestination(
-                icon: Icon(Icons.home_outlined),
-                selectedIcon: Icon(
-                  Icons.home,
-                  color: AppTheme.onPrimaryContainerColor,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: NavigationBar(
+              selectedIndex: _currentCitizenIndex,
+              onDestinationSelected: (index) {
+                setState(() {
+                  _currentCitizenIndex = index;
+                });
+              },
+              backgroundColor: Colors.white,
+              elevation: 0,
+              surfaceTintColor: Colors.transparent,
+              indicatorColor: AppTheme.primaryColor.withOpacity(0.12),
+              labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+              destinations: const [
+                NavigationDestination(
+                  icon: Icon(Icons.home_rounded, color: AppTheme.outlineColor),
+                  selectedIcon: Icon(
+                    Icons.home_rounded,
+                    color: AppTheme.primaryColor,
+                  ),
+                  label: 'Beranda',
                 ),
-                label: 'Dashboard',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.add_box_outlined),
-                selectedIcon: Icon(
-                  Icons.add_box,
-                  color: AppTheme.onPrimaryContainerColor,
+                NavigationDestination(
+                  icon: Icon(
+                    Icons.add_circle_outline_rounded,
+                    color: AppTheme.outlineColor,
+                  ),
+                  selectedIcon: Icon(
+                    Icons.add_circle_rounded,
+                    color: AppTheme.primaryColor,
+                  ),
+                  label: 'Lapor',
                 ),
-                label: 'Report',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.history_outlined),
-                selectedIcon: Icon(
-                  Icons.history,
-                  color: AppTheme.onPrimaryContainerColor,
+                NavigationDestination(
+                  icon: Icon(
+                    Icons.history_rounded,
+                    color: AppTheme.outlineColor,
+                  ),
+                  selectedIcon: Icon(
+                    Icons.history_rounded,
+                    color: AppTheme.primaryColor,
+                  ),
+                  label: 'Aktivitas',
                 ),
-                label: 'Activity',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.person_outline),
-                selectedIcon: Icon(
-                  Icons.person,
-                  color: AppTheme.onPrimaryContainerColor,
+                NavigationDestination(
+                  icon: Icon(
+                    Icons.person_outline_rounded,
+                    color: AppTheme.outlineColor,
+                  ),
+                  selectedIcon: Icon(
+                    Icons.person_rounded,
+                    color: AppTheme.primaryColor,
+                  ),
+                  label: 'Profil',
                 ),
-                label: 'Profil',
-              ),
-            ],
+              ],
+            ),
           ),
         ),
         floatingActionButton: _currentCitizenIndex == 0
@@ -177,9 +314,9 @@ class _HomeScreenWrapperState extends State<HomeScreenWrapper> {
                 backgroundColor: AppTheme.primaryColor,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Icon(Icons.add, size: 30),
+                child: const Icon(Icons.add_rounded, size: 30),
               )
             : null,
       );
@@ -187,39 +324,69 @@ class _HomeScreenWrapperState extends State<HomeScreenWrapper> {
       // Admin View with 4 tabs
       return Scaffold(
         body: _adminScreens[_currentAdminIndex],
-        bottomNavigationBar: BottomNavigationBar(
-          currentIndex: _currentAdminIndex,
-          onTap: (index) {
-            setState(() {
-              _currentAdminIndex = index;
-            });
-          },
-          type: BottomNavigationBarType.fixed,
-          selectedItemColor: AppTheme.primaryColor,
-          unselectedItemColor: AppTheme.textSecondaryColor,
-          showUnselectedLabels: true,
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.admin_panel_settings_outlined),
-              activeIcon: Icon(Icons.admin_panel_settings),
-              label: 'Dashboard',
+        bottomNavigationBar: Container(
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: AppTheme.outlineVariantColor.withOpacity(0.55),
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.people_outline),
-              activeIcon: Icon(Icons.people),
-              label: 'Warga',
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.06),
+                blurRadius: 18,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: BottomNavigationBar(
+              currentIndex: _currentAdminIndex,
+              onTap: (index) {
+                setState(() {
+                  _currentAdminIndex = index;
+                });
+              },
+              type: BottomNavigationBarType.fixed,
+              backgroundColor: Colors.white,
+              elevation: 0,
+              selectedItemColor: AppTheme.primaryColor,
+              unselectedItemColor: AppTheme.textSecondaryColor,
+              selectedLabelStyle: const TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 12,
+              ),
+              unselectedLabelStyle: const TextStyle(
+                fontWeight: FontWeight.w500,
+                fontSize: 12,
+              ),
+              showUnselectedLabels: true,
+              items: const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.admin_panel_settings_outlined),
+                  activeIcon: Icon(Icons.admin_panel_settings),
+                  label: 'Dashboard',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.people_outline),
+                  activeIcon: Icon(Icons.people),
+                  label: 'Warga',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.history_outlined),
+                  activeIcon: Icon(Icons.history),
+                  label: 'Aktivitas',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.account_circle_outlined),
+                  activeIcon: Icon(Icons.account_circle),
+                  label: 'Profil',
+                ),
+              ],
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.history_outlined),
-              activeIcon: Icon(Icons.history),
-              label: 'Aktivitas',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.account_circle_outlined),
-              activeIcon: Icon(Icons.account_circle),
-              label: 'Profil',
-            ),
-          ],
+          ),
         ),
       );
     }

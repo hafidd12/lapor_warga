@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
@@ -658,6 +658,22 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
         fit: fit,
         errorBuilder: (context, error, stackTrace) => _buildErrorImagePlaceholder(),
       );
+    } else if (path.startsWith('data:image/')) {
+      final commaIndex = path.indexOf(',');
+      if (commaIndex == -1) {
+        return _buildErrorImagePlaceholder();
+      }
+
+      final base64Part = path.substring(commaIndex + 1);
+      try {
+        return Image.memory(
+          base64Decode(base64Part),
+          fit: fit,
+          errorBuilder: (context, error, stackTrace) => _buildErrorImagePlaceholder(),
+        );
+      } catch (_) {
+        return _buildErrorImagePlaceholder();
+      }
     } else if (path.startsWith('mock://')) {
       return Image.network(
         'https://picsum.photos/seed/laporan/600/400',
@@ -665,11 +681,7 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
         errorBuilder: (context, error, stackTrace) => _buildErrorImagePlaceholder(),
       );
     } else {
-      return Image.file(
-        File(path),
-        fit: fit,
-        errorBuilder: (context, error, stackTrace) => _buildErrorImagePlaceholder(),
-      );
+      return _buildErrorImagePlaceholder();
     }
   }
 

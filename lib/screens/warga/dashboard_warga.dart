@@ -1,396 +1,1027 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import '../../models/models.dart';
 import '../../providers/app_state.dart';
 import '../../theme.dart';
-import '../../models/models.dart';
-import '../../widgets/report_card.dart';
 
-class DashboardWargaScreen extends StatelessWidget {
+class DashboardWargaScreen extends StatefulWidget {
   const DashboardWargaScreen({Key? key}) : super(key: key);
+
+  @override
+  State<DashboardWargaScreen> createState() => _DashboardWargaScreenState();
+}
+
+class _DashboardWargaScreenState extends State<DashboardWargaScreen> {
+  String? _selectedPollOption;
 
   @override
   Widget build(BuildContext context) {
     final state = Provider.of<AppState>(context);
-    final theme = Theme.of(context);
     final user = state.currentUser;
-
-    // Filter reports for "Laporan Saya" section (show max 2)
-    final myReports = state.reports.take(2).toList();
-    final latestCompletedReports = state.completedReportsWithPhotos
-        .take(2)
+    final completedReports = state.completedReportsWithPhotos.take(3).toList();
+    final announcements = state.announcements.take(3).toList();
+    final myReports = state.reports
+        .where((report) => report.citizenName == user?.name)
         .toList();
+    final poll = state.polls.isNotEmpty ? state.polls.first : null;
+    final userId = user?.id;
+    final hasVoted = poll != null && poll.userVotes.containsKey(user?.id);
+    final selectedPollOption = hasVoted
+        ? poll.userVotes[userId]
+        : _selectedPollOption;
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      appBar: AppBar(
-        title: const Text(
-          'Lapor Warga',
-          style: TextStyle(
-            color: AppTheme.primaryColor,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0.5,
-        scrolledUnderElevation: 1,
-        actions: [
-          IconButton(
-            icon: const Icon(
-              Icons.notifications_none_outlined,
-              color: AppTheme.primaryColor,
-            ),
-            onPressed: () {},
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // User Greeting Section
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Halo, ${user?.name ?? "Warga"}',
-                    style: theme.textTheme.headlineLarge?.copyWith(
-                      fontSize: 24,
-                      color: AppTheme.primaryColor,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: const [
-                      Icon(
-                        Icons.location_on_outlined,
-                        size: 16,
-                        color: AppTheme.textSecondaryColor,
-                      ),
-                      SizedBox(width: 4),
-                      Text(
-                        'Wilayah RT 05 / RW 02',
-                        style: TextStyle(
-                          color: AppTheme.textSecondaryColor,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 28),
-
-              if (latestCompletedReports.isNotEmpty) ...[
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Bukti Selesai dari RT',
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        fontSize: 18,
-                        color: AppTheme.textPrimaryColor,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const Icon(
-                      Icons.verified_outlined,
-                      color: AppTheme.statusLow,
-                      size: 20,
-                    ),
-                  ],
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        bottom: false,
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(context),
+                const SizedBox(height: 18),
+                _buildGreetingCard(user),
+                const SizedBox(height: 18),
+                _buildHeroBanner(context),
+                const SizedBox(height: 22),
+                _buildSectionHeader(
+                  title: 'Akses Cepat',
+                  subtitle: 'Layanan utama dalam satu sentuhan',
                 ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  height: 218,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    physics: const BouncingScrollPhysics(),
-                    itemCount: latestCompletedReports.length,
-                    itemBuilder: (context, index) {
-                      return _buildCompletionProofCard(
-                        context,
-                        latestCompletedReports[index],
-                      );
+                const SizedBox(height: 16),
+                _buildQuickAccessRow(context),
+                const SizedBox(height: 28),
+                if (completedReports.isNotEmpty) ...[
+                  _buildSectionHeader(
+                    title: 'Bukti Selesai dari RT',
+                    subtitle: 'Laporan yang sudah ditindaklanjuti',
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    height: 286,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: completedReports.length,
+                      separatorBuilder: (_, _) => const SizedBox(width: 14),
+                      itemBuilder: (context, index) {
+                        return _CompletionProofCard(
+                          report: completedReports[index],
+                          rtRw: user?.rtRw,
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                ],
+                _buildSectionHeader(
+                  title: 'Pengumuman Terbaru',
+                  subtitle: 'Informasi penting untuk warga',
+                  actionLabel: 'Lihat Semua',
+                  onActionTap: () {},
+                ),
+                const SizedBox(height: 16),
+                if (announcements.isEmpty)
+                  _buildEmptyState(
+                    icon: Icons.campaign_rounded,
+                    title: 'Belum ada pengumuman baru',
+                    subtitle: 'Semua pengumuman akan tampil di sini.',
+                  )
+                else
+                  SizedBox(
+                    height: 228,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: announcements.length,
+                      separatorBuilder: (_, _) => const SizedBox(width: 14),
+                      itemBuilder: (context, index) {
+                        return _AnnouncementCard(
+                          announcement: announcements[index],
+                          onSeeAllTap: () {},
+                        );
+                      },
+                    ),
+                  ),
+                const SizedBox(height: 32),
+                _buildSectionHeader(
+                  title: 'Status Laporan Anda',
+                  subtitle: 'Pantau laporan yang sudah Anda kirim',
+                ),
+                const SizedBox(height: 16),
+                if (myReports.isEmpty)
+                  _buildEmptyState(
+                    icon: Icons.assignment_outlined,
+                    title: 'Belum ada laporan aktif',
+                    subtitle: 'Gunakan tombol Laporkan Sekarang untuk mulai.',
+                  )
+                else
+                  SizedBox(
+                    height: 202,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: myReports.length,
+                      separatorBuilder: (_, _) => const SizedBox(width: 14),
+                      itemBuilder: (context, index) {
+                        return _ReportStatusCard(report: myReports[index]);
+                      },
+                    ),
+                  ),
+                const SizedBox(height: 32),
+                _buildSectionHeader(
+                  title: 'Voting Lingkungan',
+                  subtitle: 'Berikan suara untuk keputusan bersama warga',
+                ),
+                const SizedBox(height: 16),
+                if (poll == null)
+                  _buildEmptyState(
+                    icon: Icons.how_to_vote_rounded,
+                    title: 'Tidak ada voting aktif',
+                    subtitle:
+                        'Voting baru akan muncul saat RT membuat polling.',
+                  )
+                else
+                  _buildPollCard(
+                    context,
+                    poll: poll,
+                    hasVoted: hasVoted,
+                    selectedPollOption: selectedPollOption,
+                    onOptionChanged: (value) {
+                      setState(() {
+                        _selectedPollOption = value;
+                      });
+                    },
+                    onSubmit: () {
+                      final option = _selectedPollOption;
+                      if (option == null) return;
+                      state.voteInPoll(poll.id, option);
+                      setState(() {
+                        _selectedPollOption = null;
+                      });
                     },
                   ),
-                ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 88),
               ],
-
-              // Section 1: Pengumuman Terbaru
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Pengumuman Terbaru',
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      fontSize: 18,
-                      color: AppTheme.textPrimaryColor,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () {},
-                    child: const Text(
-                      'Lihat Semua',
-                      style: TextStyle(
-                        color: AppTheme.primaryColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              state.announcements.isEmpty
-                  ? const Center(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(vertical: 20),
-                        child: Text('Belum ada pengumuman baru.'),
-                      ),
-                    )
-                  : SizedBox(
-                      height: 230,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
-                        itemCount: state.announcements.length,
-                        itemBuilder: (context, index) {
-                          final ann = state.announcements[index];
-                          // Match badge and styling from Stitch mockup
-                          final isKegiatan = index == 0;
-                          final badgeText = isKegiatan
-                              ? 'KEGIATAN'
-                              : 'INFORMASI';
-                          final badgeBg = isKegiatan
-                              ? AppTheme.primaryColor
-                              : AppTheme.tertiaryContainerColor;
-                          final badgeTextColor = isKegiatan
-                              ? Colors.white
-                              : AppTheme.onTertiaryContainerColor;
-
-                          return Container(
-                            width: MediaQuery.of(context).size.width * 0.78,
-                            margin: const EdgeInsets.only(
-                              right: 14,
-                              bottom: 6,
-                              top: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: AppTheme.outlineVariantColor.withOpacity(
-                                  0.4,
-                                ),
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppTheme.primaryColor.withOpacity(
-                                    0.03,
-                                  ),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Announcement image or styled illustration container
-                                Container(
-                                  height: 110,
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.secondaryContainerColor
-                                        .withOpacity(0.4),
-                                    borderRadius: const BorderRadius.only(
-                                      topLeft: Radius.circular(16),
-                                      topRight: Radius.circular(16),
-                                    ),
-                                  ),
-                                  child: Stack(
-                                    children: [
-                                      Center(
-                                        child: Icon(
-                                          isKegiatan
-                                              ? Icons.campaign_outlined
-                                              : Icons.info_outline,
-                                          size: 48,
-                                          color: AppTheme.primaryColor
-                                              .withOpacity(0.4),
-                                        ),
-                                      ),
-                                      Positioned(
-                                        top: 12,
-                                        left: 12,
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 10,
-                                            vertical: 4,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: badgeBg,
-                                            borderRadius: BorderRadius.circular(
-                                              100,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            badgeText,
-                                            style: TextStyle(
-                                              fontSize: 9,
-                                              fontWeight: FontWeight.bold,
-                                              color: badgeTextColor,
-                                              letterSpacing: 0.5,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.all(12.0),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        ann.title,
-                                        style: const TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.bold,
-                                          color: AppTheme.textPrimaryColor,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        ann.content,
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          color: AppTheme.textSecondaryColor,
-                                        ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      const SizedBox(height: 10),
-                                      Row(
-                                        children: [
-                                          const Icon(
-                                            Icons.calendar_today,
-                                            size: 12,
-                                            color: AppTheme.textSecondaryColor,
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            '${ann.createdAt.day} ${_getMonthName(ann.createdAt.month)} ${ann.createdAt.year}',
-                                            style: const TextStyle(
-                                              fontSize: 10,
-                                              color:
-                                                  AppTheme.textSecondaryColor,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-
-              const SizedBox(height: 28),
-
-              // Section 2: Laporan Saya
-              Text(
-                'Laporan Saya',
-                style: theme.textTheme.headlineMedium?.copyWith(
-                  fontSize: 18,
-                  color: AppTheme.textPrimaryColor,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-              myReports.isEmpty
-                  ? const Card(
-                      child: Padding(
-                        padding: EdgeInsets.all(20.0),
-                        child: Center(
-                          child: Text(
-                            'Belum ada laporan aktif. Gunakan tombol + untuk membuat laporan.',
-                          ),
-                        ),
-                      ),
-                    )
-                  : Column(
-                      children: myReports.map((report) {
-                        return ReportCard(report: report, onTap: () {});
-                      }).toList(),
-                    ),
-
-              const SizedBox(height: 28),
-
-              // Section 3: Voting Lingkungan (Asymmetric Bento Style)
-              Text(
-                'Voting Lingkungan',
-                style: theme.textTheme.headlineMedium?.copyWith(
-                  fontSize: 18,
-                  color: AppTheme.textPrimaryColor,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-              state.polls.isEmpty
-                  ? const Card(
-                      child: Padding(
-                        padding: EdgeInsets.all(20.0),
-                        child: Center(
-                          child: Text('Tidak ada voting aktif saat ini.'),
-                        ),
-                      ),
-                    )
-                  : _buildBentoVotingCard(
-                      context,
-                      state.polls.first,
-                      user?.id,
-                      state,
-                    ),
-              const SizedBox(height: 80), // extra padding for fab
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildBentoVotingCard(
-    BuildContext context,
-    Poll poll,
-    String? userId,
-    AppState state,
-  ) {
-    final hasVoted = poll.userVotes.containsKey(userId);
-    final selectedOption = poll.userVotes[userId];
+  Widget _buildHeader(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: AppTheme.primaryColor.withOpacity(0.10),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: const Icon(
+            Icons.eco_rounded,
+            color: AppTheme.primaryColor,
+            size: 24,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: const [
+              Text(
+                'Lapor Warga',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: AppTheme.textPrimaryColor,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              SizedBox(height: 2),
+              Text(
+                'Warga peduli lingkungan',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: AppTheme.textSecondaryColor,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+        IconButton(
+          onPressed: () {},
+          icon: const Icon(
+            Icons.notifications_none_rounded,
+            color: AppTheme.textPrimaryColor,
+          ),
+          style: IconButton.styleFrom(
+            backgroundColor: AppTheme.surfaceContainerLow,
+            shape: const CircleBorder(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGreetingCard(AppUser? user) {
+    final rtRw = user?.rtRw;
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppTheme.primaryColor,
-        borderRadius: BorderRadius.circular(20),
+        color: AppTheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: AppTheme.outlineVariantColor.withOpacity(0.55),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Selamat Pagi',
+                  style: TextStyle(
+                    color: AppTheme.primaryColor,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.4,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  user?.name ?? 'Warga',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppTheme.textPrimaryColor,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    height: 1.15,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _InfoChip(
+                  icon: Icons.location_on_rounded,
+                  label: rtRw != null && rtRw.isNotEmpty
+                      ? 'RT/RW $rtRw'
+                      : 'RT/RW belum tersedia',
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: const Icon(
+              Icons.person_rounded,
+              color: AppTheme.primaryColor,
+              size: 38,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeroBanner(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppTheme.primaryColor.withOpacity(0.10)),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primaryColor.withOpacity(0.12),
+            color: AppTheme.primaryColor.withOpacity(0.05),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -10,
+            top: -10,
+            child: Container(
+              width: 110,
+              height: 110,
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor.withOpacity(0.06),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          Positioned(
+            right: 32,
+            bottom: 16,
+            child: Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor.withOpacity(0.10),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _SectionTag(
+                      label: 'Peduli lingkungan',
+                      backgroundColor: AppTheme.primaryColor.withOpacity(0.08),
+                      textColor: AppTheme.primaryColor,
+                    ),
+                    const SizedBox(height: 14),
+                    const Text(
+                      'Bersama Menjaga Lingkungan',
+                      style: TextStyle(
+                        color: AppTheme.textPrimaryColor,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        height: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'Laporkan masalah di sekitar Anda agar segera ditindaklanjuti RT.',
+                      style: TextStyle(
+                        color: AppTheme.textSecondaryColor,
+                        fontSize: 13,
+                        height: 1.55,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      height: 46,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.of(context).pushNamed('/buat-laporan');
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primaryColor,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(horizontal: 18),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: const Text(
+                          'Laporkan Sekarang',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              const SizedBox(
+                width: 118,
+                height: 170,
+                child: _EnvironmentalIllustration(),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickAccessRow(BuildContext context) {
+    final items = <_QuickActionItem>[
+      _QuickActionItem(
+        label: 'Lapor',
+        icon: Icons.assignment_rounded,
+        onTap: () => Navigator.of(context).pushNamed('/buat-laporan'),
+      ),
+      _QuickActionItem(
+        label: 'Pengumuman',
+        icon: Icons.campaign_rounded,
+        onTap: () {},
+      ),
+      _QuickActionItem(
+        label: 'Aktivitas',
+        icon: Icons.timeline_rounded,
+        onTap: () {},
+      ),
+      _QuickActionItem(
+        label: 'Bantuan',
+        icon: Icons.help_rounded,
+        onTap: () {},
+      ),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, _) {
+        return Row(
+          children: [
+            for (var i = 0; i < items.length; i++) ...[
+              if (i > 0) const SizedBox(width: 12),
+              Expanded(child: _QuickActionCard(item: items[i])),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildSectionHeader({
+    required String title,
+    required String subtitle,
+    String? actionLabel,
+    VoidCallback? onActionTap,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  color: AppTheme.textPrimaryColor,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  height: 1.15,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: const TextStyle(
+                  color: AppTheme.textSecondaryColor,
+                  fontSize: 12,
+                  height: 1.35,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (actionLabel != null) ...[
+          const SizedBox(width: 12),
+          TextButton(
+            onPressed: onActionTap,
+            style: TextButton.styleFrom(
+              foregroundColor: AppTheme.primaryColor,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              visualDensity: VisualDensity.compact,
+            ),
+            child: Text(
+              actionLabel,
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildEmptyState({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: AppTheme.outlineVariantColor.withOpacity(0.55),
+        ),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 54,
+            height: 54,
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor.withOpacity(0.08),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: AppTheme.primaryColor, size: 28),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: AppTheme.textPrimaryColor,
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: AppTheme.textSecondaryColor,
+              fontSize: 12,
+              height: 1.45,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPollCard(
+    BuildContext context, {
+    required Poll poll,
+    required bool hasVoted,
+    required String? selectedPollOption,
+    required ValueChanged<String> onOptionChanged,
+    required VoidCallback onSubmit,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: AppTheme.outlineVariantColor.withOpacity(0.6),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.035),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withOpacity(0.10),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.how_to_vote_rounded,
+                  color: AppTheme.primaryColor,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'Voting Lingkungan',
+                  style: TextStyle(
+                    color: AppTheme.textPrimaryColor,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              if (!hasVoted)
+                _SectionTag(
+                  label: 'Belum memilih',
+                  backgroundColor: AppTheme.surfaceContainerLow,
+                  textColor: AppTheme.textSecondaryColor,
+                ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            poll.question,
+            style: const TextStyle(
+              color: AppTheme.textPrimaryColor,
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              height: 1.35,
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Pilih satu opsi yang paling sesuai untuk kondisi lingkungan saat ini.',
+            style: TextStyle(
+              color: AppTheme.textSecondaryColor,
+              fontSize: 12,
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: 18),
+          if (!hasVoted) ...[
+            ...poll.options.asMap().entries.map((entry) {
+              final option = entry.value;
+              final isSelected = selectedPollOption == option;
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: InkWell(
+                  onTap: () => onOptionChanged(option),
+                  borderRadius: BorderRadius.circular(18),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? AppTheme.primaryColor.withOpacity(0.06)
+                          : AppTheme.surfaceContainerLow,
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(
+                        color: isSelected
+                            ? AppTheme.primaryColor.withOpacity(0.25)
+                            : AppTheme.outlineVariantColor.withOpacity(0.45),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Radio<String>(
+                          value: option,
+                          groupValue: selectedPollOption,
+                          onChanged: (value) {
+                            if (value != null) onOptionChanged(value);
+                          },
+                          activeColor: AppTheme.primaryColor,
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        Expanded(
+                          child: Text(
+                            option,
+                            style: const TextStyle(
+                              color: AppTheme.textPrimaryColor,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: selectedPollOption == null ? null : onSubmit,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryColor,
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: AppTheme.primaryColor.withOpacity(
+                    0.35,
+                  ),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: const Text(
+                  'Kirim Vote',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                ),
+              ),
+            ),
+          ] else ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Hasil voting saat ini',
+                    style: TextStyle(
+                      color: AppTheme.textPrimaryColor,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  ...poll.options.map((option) {
+                    final votes = poll.votes[option] ?? 0;
+                    final totalVotes = poll.totalVotes == 0
+                        ? 1
+                        : poll.totalVotes;
+                    final percent = votes / totalVotes;
+                    final isSelected = selectedPollOption == option;
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  option,
+                                  style: TextStyle(
+                                    color: isSelected
+                                        ? AppTheme.primaryColor
+                                        : AppTheme.textPrimaryColor,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                '${(percent * 100).toStringAsFixed(0)}%',
+                                style: TextStyle(
+                                  color: isSelected
+                                      ? AppTheme.primaryColor
+                                      : AppTheme.textSecondaryColor,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(999),
+                            child: LinearProgressIndicator(
+                              minHeight: 8,
+                              value: percent,
+                              backgroundColor: Colors.white,
+                              valueColor: const AlwaysStoppedAnimation<Color>(
+                                AppTheme.primaryColor,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _QuickActionItem {
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _QuickActionItem({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
+}
+
+class _QuickActionCard extends StatelessWidget {
+  final _QuickActionItem item;
+
+  const _QuickActionCard({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        onTap: item.onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          height: 96,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: AppTheme.outlineVariantColor.withOpacity(0.8),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withOpacity(0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(item.icon, color: AppTheme.primaryColor, size: 27),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                item.label,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: AppTheme.textPrimaryColor,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  height: 1.1,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CompletionProofCard extends StatelessWidget {
+  final Report report;
+  final String? rtRw;
+
+  const _CompletionProofCard({required this.report, required this.rtRw});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 282,
+      height: 286,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: AppTheme.outlineVariantColor.withOpacity(0.55),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              height: 156,
+              width: double.infinity,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.network(
+                    report.completionPhotoUrl ?? '',
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return _CompletionFallback(
+                        icon: _categoryIcon(report.category),
+                      );
+                    },
+                  ),
+                  Positioned(
+                    left: 12,
+                    top: 12,
+                    child: _SectionTag(
+                      label: 'SELESAI',
+                      backgroundColor: AppTheme.primaryColor,
+                      textColor: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    report.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppTheme.textPrimaryColor,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      height: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    report.citizenName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppTheme.textSecondaryColor,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          rtRw != null && rtRw!.isNotEmpty
+                              ? 'RT/RW $rtRw'
+                              : 'RT/RW belum tersedia',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: AppTheme.textSecondaryColor,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        _formatDate(report.completedAt ?? report.createdAt),
+                        style: const TextStyle(
+                          color: AppTheme.textSecondaryColor,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AnnouncementCard extends StatelessWidget {
+  final Announcement announcement;
+  final VoidCallback onSeeAllTap;
+
+  const _AnnouncementCard({
+    required this.announcement,
+    required this.onSeeAllTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 286,
+      height: 228,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: AppTheme.outlineVariantColor.withOpacity(0.55),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.035),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
@@ -399,343 +1030,492 @@ class DashboardWargaScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header inside card
-          Row(
-            children: const [
-              Icon(Icons.how_to_vote, color: AppTheme.tertiaryFixed, size: 20),
-              SizedBox(width: 8),
-              Text(
-                'AKTIF SAMPAI 30 NOV',
-                style: TextStyle(
-                  color: AppTheme.tertiaryFixed,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.0,
-                ),
-              ),
-            ],
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(
+              Icons.campaign_rounded,
+              color: AppTheme.primaryColor,
+              size: 24,
+            ),
           ),
-          const SizedBox(height: 12),
-
-          // Question title
+          const SizedBox(height: 14),
           Text(
-            poll.question,
+            announcement.title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              height: 1.3,
+              color: AppTheme.textPrimaryColor,
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              height: 1.25,
             ),
           ),
           const SizedBox(height: 8),
-
-          // Sub-description
           Text(
-            'Program ini bertujuan untuk mendukung pengolahan kompos mandiri di tingkat RT.',
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.8),
+            announcement.content,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: AppTheme.textSecondaryColor,
               fontSize: 12,
-              height: 1.4,
+              height: 1.45,
             ),
           ),
-          const SizedBox(height: 20),
-
-          // Options layout
-          if (!hasVoted) ...[
-            Row(
-              children: [
-                // Highlight option (Ya, Setuju / Option 0)
-                Expanded(
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.tertiaryFixed,
-                      foregroundColor: AppTheme.tertiaryColor,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    onPressed: () {
-                      if (poll.options.isNotEmpty) {
-                        state.voteInPoll(poll.id, poll.options.first);
-                      }
-                    },
-                    child: Text(
-                      poll.options.isNotEmpty
-                          ? poll.options.first
-                          : 'Ya, Setuju',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
+          const Spacer(),
+          Row(
+            children: [
+              const Icon(
+                Icons.schedule_rounded,
+                size: 14,
+                color: AppTheme.textSecondaryColor,
+              ),
+              const SizedBox(width: 5),
+              Text(
+                _formatDate(announcement.createdAt),
+                style: const TextStyle(
+                  color: AppTheme.textSecondaryColor,
+                  fontSize: 11,
                 ),
-
-                // Secondary Option (Tidak / Option 1)
-                if (poll.options.length > 1) ...[
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        side: const BorderSide(color: Colors.white30, width: 1),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      onPressed: () {
-                        state.voteInPoll(poll.id, poll.options[1]);
-                      },
-                      child: Text(
-                        poll.options[1],
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-            // Fallback for more options
-            if (poll.options.length > 2) ...[
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: poll.options.skip(2).map((opt) {
-                  return OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      side: const BorderSide(color: Colors.white30, width: 1),
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 10,
-                        horizontal: 16,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    onPressed: () {
-                      state.voteInPoll(poll.id, opt);
-                    },
-                    child: Text(opt, style: const TextStyle(fontSize: 12)),
-                  );
-                }).toList(),
+              ),
+              const Spacer(),
+              TextButton(
+                onPressed: onSeeAllTap,
+                style: TextButton.styleFrom(
+                  foregroundColor: AppTheme.primaryColor,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                ),
+                child: const Text(
+                  'Lihat Semua',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                ),
               ),
             ],
-          ] else ...[
-            // Voted state showing percentages
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Terima kasih atas partisipasi Anda!',
-                    style: TextStyle(
-                      color: AppTheme.tertiaryFixed,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  ...poll.options.map((opt) {
-                    final votes = poll.votes[opt] ?? 0;
-                    final total = poll.totalVotes == 0 ? 1 : poll.totalVotes;
-                    final percent = (votes / total).toDouble();
-                    final isSelected = selectedOption == opt;
-
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                opt,
-                                style: TextStyle(
-                                  color: isSelected
-                                      ? Colors.white
-                                      : Colors.white70,
-                                  fontWeight: isSelected
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                                  fontSize: 12,
-                                ),
-                              ),
-                              Text(
-                                '${(percent * 100).toStringAsFixed(0)}% ($votes)',
-                                style: TextStyle(
-                                  color: isSelected
-                                      ? AppTheme.tertiaryFixed
-                                      : Colors.white70,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(2),
-                            child: LinearProgressIndicator(
-                              value: percent,
-                              backgroundColor: Colors.white12,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                isSelected
-                                    ? AppTheme.tertiaryFixed
-                                    : Colors.white30,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                ],
-              ),
-            ),
-          ],
+          ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildCompletionProofCard(BuildContext context, Report report) {
+class _ReportStatusCard extends StatelessWidget {
+  final Report report;
+
+  const _ReportStatusCard({required this.report});
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      width: MediaQuery.of(context).size.width * 0.76,
-      margin: const EdgeInsets.only(right: 14, bottom: 4),
+      width: 330,
+      height: 190,
+      padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: AppTheme.outlineVariantColor.withOpacity(0.35),
+          color: AppTheme.outlineVariantColor.withOpacity(0.55),
         ),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primaryColor.withOpacity(0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              height: 132,
-              width: double.infinity,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Image.network(
-                    report.completionPhotoUrl!,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: AppTheme.surfaceContainerHigh,
-                        child: const Center(
-                          child: Icon(
-                            Icons.photo_outlined,
-                            color: AppTheme.outlineColor,
-                            size: 34,
-                          ),
-                        ),
-                      );
-                    },
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _ReportLeading(report: report),
+          const SizedBox(width: 11),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  report.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppTheme.textPrimaryColor,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    height: 1.15,
                   ),
-                  Positioned(
-                    left: 10,
-                    top: 10,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 9,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppTheme.statusLow,
-                        borderRadius: BorderRadius.circular(100),
-                      ),
-                      child: const Text(
-                        'SELESAI',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  report.locationLabel ?? 'Lokasi belum ditentukan',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppTheme.textSecondaryColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 7),
+                Wrap(
+                  spacing: 5,
+                  runSpacing: 5,
+                  children: [
+                    _PriorityBadge(priority: report.priority),
+                    _StatusBadge(status: report.status),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: [
+                    _DetailPill(
+                      icon: Icons.thumb_up_rounded,
+                      label: '${report.votesCount} dukungan',
                     ),
-                  ),
-                ],
-              ),
+                    _DetailPill(
+                      icon: Icons.schedule_rounded,
+                      label: _timeAgo(report.createdAt),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    report.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppTheme.primaryColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    'Dikirim oleh ${report.completedBy ?? 'RT'}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppTheme.textSecondaryColor,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReportLeading extends StatelessWidget {
+  final Report report;
+
+  const _ReportLeading({required this.report});
+
+  @override
+  Widget build(BuildContext context) {
+    final hasPhoto =
+        report.reportPhotoUrl != null &&
+        report.reportPhotoUrl!.trim().isNotEmpty;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: SizedBox(
+        width: 104,
+        height: 150,
+        child: hasPhoto
+            ? Image.network(
+                report.reportPhotoUrl!,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return _CompletionFallback(
+                    icon: _categoryIcon(report.category),
+                  );
+                },
+              )
+            : _CompletionFallback(icon: _categoryIcon(report.category)),
+      ),
+    );
+  }
+}
+
+class _CompletionFallback extends StatelessWidget {
+  final IconData icon;
+
+  const _CompletionFallback({required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppTheme.surfaceContainerLow,
+      alignment: Alignment.center,
+      child: Container(
+        width: 48,
+        height: 48,
+        decoration: BoxDecoration(
+          color: AppTheme.primaryColor.withOpacity(0.10),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, color: AppTheme.primaryColor, size: 24),
+      ),
+    );
+  }
+}
+
+class _PriorityBadge extends StatelessWidget {
+  final ReportPriority priority;
+
+  const _PriorityBadge({required this.priority});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = switch (priority) {
+      ReportPriority.high => AppTheme.statusHigh,
+      ReportPriority.medium => AppTheme.statusMedium,
+      ReportPriority.low => AppTheme.statusLow,
+    };
+
+    return _InfoChip(
+      icon: Icons.flag_rounded,
+      label: _priorityLabel(priority),
+      backgroundColor: color.withOpacity(0.10),
+      iconColor: color,
+      textColor: color,
+    );
+  }
+}
+
+class _StatusBadge extends StatelessWidget {
+  final ReportStatus status;
+
+  const _StatusBadge({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = switch (status) {
+      ReportStatus.submitted => AppTheme.statusMedium,
+      ReportStatus.processed => const Color(0xFF2563EB),
+      ReportStatus.resolved => AppTheme.primaryColor,
+    };
+
+    return _InfoChip(
+      icon: Icons.verified_rounded,
+      label: _statusLabel(status),
+      backgroundColor: color.withOpacity(0.10),
+      iconColor: color,
+      textColor: color,
+    );
+  }
+}
+
+class _DetailPill extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  const _DetailPill({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return _InfoChip(
+      icon: icon,
+      label: label,
+      backgroundColor: AppTheme.surfaceContainerLow,
+      iconColor: AppTheme.primaryColor,
+      textColor: AppTheme.textSecondaryColor,
+    );
+  }
+}
+
+class _InfoChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color backgroundColor;
+  final Color iconColor;
+  final Color textColor;
+
+  const _InfoChip({
+    required this.icon,
+    required this.label,
+    this.backgroundColor = AppTheme.surfaceContainerLow,
+    this.iconColor = AppTheme.primaryColor,
+    this.textColor = AppTheme.textSecondaryColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: iconColor),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              color: textColor,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
             ),
-          ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionTag extends StatelessWidget {
+  final String label;
+  final Color backgroundColor;
+  final Color textColor;
+
+  const _SectionTag({
+    required this.label,
+    required this.backgroundColor,
+    required this.textColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: textColor,
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.4,
         ),
       ),
     );
   }
+}
 
-  String _getMonthName(int month) {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'Mei',
-      'Jun',
-      'Jul',
-      'Agu',
-      'Sep',
-      'Okt',
-      'Nov',
-      'Des',
-    ];
-    if (month >= 1 && month <= 12) {
-      return months[month - 1];
-    }
-    return '';
+class _EnvironmentalIllustration extends StatelessWidget {
+  const _EnvironmentalIllustration();
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.center,
+      children: [
+        Positioned(
+          left: 8,
+          top: 18,
+          child: _IllustrationOrb(
+            size: 76,
+            color: AppTheme.primaryColor.withOpacity(0.08),
+          ),
+        ),
+        Positioned(
+          right: 0,
+          bottom: 18,
+          child: _IllustrationOrb(
+            size: 54,
+            color: AppTheme.primaryColor.withOpacity(0.12),
+          ),
+        ),
+        Positioned(
+          top: 6,
+          right: 18,
+          child: Icon(
+            Icons.nature_rounded,
+            color: AppTheme.primaryColor.withOpacity(0.26),
+            size: 34,
+          ),
+        ),
+        Positioned(
+          bottom: 18,
+          left: 14,
+          child: Icon(
+            Icons.water_drop_rounded,
+            color: AppTheme.primaryColor.withOpacity(0.22),
+            size: 24,
+          ),
+        ),
+        Container(
+          width: 116,
+          height: 116,
+          decoration: BoxDecoration(
+            color: AppTheme.primaryColor.withOpacity(0.95),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(Icons.eco_rounded, color: Colors.white, size: 54),
+        ),
+      ],
+    );
   }
+}
+
+class _IllustrationOrb extends StatelessWidget {
+  final double size;
+  final Color color;
+
+  const _IllustrationOrb({required this.size, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+    );
+  }
+}
+
+IconData _categoryIcon(String category) {
+  final value = category.toLowerCase();
+  if (value.contains('infrastruktur')) return Icons.construction_rounded;
+  if (value.contains('penerangan') || value.contains('lampu')) {
+    return Icons.lightbulb_rounded;
+  }
+  if (value.contains('kebersihan') || value.contains('sampah')) {
+    return Icons.delete_rounded;
+  }
+  if (value.contains('aman') || value.contains('keamanan')) {
+    return Icons.security_rounded;
+  }
+  if (value.contains('air') || value.contains('drainase')) {
+    return Icons.water_drop_rounded;
+  }
+  return Icons.report_problem_rounded;
+}
+
+String _formatDate(DateTime dateTime) {
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'Mei',
+    'Jun',
+    'Jul',
+    'Agu',
+    'Sep',
+    'Okt',
+    'Nov',
+    'Des',
+  ];
+
+  final day = dateTime.day.toString().padLeft(2, '0');
+  final month = months[dateTime.month - 1];
+  return '$day $month ${dateTime.year}';
+}
+
+String _timeAgo(DateTime dateTime) {
+  final diff = DateTime.now().difference(dateTime);
+  if (diff.inDays > 0) return '${diff.inDays} hari lalu';
+  if (diff.inHours > 0) return '${diff.inHours} jam lalu';
+  if (diff.inMinutes > 0) return '${diff.inMinutes} menit lalu';
+  return 'Baru saja';
+}
+
+String _priorityLabel(ReportPriority priority) {
+  return switch (priority) {
+    ReportPriority.high => 'Prioritas Tinggi',
+    ReportPriority.medium => 'Prioritas Sedang',
+    ReportPriority.low => 'Prioritas Rendah',
+  };
+}
+
+String _statusLabel(ReportStatus status) {
+  return switch (status) {
+    ReportStatus.submitted => 'Diajukan',
+    ReportStatus.processed => 'Diproses',
+    ReportStatus.resolved => 'Selesai',
+  };
 }

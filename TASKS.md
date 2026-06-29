@@ -35,7 +35,7 @@
 ## Daffa-spec
 
 - [ ] Backend API Development
-  - [ ] Auth API
+  - [x] Auth API
   - [ ] User registration API
   - [ ] Warga verification API
   - [ ] Report API
