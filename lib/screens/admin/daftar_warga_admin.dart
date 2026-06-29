@@ -31,7 +31,6 @@ class _DaftarWargaAdminScreenState extends State<DaftarWargaAdminScreen>
   @override
   Widget build(BuildContext context) {
     final state = Provider.of<AppState>(context);
-    final theme = Theme.of(context);
 
     final verified = state.verifiedWarga
         .where((u) =>
