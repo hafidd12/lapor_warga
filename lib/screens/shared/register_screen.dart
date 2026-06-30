@@ -1,10 +1,11 @@
-import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
+import '../../services/supabase_service.dart';
 import '../../theme.dart';
+import 'ktp_image_preview.dart';
 
 class RegisterScreen extends StatefulWidget {
   final bool isWarga;
@@ -26,9 +27,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _registrationCodeController = TextEditingController();
   final _rtRwController = TextEditingController();
   final _addressController = TextEditingController();
+  final _ktpNumberController = TextEditingController();
 
   // KTP Image
-  File? _ktpImageFile;
+  KtpImagePreview? _ktpImage;
   final ImagePicker _imagePicker = ImagePicker();
 
   // RT-specific
@@ -45,6 +47,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _codeFound = false;
   bool _codeLookupAttempted = false;
   String? _foundRtRw;
+  int _registrationLookupToken = 0;
 
   Future<void> _pickKtpImage(ImageSource source) async {
     try {
@@ -55,8 +58,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
         imageQuality: 85,
       );
       if (pickedFile != null) {
+        final preview = await createKtpImagePreviewFromXFile(pickedFile);
+        if (!mounted) return;
         setState(() {
-          _ktpImageFile = File(pickedFile.path);
+          _ktpImage = preview;
         });
       }
     } catch (e) {
@@ -214,21 +219,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
+    final lookupToken = ++_registrationLookupToken;
     final state = Provider.of<AppState>(context, listen: false);
-    final rtRw = state.lookupRegistrationCode(code);
+    final useRemoteLookup = SupabaseService.isInitialized;
 
-    setState(() {
-      _codeLookupAttempted =
-          code.length >= 4; // Only show feedback after 4+ chars
-      if (rtRw != null) {
-        _codeFound = true;
-        _foundRtRw = rtRw;
-        _rtRwController.text = rtRw;
-      } else {
-        _codeFound = false;
-        _foundRtRw = null;
-        _rtRwController.text = '';
+    Future<String?> lookup() async {
+      if (useRemoteLookup) {
+        return state.lookupRegistrationCodeRemote(code);
       }
+      return state.lookupRegistrationCode(code);
+    }
+
+    lookup().then((rtRw) {
+      if (!mounted || lookupToken != _registrationLookupToken) return;
+
+      setState(() {
+        _codeLookupAttempted = code.length >= 4;
+        if (rtRw != null) {
+          _codeFound = true;
+          _foundRtRw = rtRw;
+          _rtRwController.text = rtRw;
+        } else {
+          _codeFound = false;
+          _foundRtRw = null;
+          _rtRwController.text = '';
+        }
+      });
     });
   }
 
@@ -242,13 +258,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _registrationCodeController.dispose();
     _rtRwController.dispose();
     _addressController.dispose();
+    _ktpNumberController.dispose();
+    _ktpImage = null;
     _jabatanController.dispose();
     _wilayahController.dispose();
     _rtRegistrationCodeController.dispose();
     super.dispose();
   }
 
-  void _handleRegister() {
+  Future<void> _handleRegister() async {
     if (!_agreeToTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -261,13 +279,54 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
-
-      Future.delayed(const Duration(milliseconds: 1000), () {
+      try {
         if (!mounted) return;
 
         final state = Provider.of<AppState>(context, listen: false);
 
-        if (widget.isWarga) {
+        if (widget.isWarga && SupabaseService.isInitialized) {
+          final ktpImage = _ktpImage;
+          if (ktpImage == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Foto KTP wajib diunggah.'),
+                backgroundColor: AppTheme.statusHigh,
+              ),
+            );
+            return;
+          }
+
+          final result = await state.registerWargaWithSupabase(
+            name: _nameController.text,
+            email: _emailController.text,
+            password: _passwordController.text,
+            registrationCode: _registrationCodeController.text,
+            ktpNumber: _ktpNumberController.text,
+            phone: _phoneController.text,
+            address: _addressController.text,
+            ktpImageBytes: ktpImage.bytes,
+            ktpImageName: ktpImage.fileName,
+          );
+
+          if (!mounted) return;
+
+          if (result['success'] == true) {
+            Navigator.of(context).pushNamedAndRemoveUntil(
+              '/waiting-verification',
+              (route) => false,
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  result['message']?.toString() ??
+                      'Registrasi warga gagal. Silakan coba lagi.',
+                ),
+                backgroundColor: AppTheme.statusHigh,
+              ),
+            );
+          }
+        } else if (widget.isWarga) {
           state.registerWarga(
             name: _nameController.text,
             email: _emailController.text,
@@ -276,12 +335,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
             phone: _phoneController.text,
             rtRw: _rtRwController.text,
             address: _addressController.text,
-            ktpImagePath: _ktpImageFile?.path,
+            ktpImagePath: _ktpImage?.localPath,
           );
-          // Warga goes to waiting verification
-          Navigator.of(
-            context,
-          ).pushNamedAndRemoveUntil('/waiting-verification', (route) => false);
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            '/waiting-verification',
+            (route) => false,
+          );
         } else {
           state.registerRT(
             name: _nameController.text,
@@ -291,7 +350,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
             jabatan: _jabatanController.text,
             rtRw: _wilayahController.text,
           );
-          // Save registration code if provided
           final regCode = _rtRegistrationCodeController.text.trim();
           if (regCode.isNotEmpty) {
             state.addRegistrationCode(
@@ -299,14 +357,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
               rtRw: _wilayahController.text,
             );
           }
-          // RT goes directly to home
-          Navigator.of(
-            context,
-          ).pushNamedAndRemoveUntil('/home', (route) => false);
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            '/home',
+            (route) => false,
+          );
         }
-
-        setState(() => _isLoading = false);
-      });
+      } finally {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
+      }
     }
   }
 
@@ -584,7 +644,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   if (value == null || value.isEmpty) {
                                     return 'Kode registrasi wajib diisi';
                                   }
-                                  if (!_codeFound) {
+                                  if (!SupabaseService.isInitialized &&
+                                      !_codeFound) {
                                     return 'Kode registrasi tidak ditemukan';
                                   }
                                   return null;
@@ -648,6 +709,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ],
                               const SizedBox(height: 14),
 
+                              // KTP Number
+                              _buildInputLabel('NOMOR KTP / NIK'),
+                              const SizedBox(height: 4),
+                              _buildTextFormField(
+                                controller: _ktpNumberController,
+                                hintText: '317xxxxxxxxxxxxx',
+                                prefixIcon: Icons.badge_outlined,
+                                keyboardType: TextInputType.number,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Nomor KTP / NIK wajib diisi';
+                                  }
+                                  if (value.trim().length < 10) {
+                                    return 'Nomor KTP / NIK tidak valid';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 14),
+
                               // Upload Foto KTP
                               _buildInputLabel('FOTO KTP'),
                               const SizedBox(height: 4),
@@ -655,34 +736,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 onTap: _showKtpImageSourcePicker,
                                 child: Container(
                                   width: double.infinity,
-                                  height: _ktpImageFile != null ? null : 130,
+                                  height: _ktpImage != null ? 220 : 130,
                                   decoration: BoxDecoration(
                                     color: AppTheme.primaryFixed.withValues(
                                       alpha: 0.06,
                                     ),
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
-                                      color: _ktpImageFile != null
+                                      color: _ktpImage != null
                                           ? AppTheme.primaryColor.withValues(
                                               alpha: 0.4,
                                             )
                                           : AppTheme.outlineVariantColor,
                                       width: 1.5,
-                                      style: _ktpImageFile != null
+                                      style: _ktpImage != null
                                           ? BorderStyle.solid
                                           : BorderStyle.none,
                                     ),
                                   ),
-                                  child: _ktpImageFile != null
+                                  child: _ktpImage != null
                                       ? Stack(
                                           children: [
-                                            ClipRRect(
-                                              borderRadius:
-                                                  BorderRadius.circular(11),
-                                              child: Image.file(
-                                                _ktpImageFile!,
-                                                width: double.infinity,
-                                                fit: BoxFit.cover,
+                                            Positioned.fill(
+                                              child: _ktpImage!.buildPreview(
+                                                borderRadius:
+                                                    BorderRadius.circular(11),
                                               ),
                                             ),
                                             Positioned(
@@ -704,7 +782,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                                     color: AppTheme.statusHigh,
                                                     onTap: () {
                                                       setState(() {
-                                                        _ktpImageFile = null;
+                                                        _ktpImage = null;
                                                       });
                                                     },
                                                   ),

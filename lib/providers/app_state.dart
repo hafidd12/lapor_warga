@@ -5,6 +5,7 @@ import '../models/models.dart';
 import '../services/auth_service.dart';
 import '../services/backend_service.dart';
 import '../services/supabase_service.dart';
+import '../services/warga_verification_service.dart';
 
 class AppState with ChangeNotifier {
   AppUser? _currentUser;
@@ -16,10 +17,17 @@ class AppState with ChangeNotifier {
   final List<Poll> _polls = [];
   final List<AdminActivity> _activities = [];
   final List<RegistrationCode> _registrationCodes = [];
+  final List<AppUser> _verificationUsers = [];
+  final WargaVerificationService? _verificationService;
+  bool _verificationUsersLoaded = false;
 
-  AppState({AuthService? authService, BackendService? backendService})
-    : _authService = authService,
-      _backendService = backendService {
+  AppState({
+    AuthService? authService,
+    BackendService? backendService,
+    WargaVerificationService? verificationService,
+  }) : _authService = authService,
+       _backendService = backendService,
+       _verificationService = verificationService {
     _loadMockData();
   }
 
@@ -34,28 +42,45 @@ class AppState with ChangeNotifier {
 
   // Warga queries
   List<AppUser> get allWarga =>
-      _registeredUsers.where((u) => u.role == UserRole.warga).toList();
-  List<AppUser> get verifiedWarga => _registeredUsers
-      .where(
-        (u) =>
-            u.role == UserRole.warga &&
-            u.verificationStatus == VerificationStatus.verified,
-      )
-      .toList();
-  List<AppUser> get pendingWarga => _registeredUsers
-      .where(
-        (u) =>
-            u.role == UserRole.warga &&
-            u.verificationStatus == VerificationStatus.pending,
-      )
-      .toList();
-  List<AppUser> get rejectedWarga => _registeredUsers
-      .where(
-        (u) =>
-            u.role == UserRole.warga &&
-            u.verificationStatus == VerificationStatus.rejected,
-      )
-      .toList();
+      _verificationUsersLoaded
+          ? List.unmodifiable(_verificationUsers)
+          : _registeredUsers.where((u) => u.role == UserRole.warga).toList();
+  List<AppUser> get verifiedWarga =>
+      _verificationUsersLoaded
+          ? _verificationUsers
+              .where((u) => u.verificationStatus == VerificationStatus.verified)
+              .toList()
+          : _registeredUsers
+              .where(
+                (u) =>
+                    u.role == UserRole.warga &&
+                    u.verificationStatus == VerificationStatus.verified,
+              )
+              .toList();
+  List<AppUser> get pendingWarga =>
+      _verificationUsersLoaded
+          ? _verificationUsers
+              .where((u) => u.verificationStatus == VerificationStatus.pending)
+              .toList()
+          : _registeredUsers
+              .where(
+                (u) =>
+                    u.role == UserRole.warga &&
+                    u.verificationStatus == VerificationStatus.pending,
+              )
+              .toList();
+  List<AppUser> get rejectedWarga =>
+      _verificationUsersLoaded
+          ? _verificationUsers
+              .where((u) => u.verificationStatus == VerificationStatus.rejected)
+              .toList()
+          : _registeredUsers
+              .where(
+                (u) =>
+                    u.role == UserRole.warga &&
+                    u.verificationStatus == VerificationStatus.rejected,
+              )
+              .toList();
 
   // Completed reports with photos
   List<Report> get completedReportsWithPhotos => _reports
@@ -307,10 +332,27 @@ class AppState with ChangeNotifier {
   AuthService get _activeAuthService => _authService ?? AuthService();
   BackendService get _activeBackendService =>
       _backendService ?? BackendService();
+  WargaVerificationService get _activeVerificationService =>
+      _verificationService ?? WargaVerificationService();
 
   void _setCurrentUser(AppUser? user) {
     _currentUser = user;
     notifyListeners();
+  }
+
+  Future<void> refreshVerificationUsers() async {
+    if (!SupabaseService.isInitialized) return;
+
+    try {
+      final users = await _activeVerificationService.fetchAllWarga();
+      _verificationUsers
+        ..clear()
+        ..addAll(users);
+      _verificationUsersLoaded = true;
+      notifyListeners();
+    } catch (_) {
+      _verificationUsersLoaded = false;
+    }
   }
 
   Future<void> refreshRemoteData() async {
@@ -385,6 +427,9 @@ class AppState with ChangeNotifier {
       );
       _setCurrentUser(user);
       await refreshRemoteData();
+      if (user.role == UserRole.admin) {
+        await refreshVerificationUsers();
+      }
 
       return {
         'success': true,
@@ -410,6 +455,9 @@ class AppState with ChangeNotifier {
 
       _setCurrentUser(user);
       await refreshRemoteData();
+      if (user.role == UserRole.admin) {
+        await refreshVerificationUsers();
+      }
       return true;
     } catch (_) {
       _setCurrentUser(null);
@@ -427,6 +475,7 @@ class AppState with ChangeNotifier {
     }
 
     _setCurrentUser(null);
+    _verificationUsersLoaded = false;
   }
 
   Future<String?> lookupRegistrationCodeRemote(String code) async {

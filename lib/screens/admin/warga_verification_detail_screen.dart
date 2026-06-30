@@ -5,8 +5,7 @@ import '../../services/warga_verification_service.dart';
 import '../../theme.dart';
 
 class WargaVerificationDetailScreen extends StatefulWidget {
-  const WargaVerificationDetailScreen({Key? key, required this.userId})
-      : super(key: key);
+  const WargaVerificationDetailScreen({super.key, required this.userId});
 
   final String userId;
 
@@ -149,30 +148,32 @@ class _WargaVerificationDetailScreenState
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        AspectRatio(
-                          aspectRatio: 4 / 3,
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(16),
-                            child: Container(
-                              color: AppTheme.surfaceContainerLow,
-                              child: ktpSnapshot.connectionState ==
-                                      ConnectionState.waiting
-                                  ? const Center(
-                                      child: CircularProgressIndicator(),
-                                    )
-                                  : ktpUrl == null || ktpUrl.isEmpty
-                                      ? const Center(
-                                          child: Text(
-                                            'Foto KTP tidak tersedia',
-                                            style: TextStyle(
-                                              color:
-                                                  AppTheme.textSecondaryColor,
-                                            ),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            width: double.infinity,
+                            height: 240,
+                            color: AppTheme.surfaceContainerLow,
+                            child: ktpSnapshot.connectionState ==
+                                    ConnectionState.waiting
+                                ? const Center(
+                                    child: CircularProgressIndicator(),
+                                  )
+                                : ktpUrl == null || ktpUrl.isEmpty
+                                    ? const Center(
+                                        child: Text(
+                                          'Foto KTP tidak tersedia',
+                                          style: TextStyle(
+                                            color: AppTheme.textSecondaryColor,
                                           ),
-                                        )
-                                      : Image.network(
+                                        ),
+                                      )
+                                    : Center(
+                                        child: Image.network(
                                           ktpUrl,
-                                          fit: BoxFit.cover,
+                                          width: double.infinity,
+                                          height: double.infinity,
+                                          fit: BoxFit.contain,
                                           errorBuilder:
                                               (context, error, stackTrace) {
                                             return const Center(
@@ -186,7 +187,7 @@ class _WargaVerificationDetailScreenState
                                             );
                                           },
                                         ),
-                            ),
+                                      ),
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -329,7 +330,7 @@ class _ProfileCard extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 30,
-            backgroundColor: AppTheme.primaryColor.withOpacity(0.12),
+            backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.12),
             child: Text(
               user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
               style: const TextStyle(
@@ -362,7 +363,7 @@ class _ProfileCard extends StatelessWidget {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: statusColor.withOpacity(0.12),
+                        color: statusColor.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(999),
                       ),
                       child: Text(
@@ -419,7 +420,7 @@ class _SectionCard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: AppTheme.outlineVariantColor.withOpacity(0.45),
+          color: AppTheme.outlineVariantColor.withValues(alpha: 0.45),
         ),
       ),
       child: Column(
@@ -533,8 +534,11 @@ class _ErrorState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline_rounded,
-                color: AppTheme.statusHigh, size: 48),
+            const Icon(
+              Icons.error_outline_rounded,
+              color: AppTheme.statusHigh,
+              size: 48,
+            ),
             const SizedBox(height: 12),
             Text(
               message,

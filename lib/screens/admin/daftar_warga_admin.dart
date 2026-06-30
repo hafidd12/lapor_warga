@@ -45,7 +45,7 @@ class _DaftarWargaAdminScreenState extends State<DaftarWargaAdminScreen>
   Future<void> _refreshData() async {
     if (!mounted) return;
     setState(() => _isRefreshing = true);
-    await context.read<AppState>().refreshRemoteData();
+    await context.read<AppState>().refreshVerificationUsers();
     if (!mounted) return;
     setState(() => _isRefreshing = false);
   }
