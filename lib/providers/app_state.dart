@@ -1,12 +1,15 @@
 import 'package:flutter/foundation.dart';
+import 'dart:async';
 import 'dart:math';
 import '../models/models.dart';
 import '../services/auth_service.dart';
+import '../services/backend_service.dart';
 import '../services/supabase_service.dart';
 
 class AppState with ChangeNotifier {
   AppUser? _currentUser;
   final AuthService? _authService;
+  final BackendService? _backendService;
   final List<AppUser> _registeredUsers = [];
   final List<Report> _reports = [];
   final List<Announcement> _announcements = [];
@@ -14,7 +17,9 @@ class AppState with ChangeNotifier {
   final List<AdminActivity> _activities = [];
   final List<RegistrationCode> _registrationCodes = [];
 
-  AppState({AuthService? authService}) : _authService = authService {
+  AppState({AuthService? authService, BackendService? backendService})
+    : _authService = authService,
+      _backendService = backendService {
     _loadMockData();
   }
 
@@ -300,10 +305,65 @@ class AppState with ChangeNotifier {
   // ============================================
 
   AuthService get _activeAuthService => _authService ?? AuthService();
+  BackendService get _activeBackendService =>
+      _backendService ?? BackendService();
 
   void _setCurrentUser(AppUser? user) {
     _currentUser = user;
     notifyListeners();
+  }
+
+  Future<void> refreshRemoteData() async {
+    if (!SupabaseService.isInitialized) return;
+
+    try {
+      final snapshot = await _activeBackendService.fetchSnapshot();
+      _replaceWithSnapshot(snapshot);
+    } catch (error, stackTrace) {
+      debugPrint(error.toString());
+      debugPrint(stackTrace.toString());
+    }
+  }
+
+  void _replaceWithSnapshot(BackendSnapshot snapshot) {
+    _registeredUsers
+      ..clear()
+      ..addAll(snapshot.users);
+    _reports
+      ..clear()
+      ..addAll(snapshot.reports);
+    _announcements
+      ..clear()
+      ..addAll(snapshot.announcements);
+    _polls
+      ..clear()
+      ..addAll(snapshot.polls);
+    _activities
+      ..clear()
+      ..addAll(snapshot.activities);
+    _registrationCodes
+      ..clear()
+      ..addAll(snapshot.registrationCodes);
+
+    if (_currentUser != null) {
+      final matches = _registeredUsers.where((u) => u.id == _currentUser!.id);
+      if (matches.isNotEmpty) {
+        _currentUser = matches.first;
+      }
+    }
+
+    notifyListeners();
+  }
+
+  void _runRemote(Future<void> Function() action) {
+    if (!SupabaseService.isInitialized) return;
+
+    unawaited(
+      action().catchError((Object error, StackTrace stackTrace) {
+        debugPrint(error.toString());
+        debugPrint(stackTrace.toString());
+      }),
+    );
   }
 
   Future<Map<String, dynamic>> loginWithSupabase(
@@ -324,6 +384,7 @@ class AppState with ChangeNotifier {
         password: password,
       );
       _setCurrentUser(user);
+      await refreshRemoteData();
 
       return {
         'success': true,
@@ -348,6 +409,7 @@ class AppState with ChangeNotifier {
       }
 
       _setCurrentUser(user);
+      await refreshRemoteData();
       return true;
     } catch (_) {
       _setCurrentUser(null);
@@ -428,6 +490,7 @@ class AppState with ChangeNotifier {
         ktpImageName: ktpImageName,
       );
       _setCurrentUser(user);
+      await refreshRemoteData();
 
       return {
         'success': true,
@@ -550,6 +613,32 @@ class AppState with ChangeNotifier {
     notifyListeners();
   }
 
+  void updateCurrentUser({
+    String? name,
+    String? avatarUrl,
+    String? address,
+    String? phone,
+    String? password,
+  }) {
+    if (_currentUser == null) return;
+
+    final updatedUser = _currentUser!.copyWith(
+      name: name,
+      avatarUrl: avatarUrl,
+      address: address,
+      phone: phone,
+    );
+
+    _currentUser = updatedUser;
+
+    final index = _registeredUsers.indexWhere((u) => u.id == updatedUser.id);
+    if (index != -1) {
+      _registeredUsers[index] = updatedUser;
+    }
+
+    notifyListeners();
+  }
+
   // ============================================
   // Registration Code Management
   // ============================================
@@ -583,6 +672,15 @@ class AppState with ChangeNotifier {
     );
     _registrationCodes.add(newCode);
     notifyListeners();
+
+    _runRemote(() async {
+      await _activeBackendService.createRegistrationCode(
+        code: code,
+        rtRw: rtRw,
+        currentUser: _currentUser!,
+      );
+      await refreshRemoteData();
+    });
   }
 
   /// Look up a registration code → returns the rtRw if found and active, null otherwise
@@ -612,6 +710,14 @@ class AppState with ChangeNotifier {
       final code = _registrationCodes[index];
       _registrationCodes[index] = code.copyWith(isActive: !code.isActive);
       notifyListeners();
+
+      _runRemote(() async {
+        await _activeBackendService.setRegistrationCodeActive(
+          codeId: codeId,
+          isActive: !code.isActive,
+        );
+        await refreshRemoteData();
+      });
     }
   }
 
@@ -619,6 +725,11 @@ class AppState with ChangeNotifier {
   void deleteRegistrationCode(String codeId) {
     _registrationCodes.removeWhere((rc) => rc.id == codeId);
     notifyListeners();
+
+    _runRemote(() async {
+      await _activeBackendService.deleteRegistrationCode(codeId);
+      await refreshRemoteData();
+    });
   }
 
   // ============================================
@@ -644,6 +755,16 @@ class AppState with ChangeNotifier {
       );
 
       notifyListeners();
+
+      _runRemote(() async {
+        await _activeBackendService.setWargaVerification(
+          userId: userId,
+          status: VerificationStatus.verified,
+          currentUser: _currentUser!,
+          wargaName: user.name,
+        );
+        await refreshRemoteData();
+      });
     }
   }
 
@@ -666,6 +787,16 @@ class AppState with ChangeNotifier {
       );
 
       notifyListeners();
+
+      _runRemote(() async {
+        await _activeBackendService.setWargaVerification(
+          userId: userId,
+          status: VerificationStatus.rejected,
+          currentUser: _currentUser!,
+          wargaName: user.name,
+        );
+        await refreshRemoteData();
+      });
     }
   }
 
@@ -686,6 +817,15 @@ class AppState with ChangeNotifier {
       );
 
       notifyListeners();
+
+      _runRemote(() async {
+        await _activeBackendService.removeWarga(
+          userId: userId,
+          currentUser: _currentUser!,
+          wargaName: user.name,
+        );
+        await refreshRemoteData();
+      });
     }
   }
 
@@ -720,6 +860,19 @@ class AppState with ChangeNotifier {
 
     _reports.insert(0, newReport);
     notifyListeners();
+
+    _runRemote(() async {
+      await _activeBackendService.createReport(
+        currentUser: _currentUser!,
+        title: title,
+        description: description,
+        category: category,
+        priority: priority,
+        reportPhotoUrl: reportPhotoUrl,
+        locationLabel: locationLabel,
+      );
+      await refreshRemoteData();
+    });
   }
 
   void upvoteReport(String reportId) {
@@ -745,6 +898,14 @@ class AppState with ChangeNotifier {
         votesCount: votesCount,
       );
       notifyListeners();
+
+      _runRemote(() async {
+        await _activeBackendService.toggleReportUpvote(
+          report: report,
+          userId: userId,
+        );
+        await refreshRemoteData();
+      });
     }
   }
 
@@ -770,6 +931,15 @@ class AppState with ChangeNotifier {
 
       _polls[index] = poll.copyWith(votes: votes, userVotes: userVotes);
       notifyListeners();
+
+      _runRemote(() async {
+        await _activeBackendService.voteInPoll(
+          pollId: pollId,
+          option: option,
+          userId: userId,
+        );
+        await refreshRemoteData();
+      });
     }
   }
 
@@ -782,6 +952,11 @@ class AppState with ChangeNotifier {
     if (index != -1) {
       _reports[index] = _reports[index].copyWith(status: status);
       notifyListeners();
+
+      _runRemote(() async {
+        await _activeBackendService.setReportStatus(reportId, status);
+        await refreshRemoteData();
+      });
     }
   }
 
@@ -810,6 +985,17 @@ class AppState with ChangeNotifier {
       );
 
       notifyListeners();
+
+      if (_currentUser != null) {
+        _runRemote(() async {
+          await _activeBackendService.completeReport(
+            reportId: reportId,
+            photoUrl: photoUrl,
+            currentUser: _currentUser!,
+          );
+          await refreshRemoteData();
+        });
+      }
     }
   }
 
@@ -836,6 +1022,17 @@ class AppState with ChangeNotifier {
     );
 
     notifyListeners();
+
+    if (_currentUser != null) {
+      _runRemote(() async {
+        await _activeBackendService.createAnnouncement(
+          title: title,
+          content: content,
+          currentUser: _currentUser!,
+        );
+        await refreshRemoteData();
+      });
+    }
   }
 
   void addPoll(String question, List<String> options) {
@@ -865,5 +1062,16 @@ class AppState with ChangeNotifier {
     );
 
     notifyListeners();
+
+    if (_currentUser != null) {
+      _runRemote(() async {
+        await _activeBackendService.createPoll(
+          question: question,
+          options: options,
+          currentUser: _currentUser!,
+        );
+        await refreshRemoteData();
+      });
+    }
   }
 }

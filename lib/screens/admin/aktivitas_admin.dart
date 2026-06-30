@@ -5,7 +5,7 @@ import '../../theme.dart';
 import '../../models/models.dart';
 
 class AktivitasAdminScreen extends StatelessWidget {
-  const AktivitasAdminScreen({Key? key}) : super(key: key);
+  const AktivitasAdminScreen({super.key});
 
   String _formatTimeAgo(DateTime dateTime) {
     final diff = DateTime.now().difference(dateTime);
@@ -97,11 +97,18 @@ class AktivitasAdminScreen extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: const [
-                  Icon(Icons.history, size: 48, color: AppTheme.outlineVariantColor),
+                  Icon(
+                    Icons.history,
+                    size: 48,
+                    color: AppTheme.outlineVariantColor,
+                  ),
                   SizedBox(height: 12),
                   Text(
                     'Belum ada aktivitas',
-                    style: TextStyle(color: AppTheme.textSecondaryColor, fontSize: 14),
+                    style: TextStyle(
+                      color: AppTheme.textSecondaryColor,
+                      fontSize: 14,
+                    ),
                   ),
                 ],
               ),
@@ -132,7 +139,7 @@ class AktivitasAdminScreen extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.12),
+                  color: color.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -144,7 +151,7 @@ class AktivitasAdminScreen extends StatelessWidget {
               Container(
                 width: 2,
                 height: 40,
-                color: AppTheme.outlineVariantColor.withOpacity(0.4),
+                color: AppTheme.outlineVariantColor.withValues(alpha: 0.4),
               ),
             ],
           ),
@@ -158,10 +165,11 @@ class AktivitasAdminScreen extends StatelessWidget {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                    color: AppTheme.outlineVariantColor.withOpacity(0.3)),
+                  color: AppTheme.outlineVariantColor.withValues(alpha: 0.3),
+                ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.primaryColor.withOpacity(0.02),
+                    color: AppTheme.primaryColor.withValues(alpha: 0.02),
                     blurRadius: 6,
                     offset: const Offset(0, 2),
                   ),
@@ -174,9 +182,11 @@ class AktivitasAdminScreen extends StatelessWidget {
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
-                          color: color.withOpacity(0.1),
+                          color: color.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
@@ -233,15 +243,19 @@ class AktivitasAdminScreen extends StatelessWidget {
                                   child: Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: const [
-                                      Icon(Icons.photo,
-                                          size: 32,
-                                          color: AppTheme.outlineColor),
+                                      Icon(
+                                        Icons.photo,
+                                        size: 32,
+                                        color: AppTheme.outlineColor,
+                                      ),
                                       SizedBox(height: 4),
-                                      Text('Bukti Foto',
-                                          style: TextStyle(
-                                              fontSize: 11,
-                                              color: AppTheme
-                                                  .textSecondaryColor)),
+                                      Text(
+                                        'Bukti Foto',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: AppTheme.textSecondaryColor,
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 );
@@ -252,22 +266,30 @@ class AktivitasAdminScreen extends StatelessWidget {
                               left: 6,
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 6, vertical: 3),
+                                  horizontal: 6,
+                                  vertical: 3,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.6),
+                                  color: Colors.black.withValues(alpha: 0.6),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: const [
-                                    Icon(Icons.camera_alt,
-                                        size: 10, color: Colors.white),
+                                    Icon(
+                                      Icons.camera_alt,
+                                      size: 10,
+                                      color: Colors.white,
+                                    ),
                                     SizedBox(width: 4),
-                                    Text('Bukti Foto',
-                                        style: TextStyle(
-                                            fontSize: 9,
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold)),
+                                    Text(
+                                      'Bukti Foto',
+                                      style: TextStyle(
+                                        fontSize: 9,
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),

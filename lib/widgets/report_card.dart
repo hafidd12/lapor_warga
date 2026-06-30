@@ -9,8 +9,7 @@ class ReportCard extends StatelessWidget {
   final Report report;
   final VoidCallback onTap;
 
-  const ReportCard({Key? key, required this.report, required this.onTap})
-    : super(key: key);
+  const ReportCard({super.key, required this.report, required this.onTap});
 
   bool get _hasCompletionPhoto =>
       report.status == ReportStatus.resolved &&
@@ -51,11 +50,11 @@ class ReportCard extends StatelessWidget {
         color: AppTheme.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AppTheme.outlineVariantColor.withOpacity(0.35),
+          color: AppTheme.outlineVariantColor.withValues(alpha: 0.35),
         ),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primaryColor.withOpacity(0.04),
+            color: AppTheme.primaryColor.withValues(alpha: 0.04),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -148,7 +147,7 @@ class ReportCard extends StatelessWidget {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.58),
+                      color: Colors.black.withValues(alpha: 0.58),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Row(

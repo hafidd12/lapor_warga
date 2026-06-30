@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:in_app_update/in_app_update.dart';
 import 'package:provider/provider.dart';
@@ -44,13 +45,22 @@ class LoadingScreenState extends State<LoadingScreen> {
   }
 
   Future<void> _runStartupFlow() async {
-    final updateHandled = await _checkAndHandleAppUpdate();
-    if (!mounted || updateHandled) return;
+    try {
+      final updateHandled = await _checkAndHandleAppUpdate();
+      if (!mounted || updateHandled) return;
 
-    await _navigateAfterSessionCheck();
+      await _navigateAfterSessionCheck();
+    } catch (_) {
+      if (!mounted) return;
+      _navigateToLogin();
+    }
   }
 
   Future<bool> _checkAndHandleAppUpdate() async {
+    if (Platform.isAndroid == false) {
+      return false;
+    }
+
     try {
       final updateInfo = await InAppUpdate.checkForUpdate();
 
@@ -171,6 +181,8 @@ class LoadingScreenState extends State<LoadingScreen> {
   }
 
   Future<void> _navigateAfterSessionCheck() async {
+    if (!mounted) return;
+
     AppState state;
     try {
       state = Provider.of<AppState>(context, listen: false);
@@ -179,21 +191,28 @@ class LoadingScreenState extends State<LoadingScreen> {
       return;
     }
 
-    final hasSession = await state.restoreSession();
+    try {
+      final hasSession = await state.restoreSession();
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    if (!hasSession) {
+      if (!hasSession) {
+        _navigateToLogin();
+        return;
+      }
+
+      final user = state.currentUser;
+      if (user?.role == UserRole.warga &&
+          user?.verificationStatus != VerificationStatus.verified) {
+        if (!mounted) return;
+        Navigator.of(context).pushReplacementNamed('/waiting-verification');
+      } else {
+        if (!mounted) return;
+        Navigator.of(context).pushReplacementNamed('/home');
+      }
+    } catch (_) {
+      if (!mounted) return;
       _navigateToLogin();
-      return;
-    }
-
-    final user = state.currentUser;
-    if (user?.role == UserRole.warga &&
-        user?.verificationStatus != VerificationStatus.verified) {
-      Navigator.of(context).pushReplacementNamed('/waiting-verification');
-    } else {
-      Navigator.of(context).pushReplacementNamed('/home');
     }
   }
 

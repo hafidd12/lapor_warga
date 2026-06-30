@@ -33,7 +33,7 @@ Future<void> main() async {
 }
 
 class LaporWargaApp extends StatelessWidget {
-  const LaporWargaApp({Key? key}) : super(key: key);
+  const LaporWargaApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +47,7 @@ class LaporWargaApp extends StatelessWidget {
 }
 
 class AppRouter extends StatelessWidget {
-  const AppRouter({Key? key}) : super(key: key);
+  const AppRouter({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -92,7 +92,7 @@ class AppRouter extends StatelessWidget {
 }
 
 class AppStartupGate extends StatefulWidget {
-  const AppStartupGate({Key? key, required this.child}) : super(key: key);
+  const AppStartupGate({super.key, required this.child});
 
   final Widget child;
 
@@ -175,7 +175,7 @@ class _AppStartupGateState extends State<AppStartupGate> {
 }
 
 class HomeScreenWrapper extends StatefulWidget {
-  const HomeScreenWrapper({Key? key}) : super(key: key);
+  const HomeScreenWrapper({super.key});
 
   @override
   State<HomeScreenWrapper> createState() => _HomeScreenWrapperState();
@@ -236,11 +236,11 @@ class _HomeScreenWrapperState extends State<HomeScreenWrapper> {
             color: AppTheme.surfaceContainerLowest,
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: AppTheme.outlineVariantColor.withOpacity(0.45),
+              color: AppTheme.outlineVariantColor.withValues(alpha: 0.45),
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.06),
+                color: Colors.black.withValues(alpha: 0.06),
                 blurRadius: 18,
                 offset: const Offset(0, 6),
               ),
@@ -258,7 +258,7 @@ class _HomeScreenWrapperState extends State<HomeScreenWrapper> {
               backgroundColor: Colors.white,
               elevation: 0,
               surfaceTintColor: Colors.transparent,
-              indicatorColor: AppTheme.primaryColor.withOpacity(0.12),
+              indicatorColor: AppTheme.primaryColor.withValues(alpha: 0.12),
               labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
               destinations: const [
                 NavigationDestination(
@@ -330,11 +330,11 @@ class _HomeScreenWrapperState extends State<HomeScreenWrapper> {
             color: Colors.white,
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: AppTheme.outlineVariantColor.withOpacity(0.55),
+              color: AppTheme.outlineVariantColor.withValues(alpha: 0.55),
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.06),
+                color: Colors.black.withValues(alpha: 0.06),
                 blurRadius: 18,
                 offset: const Offset(0, 6),
               ),

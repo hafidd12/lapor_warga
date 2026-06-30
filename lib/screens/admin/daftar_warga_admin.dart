@@ -5,7 +5,8 @@ import '../../theme.dart';
 import '../../models/models.dart';
 
 class DaftarWargaAdminScreen extends StatefulWidget {
-  const DaftarWargaAdminScreen({Key? key}) : super(key: key);
+  final int initialTab;
+  const DaftarWargaAdminScreen({super.key, this.initialTab = 0});
 
   @override
   State<DaftarWargaAdminScreen> createState() => _DaftarWargaAdminScreenState();
@@ -19,7 +20,11 @@ class _DaftarWargaAdminScreenState extends State<DaftarWargaAdminScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(
+      length: 2,
+      vsync: this,
+      initialIndex: widget.initialTab,
+    );
   }
 
   @override
@@ -33,14 +38,18 @@ class _DaftarWargaAdminScreenState extends State<DaftarWargaAdminScreen>
     final state = Provider.of<AppState>(context);
 
     final verified = state.verifiedWarga
-        .where((u) =>
-            _searchQuery.isEmpty ||
-            u.name.toLowerCase().contains(_searchQuery.toLowerCase()))
+        .where(
+          (u) =>
+              _searchQuery.isEmpty ||
+              u.name.toLowerCase().contains(_searchQuery.toLowerCase()),
+        )
         .toList();
     final pending = state.pendingWarga
-        .where((u) =>
-            _searchQuery.isEmpty ||
-            u.name.toLowerCase().contains(_searchQuery.toLowerCase()))
+        .where(
+          (u) =>
+              _searchQuery.isEmpty ||
+              u.name.toLowerCase().contains(_searchQuery.toLowerCase()),
+        )
         .toList();
 
     return Scaffold(
@@ -64,10 +73,14 @@ class _DaftarWargaAdminScreenState extends State<DaftarWargaAdminScreen>
           unselectedLabelColor: AppTheme.textSecondaryColor,
           indicatorColor: AppTheme.primaryColor,
           indicatorWeight: 3,
-          labelStyle:
-              const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-          unselectedLabelStyle:
-              const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+          labelStyle: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 13,
+          ),
+          unselectedLabelStyle: const TextStyle(
+            fontWeight: FontWeight.w500,
+            fontSize: 13,
+          ),
           tabs: [
             Tab(text: 'Terverifikasi (${verified.length})'),
             Tab(text: 'Menunggu (${pending.length})'),
@@ -79,20 +92,25 @@ class _DaftarWargaAdminScreenState extends State<DaftarWargaAdminScreen>
           // Search bar
           Container(
             color: Colors.white,
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: TextField(
               onChanged: (val) => setState(() => _searchQuery = val),
               style: const TextStyle(
-                  fontSize: 14, color: AppTheme.textPrimaryColor),
+                fontSize: 14,
+                color: AppTheme.textPrimaryColor,
+              ),
               decoration: InputDecoration(
                 hintText: 'Cari nama warga...',
                 hintStyle: TextStyle(
-                    color: AppTheme.textSecondaryColor.withOpacity(0.5)),
+                  color: AppTheme.textSecondaryColor.withValues(alpha: 0.5),
+                ),
                 fillColor: AppTheme.surfaceContainerLow,
                 filled: true,
-                prefixIcon: const Icon(Icons.search,
-                    color: AppTheme.outlineColor, size: 20),
+                prefixIcon: const Icon(
+                  Icons.search,
+                  color: AppTheme.outlineColor,
+                  size: 20,
+                ),
                 contentPadding: const EdgeInsets.symmetric(vertical: 10),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
@@ -119,8 +137,7 @@ class _DaftarWargaAdminScreenState extends State<DaftarWargaAdminScreen>
     );
   }
 
-  Widget _buildWargaList(List<AppUser> wargaList,
-      {required bool isVerified}) {
+  Widget _buildWargaList(List<AppUser> wargaList, {required bool isVerified}) {
     if (wargaList.isEmpty) {
       return Center(
         child: Column(
@@ -137,7 +154,9 @@ class _DaftarWargaAdminScreenState extends State<DaftarWargaAdminScreen>
                   ? 'Belum ada warga terverifikasi'
                   : 'Tidak ada warga menunggu verifikasi',
               style: const TextStyle(
-                  color: AppTheme.textSecondaryColor, fontSize: 14),
+                color: AppTheme.textSecondaryColor,
+                fontSize: 14,
+              ),
             ),
           ],
         ),
@@ -157,7 +176,7 @@ class _DaftarWargaAdminScreenState extends State<DaftarWargaAdminScreen>
   Widget _buildWargaCard(AppUser warga, {required bool isVerified}) {
     final state = Provider.of<AppState>(context, listen: false);
 
-    String _formatDate(DateTime? date) {
+    String formatDate(DateTime? date) {
       if (date == null) return '-';
       return '${date.day}/${date.month}/${date.year}';
     }
@@ -169,10 +188,11 @@ class _DaftarWargaAdminScreenState extends State<DaftarWargaAdminScreen>
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-            color: AppTheme.outlineVariantColor.withOpacity(0.4)),
+          color: AppTheme.outlineVariantColor.withValues(alpha: 0.4),
+        ),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primaryColor.withOpacity(0.02),
+            color: AppTheme.primaryColor.withValues(alpha: 0.02),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -221,12 +241,11 @@ class _DaftarWargaAdminScreenState extends State<DaftarWargaAdminScreen>
               ),
               // Status badge
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: isVerified
-                      ? AppTheme.statusLow.withOpacity(0.1)
-                      : AppTheme.statusMedium.withOpacity(0.1),
+                      ? AppTheme.statusLow.withValues(alpha: 0.1)
+                      : AppTheme.statusMedium.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -254,7 +273,10 @@ class _DaftarWargaAdminScreenState extends State<DaftarWargaAdminScreen>
             ),
             child: Column(
               children: [
-                _buildInfoRow('Kode Reg.', warga.registrationCode ?? warga.ktpNumber ?? '-'),
+                _buildInfoRow(
+                  'Kode Reg.',
+                  warga.registrationCode ?? warga.ktpNumber ?? '-',
+                ),
                 const SizedBox(height: 6),
                 _buildInfoRow('No. HP', warga.phone ?? '-'),
                 const SizedBox(height: 6),
@@ -262,7 +284,7 @@ class _DaftarWargaAdminScreenState extends State<DaftarWargaAdminScreen>
                 const SizedBox(height: 6),
                 _buildInfoRow('Alamat', warga.address ?? '-'),
                 const SizedBox(height: 6),
-                _buildInfoRow('Terdaftar', _formatDate(warga.registeredAt)),
+                _buildInfoRow('Terdaftar', formatDate(warga.registeredAt)),
               ],
             ),
           ),
@@ -275,10 +297,10 @@ class _DaftarWargaAdminScreenState extends State<DaftarWargaAdminScreen>
               child: OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppTheme.statusHigh,
-                  side:
-                      const BorderSide(color: AppTheme.statusHigh, width: 1),
+                  side: const BorderSide(color: AppTheme.statusHigh, width: 1),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                   padding: const EdgeInsets.symmetric(vertical: 10),
                 ),
                 onPressed: () {
@@ -291,7 +313,8 @@ class _DaftarWargaAdminScreenState extends State<DaftarWargaAdminScreen>
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                              '${warga.name} telah dikeluarkan dari daftar warga.'),
+                            '${warga.name} telah dikeluarkan dari daftar warga.',
+                          ),
                           backgroundColor: AppTheme.statusHigh,
                         ),
                       );
@@ -299,9 +322,10 @@ class _DaftarWargaAdminScreenState extends State<DaftarWargaAdminScreen>
                   );
                 },
                 icon: const Icon(Icons.person_remove, size: 16),
-                label: const Text('Keluarkan Warga',
-                    style:
-                        TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                label: const Text(
+                  'Keluarkan Warga',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                ),
               ),
             )
           else
@@ -312,9 +336,12 @@ class _DaftarWargaAdminScreenState extends State<DaftarWargaAdminScreen>
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppTheme.statusHigh,
                       side: const BorderSide(
-                          color: AppTheme.statusHigh, width: 1),
+                        color: AppTheme.statusHigh,
+                        width: 1,
+                      ),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                       padding: const EdgeInsets.symmetric(vertical: 10),
                     ),
                     onPressed: () {
@@ -327,16 +354,21 @@ class _DaftarWargaAdminScreenState extends State<DaftarWargaAdminScreen>
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(
-                                  'Pendaftaran ${warga.name} telah ditolak.'),
+                                'Pendaftaran ${warga.name} telah ditolak.',
+                              ),
                               backgroundColor: AppTheme.statusHigh,
                             ),
                           );
                         },
                       );
                     },
-                    child: const Text('Tolak',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 13)),
+                    child: const Text(
+                      'Tolak',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -347,7 +379,8 @@ class _DaftarWargaAdminScreenState extends State<DaftarWargaAdminScreen>
                       foregroundColor: Colors.white,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                       padding: const EdgeInsets.symmetric(vertical: 10),
                     ),
                     onPressed: () {
@@ -355,16 +388,20 @@ class _DaftarWargaAdminScreenState extends State<DaftarWargaAdminScreen>
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                              '${warga.name} telah berhasil diverifikasi!'),
+                            '${warga.name} telah berhasil diverifikasi!',
+                          ),
                           backgroundColor: AppTheme.statusLow,
                         ),
                       );
                     },
-                    icon:
-                        const Icon(Icons.verified_user, size: 16),
-                    label: const Text('Verifikasi',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 13)),
+                    icon: const Icon(Icons.verified_user, size: 16),
+                    label: const Text(
+                      'Verifikasi',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -389,9 +426,10 @@ class _DaftarWargaAdminScreenState extends State<DaftarWargaAdminScreen>
             ),
           ),
         ),
-        const Text(': ',
-            style: TextStyle(
-                fontSize: 11, color: AppTheme.textSecondaryColor)),
+        const Text(
+          ': ',
+          style: TextStyle(fontSize: 11, color: AppTheme.textSecondaryColor),
+        ),
         Expanded(
           child: Text(
             value,
@@ -414,35 +452,46 @@ class _DaftarWargaAdminScreenState extends State<DaftarWargaAdminScreen>
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(title,
-            style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-                color: AppTheme.textPrimaryColor)),
-        content: Text(message,
-            style: const TextStyle(
-                fontSize: 13, color: AppTheme.textSecondaryColor)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            color: AppTheme.textPrimaryColor,
+          ),
+        ),
+        content: Text(
+          message,
+          style: const TextStyle(
+            fontSize: 13,
+            color: AppTheme.textSecondaryColor,
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Batal',
-                style: TextStyle(color: AppTheme.secondaryColor)),
+            child: const Text(
+              'Batal',
+              style: TextStyle(color: AppTheme.secondaryColor),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.statusHigh,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
             onPressed: () {
               onConfirm();
               Navigator.pop(ctx);
             },
-            child: const Text('Ya, Lanjutkan',
-                style: TextStyle(fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Ya, Lanjutkan',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),

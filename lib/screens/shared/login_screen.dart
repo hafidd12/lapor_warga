@@ -8,7 +8,7 @@ import '../../widgets/custom_button.dart';
 import 'role_selection_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({Key? key}) : super(key: key);
+  const LoginScreen({super.key});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -48,14 +48,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (result['success'] == true) {
         final role = result['role'] as UserRole;
-        final verStatus =
-            result['verificationStatus'] as VerificationStatus;
+        final verStatus = result['verificationStatus'] as VerificationStatus;
 
         if (role == UserRole.warga &&
             verStatus != VerificationStatus.verified) {
           // Warga not yet verified
-          Navigator.of(context)
-              .pushReplacementNamed('/waiting-verification');
+          Navigator.of(context).pushReplacementNamed('/waiting-verification');
         } else {
           // Verified warga or admin
           Navigator.of(context).pushReplacementNamed('/home');
@@ -64,7 +62,8 @@ class _LoginScreenState extends State<LoginScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-                result['message'] ?? 'Login Gagal! Periksa email dan password.'),
+              result['message'] ?? 'Login Gagal! Periksa email dan password.',
+            ),
             backgroundColor: AppTheme.statusHigh,
           ),
         );
@@ -89,7 +88,7 @@ class _LoginScreenState extends State<LoginScreen> {
               height: 250,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppTheme.primaryFixed.withOpacity(0.2),
+                color: AppTheme.primaryFixed.withValues(alpha: 0.2),
               ),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
@@ -105,7 +104,7 @@ class _LoginScreenState extends State<LoginScreen> {
               height: 350,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppTheme.tertiaryFixedDim.withOpacity(0.15),
+                color: AppTheme.tertiaryFixedDim.withValues(alpha: 0.15),
               ),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 100, sigmaY: 100),
@@ -119,7 +118,9 @@ class _LoginScreenState extends State<LoginScreen> {
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 24, vertical: 24),
+                  horizontal: 24,
+                  vertical: 24,
+                ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -135,11 +136,12 @@ class _LoginScreenState extends State<LoginScreen> {
                             borderRadius: BorderRadius.circular(20),
                             boxShadow: [
                               BoxShadow(
-                                color: AppTheme.primaryColor
-                                    .withOpacity(0.12),
+                                color: AppTheme.primaryColor.withValues(
+                                  alpha: 0.12,
+                                ),
                                 blurRadius: 16,
                                 offset: const Offset(0, 8),
-                              )
+                              ),
                             ],
                           ),
                           child: const Icon(
@@ -151,8 +153,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 16),
                         Text(
                           'Lapor Warga',
-                          style:
-                              theme.textTheme.headlineLarge?.copyWith(
+                          style: theme.textTheme.headlineLarge?.copyWith(
                             fontSize: 28,
                             color: AppTheme.primaryColor,
                             fontWeight: FontWeight.bold,
@@ -175,32 +176,32 @@ class _LoginScreenState extends State<LoginScreen> {
                     Container(
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.88),
+                        color: Colors.white.withValues(alpha: 0.88),
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(
-                          color: AppTheme.outlineVariantColor
-                              .withOpacity(0.4),
+                          color: AppTheme.outlineVariantColor.withValues(
+                            alpha: 0.4,
+                          ),
                           width: 1,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: AppTheme.primaryColor
-                                .withOpacity(0.04),
+                            color: AppTheme.primaryColor.withValues(
+                              alpha: 0.04,
+                            ),
                             blurRadius: 24,
                             offset: const Offset(0, 12),
-                          )
+                          ),
                         ],
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(24),
                         child: BackdropFilter(
-                          filter:
-                              ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+                          filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
                           child: Form(
                             key: _formKey,
                             child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 // Email Input
                                 const Text(
@@ -215,64 +216,58 @@ class _LoginScreenState extends State<LoginScreen> {
                                 const SizedBox(height: 6),
                                 TextFormField(
                                   controller: _emailController,
-                                  keyboardType:
-                                      TextInputType.emailAddress,
+                                  keyboardType: TextInputType.emailAddress,
                                   style: const TextStyle(
-                                      fontSize: 15,
-                                      color:
-                                          AppTheme.textPrimaryColor),
+                                    fontSize: 15,
+                                    color: AppTheme.textPrimaryColor,
+                                  ),
                                   decoration: InputDecoration(
                                     hintText: 'user@laporwarga.id',
                                     hintStyle: TextStyle(
-                                        color: AppTheme
-                                            .textSecondaryColor
-                                            .withOpacity(0.5)),
+                                      color: AppTheme.textSecondaryColor
+                                          .withValues(alpha: 0.5),
+                                    ),
                                     fillColor: Colors.white,
                                     filled: true,
                                     prefixIcon: const Icon(
-                                        Icons.person_outline,
-                                        color: AppTheme.outlineColor,
-                                        size: 22),
-                                    contentPadding:
-                                        const EdgeInsets.symmetric(
-                                            vertical: 14),
+                                      Icons.person_outline,
+                                      color: AppTheme.outlineColor,
+                                      size: 22,
+                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      vertical: 14,
+                                    ),
                                     enabledBorder: OutlineInputBorder(
-                                      borderRadius:
-                                          BorderRadius.circular(12),
+                                      borderRadius: BorderRadius.circular(12),
                                       borderSide: const BorderSide(
-                                          color: AppTheme
-                                              .outlineVariantColor,
-                                          width: 1),
+                                        color: AppTheme.outlineVariantColor,
+                                        width: 1,
+                                      ),
                                     ),
                                     focusedBorder: OutlineInputBorder(
-                                      borderRadius:
-                                          BorderRadius.circular(12),
+                                      borderRadius: BorderRadius.circular(12),
                                       borderSide: const BorderSide(
-                                          color:
-                                              AppTheme.primaryColor,
-                                          width: 1.5),
+                                        color: AppTheme.primaryColor,
+                                        width: 1.5,
+                                      ),
                                     ),
                                     errorBorder: OutlineInputBorder(
-                                      borderRadius:
-                                          BorderRadius.circular(12),
+                                      borderRadius: BorderRadius.circular(12),
                                       borderSide: const BorderSide(
-                                          color:
-                                              AppTheme.statusHigh,
-                                          width: 1),
+                                        color: AppTheme.statusHigh,
+                                        width: 1,
+                                      ),
                                     ),
-                                    focusedErrorBorder:
-                                        OutlineInputBorder(
-                                      borderRadius:
-                                          BorderRadius.circular(12),
+                                    focusedErrorBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
                                       borderSide: const BorderSide(
-                                          color:
-                                              AppTheme.statusHigh,
-                                          width: 1.5),
+                                        color: AppTheme.statusHigh,
+                                        width: 1.5,
+                                      ),
                                     ),
                                   ),
                                   validator: (value) {
-                                    if (value == null ||
-                                        value.isEmpty) {
+                                    if (value == null || value.isEmpty) {
                                       return 'Email tidak boleh kosong';
                                     }
                                     if (!value.contains('@')) {
@@ -298,78 +293,70 @@ class _LoginScreenState extends State<LoginScreen> {
                                   controller: _passwordController,
                                   obscureText: _obscureText,
                                   style: const TextStyle(
-                                      fontSize: 15,
-                                      color:
-                                          AppTheme.textPrimaryColor),
+                                    fontSize: 15,
+                                    color: AppTheme.textPrimaryColor,
+                                  ),
                                   decoration: InputDecoration(
                                     hintText: '••••••••',
                                     hintStyle: TextStyle(
-                                        color: AppTheme
-                                            .textSecondaryColor
-                                            .withOpacity(0.5)),
+                                      color: AppTheme.textSecondaryColor
+                                          .withValues(alpha: 0.5),
+                                    ),
                                     fillColor: Colors.white,
                                     filled: true,
                                     prefixIcon: const Icon(
-                                        Icons.lock_outline,
-                                        color: AppTheme.outlineColor,
-                                        size: 22),
+                                      Icons.lock_outline,
+                                      color: AppTheme.outlineColor,
+                                      size: 22,
+                                    ),
                                     suffixIcon: IconButton(
                                       icon: Icon(
                                         _obscureText
-                                            ? Icons
-                                                .visibility_off_outlined
-                                            : Icons
-                                                .visibility_outlined,
+                                            ? Icons.visibility_off_outlined
+                                            : Icons.visibility_outlined,
                                         color: AppTheme.outlineColor,
                                         size: 20,
                                       ),
                                       onPressed: () {
                                         setState(() {
-                                          _obscureText =
-                                              !_obscureText;
+                                          _obscureText = !_obscureText;
                                         });
                                       },
                                     ),
-                                    contentPadding:
-                                        const EdgeInsets.symmetric(
-                                            vertical: 14),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      vertical: 14,
+                                    ),
                                     enabledBorder: OutlineInputBorder(
-                                      borderRadius:
-                                          BorderRadius.circular(12),
+                                      borderRadius: BorderRadius.circular(12),
                                       borderSide: const BorderSide(
-                                          color: AppTheme
-                                              .outlineVariantColor,
-                                          width: 1),
+                                        color: AppTheme.outlineVariantColor,
+                                        width: 1,
+                                      ),
                                     ),
                                     focusedBorder: OutlineInputBorder(
-                                      borderRadius:
-                                          BorderRadius.circular(12),
+                                      borderRadius: BorderRadius.circular(12),
                                       borderSide: const BorderSide(
-                                          color:
-                                              AppTheme.primaryColor,
-                                          width: 1.5),
+                                        color: AppTheme.primaryColor,
+                                        width: 1.5,
+                                      ),
                                     ),
                                     errorBorder: OutlineInputBorder(
-                                      borderRadius:
-                                          BorderRadius.circular(12),
+                                      borderRadius: BorderRadius.circular(12),
                                       borderSide: const BorderSide(
-                                          color:
-                                              AppTheme.statusHigh,
-                                          width: 1),
+                                        color: AppTheme.statusHigh,
+                                        width: 1,
+                                      ),
                                     ),
-                                    focusedErrorBorder:
-                                        OutlineInputBorder(
-                                      borderRadius:
-                                          BorderRadius.circular(12),
+                                    focusedErrorBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
                                       borderSide: const BorderSide(
-                                          color:
-                                              AppTheme.statusHigh,
-                                          width: 1.5),
+                                        color: AppTheme.statusHigh,
+                                        width: 1.5,
+                                      ),
                                     ),
                                   ),
                                   validator: (value) {
-                                    if (value == null ||
-                                        value.isEmpty) {
+                                    if (value == null || value.isEmpty) {
                                       return 'Kata sandi tidak boleh kosong';
                                     }
                                     if (value.length < 6) {
@@ -401,10 +388,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                 Container(
                                   padding: const EdgeInsets.all(10),
                                   decoration: BoxDecoration(
-                                    color: AppTheme.primaryFixed
-                                        .withOpacity(0.15),
-                                    borderRadius:
-                                        BorderRadius.circular(8),
+                                    color: AppTheme.primaryFixed.withValues(
+                                      alpha: 0.15,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Column(
                                     crossAxisAlignment:
@@ -424,8 +411,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                         'Warga\nEmail : user@gmail.com\nPassword : 12345678\n\nAdmin RT\nEmail : agus@gmail.com\nPassword : 12345678',
                                         style: TextStyle(
                                           fontSize: 11,
-                                          color:
-                                              AppTheme.textSecondaryColor,
+                                          color: AppTheme.textSecondaryColor,
                                           height: 1.4,
                                         ),
                                       ),
@@ -455,15 +441,17 @@ class _LoginScreenState extends State<LoginScreen> {
                         const Text(
                           'Belum memiliki akun? ',
                           style: TextStyle(
-                              fontSize: 13,
-                              color: AppTheme.secondaryColor),
+                            fontSize: 13,
+                            color: AppTheme.secondaryColor,
+                          ),
                         ),
                         GestureDetector(
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                  builder: (context) =>
-                                      const RoleSelectionScreen()),
+                                builder: (context) =>
+                                    const RoleSelectionScreen(),
+                              ),
                             );
                           },
                           child: const Text(
@@ -486,20 +474,25 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: Column(
                         children: [
                           Row(
-                            mainAxisAlignment:
-                                MainAxisAlignment.center,
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: const [
-                              Icon(Icons.forest_outlined,
-                                  color: AppTheme.primaryColor,
-                                  size: 24),
+                              Icon(
+                                Icons.forest_outlined,
+                                color: AppTheme.primaryColor,
+                                size: 24,
+                              ),
                               SizedBox(width: 16),
-                              Icon(Icons.nature_people_outlined,
-                                  color: AppTheme.primaryColor,
-                                  size: 24),
+                              Icon(
+                                Icons.nature_people_outlined,
+                                color: AppTheme.primaryColor,
+                                size: 24,
+                              ),
                               SizedBox(width: 16),
-                              Icon(Icons.recycling,
-                                  color: AppTheme.primaryColor,
-                                  size: 24),
+                              Icon(
+                                Icons.recycling,
+                                color: AppTheme.primaryColor,
+                                size: 24,
+                              ),
                             ],
                           ),
                           const SizedBox(height: 8),

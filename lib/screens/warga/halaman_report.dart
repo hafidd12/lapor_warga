@@ -13,10 +13,10 @@ class HalamanReportScreen extends StatefulWidget {
   final VoidCallback? onBackPressed;
 
   const HalamanReportScreen({
-    Key? key,
+    super.key,
     this.showBackButton = true,
     this.onBackPressed,
-  }) : super(key: key);
+  });
 
   @override
   State<HalamanReportScreen> createState() => _HalamanReportScreenState();
@@ -90,8 +90,8 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
     final reportPhotoUrl = _isTesting
         ? _mockReportPhotoUrl
         : (_reportImageBytes != null && _reportImageName != null
-            ? _buildDataUrl(_reportImageBytes!, _reportImageName!)
-            : null);
+              ? _buildDataUrl(_reportImageBytes!, _reportImageName!)
+              : null);
     final locationLabel = _isTesting
         ? _mockLocationLabel
         : _customLocationLabel;
@@ -259,16 +259,16 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
+          color: color.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withOpacity(0.2)),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
         ),
         child: Column(
           children: [
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.15),
+                color: color.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: color, size: 28),
@@ -366,7 +366,7 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppTheme.primaryColor,
                         side: BorderSide(
-                          color: AppTheme.primaryColor.withOpacity(0.4),
+                          color: AppTheme.primaryColor.withValues(alpha: 0.4),
                           width: 1.5,
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 14),
@@ -452,7 +452,9 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
                     decoration: InputDecoration(
                       hintText:
                           'Misal: Depan Pos Ronda RT 05, samping pohon mangga...',
-                      fillColor: AppTheme.surfaceContainerLow.withOpacity(0.3),
+                      fillColor: AppTheme.surfaceContainerLow.withValues(
+                        alpha: 0.3,
+                      ),
                       filled: true,
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
@@ -711,12 +713,12 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
                         width: double.infinity,
                         height: _reportImageBytes != null ? null : 130,
                         decoration: BoxDecoration(
-                          color: AppTheme.primaryFixed.withOpacity(0.06),
+                          color: AppTheme.primaryFixed.withValues(alpha: 0.06),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                                  color: _reportImageBytes != null
-                                      ? AppTheme.primaryColor.withOpacity(0.4)
-                                      : AppTheme.outlineVariantColor,
+                            color: _reportImageBytes != null
+                                ? AppTheme.primaryColor.withValues(alpha: 0.4)
+                                : AppTheme.outlineVariantColor,
                             width: 1.5,
                             style: _reportImageBytes != null
                                 ? BorderStyle.solid
@@ -778,7 +780,7 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
                                           end: Alignment.bottomCenter,
                                           colors: [
                                             Colors.transparent,
-                                            Colors.black.withOpacity(0.6),
+                                            Colors.black.withValues(alpha: 0.6),
                                           ],
                                         ),
                                       ),
@@ -867,8 +869,8 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
                         aspectRatio: 16 / 9,
                         child: Container(
                           decoration: BoxDecoration(
-                            color: AppTheme.secondaryContainerColor.withOpacity(
-                              0.55,
+                            color: AppTheme.secondaryContainerColor.withValues(
+                              alpha: 0.55,
                             ),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
@@ -913,8 +915,9 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
                                     ),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: AppTheme.primaryColor
-                                            .withOpacity(0.08),
+                                        color: AppTheme.primaryColor.withValues(
+                                          alpha: 0.08,
+                                        ),
                                         blurRadius: 14,
                                         offset: const Offset(0, 6),
                                       ),
@@ -1039,11 +1042,11 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AppTheme.outlineVariantColor.withOpacity(0.35),
+          color: AppTheme.outlineVariantColor.withValues(alpha: 0.35),
         ),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primaryColor.withOpacity(0.04),
+            color: AppTheme.primaryColor.withValues(alpha: 0.04),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -1099,7 +1102,7 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: AppTheme.primaryColor.withOpacity(0.06),
+                      color: AppTheme.primaryColor.withValues(alpha: 0.06),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -1131,11 +1134,11 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
       child: Container(
         padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.9),
+          color: Colors.white.withValues(alpha: 0.9),
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.15),
+              color: Colors.black.withValues(alpha: 0.15),
               blurRadius: 6,
               offset: const Offset(0, 2),
             ),
@@ -1195,11 +1198,11 @@ class _MapGridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final roadPaint = Paint()
-      ..color = Colors.white.withOpacity(0.75)
+      ..color = Colors.white.withValues(alpha: 0.75)
       ..strokeWidth = 6
       ..strokeCap = StrokeCap.round;
     final minorPaint = Paint()
-      ..color = AppTheme.outlineVariantColor.withOpacity(0.5)
+      ..color = AppTheme.outlineVariantColor.withValues(alpha: 0.5)
       ..strokeWidth = 2
       ..strokeCap = StrokeCap.round;
 

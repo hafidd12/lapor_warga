@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../theme.dart';
 
 class WaitingVerificationScreen extends StatefulWidget {
-  const WaitingVerificationScreen({Key? key}) : super(key: key);
+  const WaitingVerificationScreen({super.key});
 
   @override
   State<WaitingVerificationScreen> createState() =>
@@ -50,7 +50,7 @@ class _WaitingVerificationScreenState extends State<WaitingVerificationScreen>
               height: 260,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppTheme.primaryFixed.withOpacity(0.15),
+                color: AppTheme.primaryFixed.withValues(alpha: 0.15),
               ),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
@@ -66,7 +66,7 @@ class _WaitingVerificationScreenState extends State<WaitingVerificationScreen>
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppTheme.tertiaryFixedDim.withOpacity(0.1),
+                color: AppTheme.tertiaryFixedDim.withValues(alpha: 0.1),
               ),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 90, sigmaY: 90),
@@ -78,8 +78,10 @@ class _WaitingVerificationScreenState extends State<WaitingVerificationScreen>
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 24,
+                ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -93,7 +95,9 @@ class _WaitingVerificationScreenState extends State<WaitingVerificationScreen>
                             width: 100,
                             height: 100,
                             decoration: BoxDecoration(
-                              color: AppTheme.primaryFixed.withOpacity(0.3),
+                              color: AppTheme.primaryFixed.withValues(
+                                alpha: 0.3,
+                              ),
                               shape: BoxShape.circle,
                             ),
                             child: Center(
@@ -105,8 +109,9 @@ class _WaitingVerificationScreenState extends State<WaitingVerificationScreen>
                                   shape: BoxShape.circle,
                                   boxShadow: [
                                     BoxShadow(
-                                      color: AppTheme.primaryColor
-                                          .withOpacity(0.15),
+                                      color: AppTheme.primaryColor.withValues(
+                                        alpha: 0.15,
+                                      ),
                                       blurRadius: 16,
                                       offset: const Offset(0, 4),
                                     ),
@@ -150,15 +155,18 @@ class _WaitingVerificationScreenState extends State<WaitingVerificationScreen>
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color:
-                              AppTheme.outlineVariantColor.withOpacity(0.4),
+                          color: AppTheme.outlineVariantColor.withValues(
+                            alpha: 0.4,
+                          ),
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: AppTheme.primaryColor.withOpacity(0.03),
+                            color: AppTheme.primaryColor.withValues(
+                              alpha: 0.03,
+                            ),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),
@@ -176,8 +184,9 @@ class _WaitingVerificationScreenState extends State<WaitingVerificationScreen>
                           const Padding(
                             padding: EdgeInsets.only(left: 18),
                             child: Divider(
-                                height: 24,
-                                color: AppTheme.surfaceContainer),
+                              height: 24,
+                              color: AppTheme.surfaceContainer,
+                            ),
                           ),
                           _buildInfoRow(
                             icon: Icons.verified_user_outlined,
@@ -190,8 +199,9 @@ class _WaitingVerificationScreenState extends State<WaitingVerificationScreen>
                           const Padding(
                             padding: EdgeInsets.only(left: 18),
                             child: Divider(
-                                height: 24,
-                                color: AppTheme.surfaceContainer),
+                              height: 24,
+                              color: AppTheme.surfaceContainer,
+                            ),
                           ),
                           _buildInfoRow(
                             icon: Icons.check_circle_outline,
@@ -212,21 +222,26 @@ class _WaitingVerificationScreenState extends State<WaitingVerificationScreen>
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppTheme.primaryColor,
                           side: const BorderSide(
-                              color: AppTheme.primaryColor, width: 1.5),
+                            color: AppTheme.primaryColor,
+                            width: 1.5,
+                          ),
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
                         onPressed: () {
-                          Navigator.of(context).pushNamedAndRemoveUntil(
-                              '/login', (route) => false);
+                          Navigator.of(
+                            context,
+                          ).pushNamedAndRemoveUntil('/login', (route) => false);
                         },
                         icon: const Icon(Icons.logout, size: 18),
                         label: const Text(
                           'Kembali ke Halaman Login',
                           style: TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 14),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
                         ),
                       ),
                     ),
@@ -256,10 +271,10 @@ class _WaitingVerificationScreenState extends State<WaitingVerificationScreen>
           height: 36,
           decoration: BoxDecoration(
             color: isCompleted
-                ? AppTheme.tertiaryContainerColor.withOpacity(0.15)
+                ? AppTheme.tertiaryContainerColor.withValues(alpha: 0.15)
                 : isActive
-                    ? AppTheme.primaryFixed.withOpacity(0.3)
-                    : AppTheme.surfaceContainerHigh,
+                ? AppTheme.primaryFixed.withValues(alpha: 0.3)
+                : AppTheme.surfaceContainerHigh,
             shape: BoxShape.circle,
           ),
           child: Icon(
@@ -268,8 +283,8 @@ class _WaitingVerificationScreenState extends State<WaitingVerificationScreen>
             color: isCompleted
                 ? AppTheme.tertiaryContainerColor
                 : isActive
-                    ? AppTheme.primaryColor
-                    : AppTheme.outlineColor,
+                ? AppTheme.primaryColor
+                : AppTheme.outlineColor,
           ),
         ),
         const SizedBox(width: 12),

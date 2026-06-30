@@ -38,7 +38,8 @@ class AppUser {
   factory AppUser.fromProfileRow(Map<String, dynamic> row) {
     final name = _stringValue(row['name']) ?? 'Pengguna';
     final email = _stringValue(row['email']) ?? '';
-    final avatarUrl = _stringValue(row['avatar_url']) ??
+    final avatarUrl =
+        _stringValue(row['avatar_url']) ??
         'https://api.dicebear.com/7.x/adventurer/svg?seed=$name';
 
     return AppUser(
@@ -47,9 +48,7 @@ class AppUser {
       email: email,
       role: _parseUserRole(row['role']),
       avatarUrl: avatarUrl,
-      verificationStatus: _parseVerificationStatus(
-        row['verification_status'],
-      ),
+      verificationStatus: _parseVerificationStatus(row['verification_status']),
       ktpNumber: _stringValue(row['ktp_number']),
       registrationCode: _stringValue(row['registration_code']),
       ktpImagePath: _stringValue(row['ktp_image_path']),

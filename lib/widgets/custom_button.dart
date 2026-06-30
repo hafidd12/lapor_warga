@@ -9,25 +9,25 @@ class CustomButton extends StatelessWidget {
   final double? width;
 
   const CustomButton({
-    Key? key,
+    super.key,
     required this.text,
     required this.onPressed,
     this.isSecondary = false,
     this.isLoading = false,
     this.width,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     final buttonStyle = ElevatedButton.styleFrom(
       backgroundColor: isSecondary ? Colors.white : AppTheme.primaryColor,
       foregroundColor: isSecondary ? AppTheme.primaryColor : Colors.white,
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
-        side: isSecondary 
+        side: isSecondary
             ? const BorderSide(color: AppTheme.primaryColor, width: 1.5)
             : BorderSide.none,
       ),

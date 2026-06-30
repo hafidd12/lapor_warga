@@ -5,10 +5,11 @@ import '../../theme.dart';
 import '../../widgets/custom_button.dart';
 
 class BuatPengumumanAdminScreen extends StatefulWidget {
-  const BuatPengumumanAdminScreen({Key? key}) : super(key: key);
+  const BuatPengumumanAdminScreen({super.key});
 
   @override
-  _BuatPengumumanAdminScreenState createState() => _BuatPengumumanAdminScreenState();
+  State<BuatPengumumanAdminScreen> createState() =>
+      _BuatPengumumanAdminScreenState();
 }
 
 class _BuatPengumumanAdminScreenState extends State<BuatPengumumanAdminScreen> {
@@ -73,14 +74,20 @@ class _BuatPengumumanAdminScreenState extends State<BuatPengumumanAdminScreen> {
                   hintText: 'Misal: Penundaan Jadwal Gotong Royong Bulanan',
                   fillColor: Colors.white,
                   filled: true,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide(color: Colors.grey.shade300),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: AppTheme.primaryColor, width: 2),
+                    borderSide: const BorderSide(
+                      color: AppTheme.primaryColor,
+                      width: 2,
+                    ),
                   ),
                 ),
                 validator: (value) {
@@ -105,17 +112,24 @@ class _BuatPengumumanAdminScreenState extends State<BuatPengumumanAdminScreen> {
                 controller: _contentController,
                 maxLines: 8,
                 decoration: InputDecoration(
-                  hintText: 'Tulis isi pengumuman secara detail dan jelas untuk dibaca oleh warga...',
+                  hintText:
+                      'Tulis isi pengumuman secara detail dan jelas untuk dibaca oleh warga...',
                   fillColor: Colors.white,
                   filled: true,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide(color: Colors.grey.shade300),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: AppTheme.primaryColor, width: 2),
+                    borderSide: const BorderSide(
+                      color: AppTheme.primaryColor,
+                      width: 2,
+                    ),
                   ),
                 ),
                 validator: (value) {
@@ -131,10 +145,7 @@ class _BuatPengumumanAdminScreenState extends State<BuatPengumumanAdminScreen> {
               const SizedBox(height: 40),
 
               // Submit Button
-              CustomButton(
-                text: 'Rilis Pengumuman',
-                onPressed: _handleSubmit,
-              ),
+              CustomButton(text: 'Rilis Pengumuman', onPressed: _handleSubmit),
             ],
           ),
         ),

@@ -3,13 +3,12 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import '../../models/models.dart';
 import '../../providers/app_state.dart';
 import '../../theme.dart';
 
 class RegisterScreen extends StatefulWidget {
   final bool isWarga;
-  const RegisterScreen({Key? key, required this.isWarga}) : super(key: key);
+  const RegisterScreen({super.key, required this.isWarga});
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
@@ -105,10 +104,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             const SizedBox(height: 4),
             const Text(
               'Pilih sumber foto KTP Anda',
-              style: TextStyle(
-                fontSize: 12,
-                color: AppTheme.secondaryColor,
-              ),
+              style: TextStyle(fontSize: 12, color: AppTheme.secondaryColor),
             ),
             const SizedBox(height: 20),
             Row(
@@ -160,18 +156,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
+          color: color.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: color.withOpacity(0.2),
-          ),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
         ),
         child: Column(
           children: [
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.15),
+                color: color.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: color, size: 28),
@@ -224,7 +218,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final rtRw = state.lookupRegistrationCode(code);
 
     setState(() {
-      _codeLookupAttempted = code.length >= 4; // Only show feedback after 4+ chars
+      _codeLookupAttempted =
+          code.length >= 4; // Only show feedback after 4+ chars
       if (rtRw != null) {
         _codeFound = true;
         _foundRtRw = rtRw;
@@ -284,8 +279,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ktpImagePath: _ktpImageFile?.path,
           );
           // Warga goes to waiting verification
-          Navigator.of(context)
-              .pushNamedAndRemoveUntil('/waiting-verification', (route) => false);
+          Navigator.of(
+            context,
+          ).pushNamedAndRemoveUntil('/waiting-verification', (route) => false);
         } else {
           state.registerRT(
             name: _nameController.text,
@@ -304,8 +300,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
             );
           }
           // RT goes directly to home
-          Navigator.of(context)
-              .pushNamedAndRemoveUntil('/home', (route) => false);
+          Navigator.of(
+            context,
+          ).pushNamedAndRemoveUntil('/home', (route) => false);
         }
 
         setState(() => _isLoading = false);
@@ -339,7 +336,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppTheme.primaryFixed.withOpacity(0.15),
+                color: AppTheme.primaryFixed.withValues(alpha: 0.15),
               ),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 90, sigmaY: 90),
@@ -355,7 +352,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppTheme.tertiaryFixedDim.withOpacity(0.12),
+                color: AppTheme.tertiaryFixedDim.withValues(alpha: 0.12),
               ),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 90, sigmaY: 90),
@@ -368,8 +365,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Center(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 8,
+                ),
                 child: Column(
                   children: [
                     // Brand Logo & Header
@@ -383,11 +382,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             borderRadius: BorderRadius.circular(18),
                             boxShadow: [
                               BoxShadow(
-                                color:
-                                    AppTheme.primaryColor.withOpacity(0.1),
+                                color: AppTheme.primaryColor.withValues(
+                                  alpha: 0.1,
+                                ),
                                 blurRadius: 12,
                                 offset: const Offset(0, 6),
-                              )
+                              ),
                             ],
                           ),
                           child: Icon(
@@ -411,8 +411,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         const SizedBox(height: 4),
                         Padding(
-                          padding:
-                              const EdgeInsets.symmetric(horizontal: 16),
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: Text(
                             widget.isWarga
                                 ? 'Lengkapi data diri Anda untuk mendaftar sebagai warga. Akun akan diverifikasi oleh RT.'
@@ -431,11 +430,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     // Role badge
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 6),
+                        horizontal: 14,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: widget.isWarga
-                            ? AppTheme.primaryFixed.withOpacity(0.3)
-                            : AppTheme.tertiaryFixed.withOpacity(0.3),
+                            ? AppTheme.primaryFixed.withValues(alpha: 0.3)
+                            : AppTheme.tertiaryFixed.withValues(alpha: 0.3),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(
@@ -469,20 +470,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: AppTheme.outlineVariantColor
-                              .withOpacity(0.4),
+                          color: AppTheme.outlineVariantColor.withValues(
+                            alpha: 0.4,
+                          ),
                           width: 1,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color:
-                                AppTheme.primaryColor.withOpacity(0.03),
+                            color: AppTheme.primaryColor.withValues(
+                              alpha: 0.03,
+                            ),
                             blurRadius: 16,
                             offset: const Offset(0, 8),
-                          )
+                          ),
                         ],
                       ),
                       child: Form(
@@ -550,16 +553,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               const SizedBox(height: 4),
                               TextFormField(
                                 controller: _registrationCodeController,
-                                textCapitalization: TextCapitalization.characters,
+                                textCapitalization:
+                                    TextCapitalization.characters,
                                 style: const TextStyle(
-                                    fontSize: 14,
-                                    color: AppTheme.textPrimaryColor),
+                                  fontSize: 14,
+                                  color: AppTheme.textPrimaryColor,
+                                ),
                                 decoration: _buildInputDecoration(
-                                  hintText: 'Masukkan kode dari RT (misal: RT05-XY7K)',
+                                  hintText:
+                                      'Masukkan kode dari RT (misal: RT05-XY7K)',
                                   prefixIcon: Icons.vpn_key_outlined,
                                   suffixIcon: _codeLookupAttempted
                                       ? Padding(
-                                          padding: const EdgeInsets.only(right: 8),
+                                          padding: const EdgeInsets.only(
+                                            right: 8,
+                                          ),
                                           child: Icon(
                                             _codeFound
                                                 ? Icons.check_circle_rounded
@@ -586,16 +594,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 const SizedBox(height: 6),
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 10, vertical: 6),
+                                    horizontal: 10,
+                                    vertical: 6,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: _codeFound
-                                        ? AppTheme.statusLow.withOpacity(0.08)
-                                        : AppTheme.statusHigh.withOpacity(0.08),
+                                        ? AppTheme.statusLow.withValues(
+                                            alpha: 0.08,
+                                          )
+                                        : AppTheme.statusHigh.withValues(
+                                            alpha: 0.08,
+                                          ),
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(
                                       color: _codeFound
-                                          ? AppTheme.statusLow.withOpacity(0.2)
-                                          : AppTheme.statusHigh.withOpacity(0.2),
+                                          ? AppTheme.statusLow.withValues(
+                                              alpha: 0.2,
+                                            )
+                                          : AppTheme.statusHigh.withValues(
+                                              alpha: 0.2,
+                                            ),
                                     ),
                                   ),
                                   child: Row(
@@ -639,11 +657,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   width: double.infinity,
                                   height: _ktpImageFile != null ? null : 130,
                                   decoration: BoxDecoration(
-                                    color: AppTheme.primaryFixed.withOpacity(0.06),
+                                    color: AppTheme.primaryFixed.withValues(
+                                      alpha: 0.06,
+                                    ),
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
                                       color: _ktpImageFile != null
-                                          ? AppTheme.primaryColor.withOpacity(0.4)
+                                          ? AppTheme.primaryColor.withValues(
+                                              alpha: 0.4,
+                                            )
                                           : AppTheme.outlineVariantColor,
                                       width: 1.5,
                                       style: _ktpImageFile != null
@@ -671,8 +693,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                                 children: [
                                                   _buildKtpActionButton(
                                                     icon: Icons.edit_rounded,
-                                                    color: AppTheme.primaryColor,
-                                                    onTap: _showKtpImageSourcePicker,
+                                                    color:
+                                                        AppTheme.primaryColor,
+                                                    onTap:
+                                                        _showKtpImageSourcePicker,
                                                   ),
                                                   const SizedBox(width: 6),
                                                   _buildKtpActionButton(
@@ -692,27 +716,36 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                               left: 0,
                                               right: 0,
                                               child: Container(
-                                                padding: const EdgeInsets.symmetric(
-                                                    horizontal: 12, vertical: 8),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 12,
+                                                      vertical: 8,
+                                                    ),
                                                 decoration: BoxDecoration(
                                                   borderRadius:
                                                       const BorderRadius.vertical(
-                                                    bottom: Radius.circular(11),
-                                                  ),
+                                                        bottom: Radius.circular(
+                                                          11,
+                                                        ),
+                                                      ),
                                                   gradient: LinearGradient(
                                                     begin: Alignment.topCenter,
                                                     end: Alignment.bottomCenter,
                                                     colors: [
                                                       Colors.transparent,
-                                                      Colors.black.withOpacity(0.6),
+                                                      Colors.black.withValues(
+                                                        alpha: 0.6,
+                                                      ),
                                                     ],
                                                   ),
                                                 ),
                                                 child: const Row(
                                                   children: [
-                                                    Icon(Icons.check_circle,
-                                                        size: 14,
-                                                        color: Colors.white),
+                                                    Icon(
+                                                      Icons.check_circle,
+                                                      size: 14,
+                                                      color: Colors.white,
+                                                    ),
                                                     SizedBox(width: 6),
                                                     Text(
                                                       'Foto KTP berhasil diupload',
@@ -731,12 +764,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                         )
                                       : Container(
                                           decoration: BoxDecoration(
-                                            borderRadius:
-                                                BorderRadius.circular(12),
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
                                           ),
                                           child: CustomPaint(
                                             painter: _DashedBorderPainter(
-                                              color: AppTheme.outlineVariantColor,
+                                              color:
+                                                  AppTheme.outlineVariantColor,
                                               borderRadius: 12,
                                             ),
                                             child: const Center(
@@ -747,15 +782,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                                   Icon(
                                                     Icons.add_a_photo_rounded,
                                                     size: 32,
-                                                    color: AppTheme.primaryColor,
+                                                    color:
+                                                        AppTheme.primaryColor,
                                                   ),
                                                   SizedBox(height: 8),
                                                   Text(
                                                     'Upload atau Foto KTP',
                                                     style: TextStyle(
                                                       fontSize: 13,
-                                                      fontWeight: FontWeight.w600,
-                                                      color: AppTheme.primaryColor,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      color:
+                                                          AppTheme.primaryColor,
                                                     ),
                                                   ),
                                                   SizedBox(height: 2),
@@ -763,8 +801,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                                     'Tap untuk mengambil foto atau pilih dari galeri',
                                                     style: TextStyle(
                                                       fontSize: 10,
-                                                      color:
-                                                          AppTheme.secondaryColor,
+                                                      color: AppTheme
+                                                          .secondaryColor,
                                                     ),
                                                   ),
                                                 ],
@@ -778,8 +816,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                               // RT/RW & Alamat
                               Row(
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Expanded(
                                     flex: 2,
@@ -802,16 +839,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                                 : FontWeight.normal,
                                           ),
                                           decoration: _buildInputDecoration(
-                                            hintText: _codeFound ? '' : '005/002',
+                                            hintText: _codeFound
+                                                ? ''
+                                                : '005/002',
                                             prefixIcon:
                                                 Icons.location_on_outlined,
                                             suffixIcon: _codeFound
                                                 ? const Padding(
-                                                    padding: EdgeInsets.only(right: 8),
+                                                    padding: EdgeInsets.only(
+                                                      right: 8,
+                                                    ),
                                                     child: Icon(
                                                       Icons.lock_rounded,
                                                       size: 16,
-                                                      color: AppTheme.primaryColor,
+                                                      color:
+                                                          AppTheme.primaryColor,
                                                     ),
                                                   )
                                                 : null,
@@ -861,8 +903,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               _buildTextFormField(
                                 controller: _jabatanController,
                                 hintText: 'Ketua RT 05',
-                                prefixIcon:
-                                    Icons.admin_panel_settings_outlined,
+                                prefixIcon: Icons.admin_panel_settings_outlined,
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
                                     return 'Jabatan wajib diisi';
@@ -906,12 +947,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   Expanded(
                                     child: TextFormField(
                                       controller: _rtRegistrationCodeController,
-                                      textCapitalization: TextCapitalization.characters,
+                                      textCapitalization:
+                                          TextCapitalization.characters,
                                       style: const TextStyle(
-                                          fontSize: 14,
-                                          color: AppTheme.textPrimaryColor,
-                                          fontWeight: FontWeight.w600,
-                                          letterSpacing: 1.2),
+                                        fontSize: 14,
+                                        color: AppTheme.textPrimaryColor,
+                                        fontWeight: FontWeight.w600,
+                                        letterSpacing: 1.2,
+                                      ),
                                       decoration: _buildInputDecoration(
                                         hintText: 'RT05-XXXX',
                                         prefixIcon: Icons.vpn_key_outlined,
@@ -926,27 +969,45 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                         backgroundColor: AppTheme.primaryFixed,
                                         foregroundColor: AppTheme.primaryColor,
                                         elevation: 0,
-                                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                        ),
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(10),
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
                                         ),
                                       ),
                                       onPressed: () {
-                                        final rtRw = _wilayahController.text.trim();
+                                        final rtRw = _wilayahController.text
+                                            .trim();
                                         if (rtRw.isEmpty) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
                                             const SnackBar(
-                                              content: Text('Isi Nomor RT/RW terlebih dahulu'),
-                                              backgroundColor: AppTheme.statusMedium,
+                                              content: Text(
+                                                'Isi Nomor RT/RW terlebih dahulu',
+                                              ),
+                                              backgroundColor:
+                                                  AppTheme.statusMedium,
                                             ),
                                           );
                                           return;
                                         }
-                                        final state = Provider.of<AppState>(context, listen: false);
-                                        final code = state.generateRegistrationCode(rtRw);
-                                        _rtRegistrationCodeController.text = code;
+                                        final state = Provider.of<AppState>(
+                                          context,
+                                          listen: false,
+                                        );
+                                        final code = state
+                                            .generateRegistrationCode(rtRw);
+                                        _rtRegistrationCodeController.text =
+                                            code;
                                       },
-                                      icon: const Icon(Icons.auto_awesome, size: 16),
+                                      icon: const Icon(
+                                        Icons.auto_awesome,
+                                        size: 16,
+                                      ),
                                       label: const Text(
                                         'Generate',
                                         style: TextStyle(
@@ -961,19 +1022,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               const SizedBox(height: 6),
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 6),
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: AppTheme.primaryFixed.withOpacity(0.15),
+                                  color: AppTheme.primaryFixed.withValues(
+                                    alpha: 0.15,
+                                  ),
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
-                                    color: AppTheme.primaryColor.withOpacity(0.15),
+                                    color: AppTheme.primaryColor.withValues(
+                                      alpha: 0.15,
+                                    ),
                                   ),
                                 ),
                                 child: const Row(
                                   children: [
-                                    Icon(Icons.info_outline,
-                                        size: 14,
-                                        color: AppTheme.primaryColor),
+                                    Icon(
+                                      Icons.info_outline,
+                                      size: 14,
+                                      color: AppTheme.primaryColor,
+                                    ),
                                     SizedBox(width: 6),
                                     Expanded(
                                       child: Text(
@@ -998,8 +1067,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               controller: _passwordController,
                               obscureText: _obscureText,
                               style: const TextStyle(
-                                  fontSize: 14,
-                                  color: AppTheme.textPrimaryColor),
+                                fontSize: 14,
+                                color: AppTheme.textPrimaryColor,
+                              ),
                               decoration: _buildInputDecoration(
                                 hintText: '••••••••',
                                 prefixIcon: Icons.lock_outline,
@@ -1037,8 +1107,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               controller: _confirmPasswordController,
                               obscureText: _obscureConfirmText,
                               style: const TextStyle(
-                                  fontSize: 14,
-                                  color: AppTheme.textPrimaryColor),
+                                fontSize: 14,
+                                color: AppTheme.textPrimaryColor,
+                              ),
                               decoration: _buildInputDecoration(
                                 hintText: '••••••••',
                                 prefixIcon: Icons.lock_outline,
@@ -1112,35 +1183,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   foregroundColor: Colors.white,
                                   elevation: 0,
                                   padding: const EdgeInsets.symmetric(
-                                      vertical: 14),
+                                    vertical: 14,
+                                  ),
                                   shape: RoundedRectangleBorder(
-                                    borderRadius:
-                                        BorderRadius.circular(10),
+                                    borderRadius: BorderRadius.circular(10),
                                   ),
                                 ),
-                                onPressed:
-                                    _isLoading ? null : _handleRegister,
+                                onPressed: _isLoading ? null : _handleRegister,
                                 icon: _isLoading
                                     ? const SizedBox(
                                         height: 18,
                                         width: 18,
-                                        child:
-                                            CircularProgressIndicator(
+                                        child: CircularProgressIndicator(
                                           strokeWidth: 2,
                                           valueColor:
-                                              AlwaysStoppedAnimation<
-                                                  Color>(Colors.white),
+                                              AlwaysStoppedAnimation<Color>(
+                                                Colors.white,
+                                              ),
                                         ),
                                       )
-                                    : const Icon(Icons.person_add,
-                                        size: 18),
+                                    : const Icon(Icons.person_add, size: 18),
                                 label: _isLoading
                                     ? const SizedBox()
                                     : const Text(
                                         'Daftar Sekarang',
                                         style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14),
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
                                       ),
                               ),
                             ),
@@ -1150,20 +1220,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               Container(
                                 padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
-                                  color: AppTheme.statusMedium
-                                      .withOpacity(0.08),
-                                  borderRadius:
-                                      BorderRadius.circular(8),
+                                  color: AppTheme.statusMedium.withValues(
+                                    alpha: 0.08,
+                                  ),
+                                  borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
-                                    color: AppTheme.statusMedium
-                                        .withOpacity(0.2),
+                                    color: AppTheme.statusMedium.withValues(
+                                      alpha: 0.2,
+                                    ),
                                   ),
                                 ),
                                 child: Row(
                                   children: const [
-                                    Icon(Icons.info_outline,
-                                        size: 16,
-                                        color: AppTheme.statusMedium),
+                                    Icon(
+                                      Icons.info_outline,
+                                      size: 16,
+                                      color: AppTheme.statusMedium,
+                                    ),
                                     SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
@@ -1192,13 +1265,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         const Text(
                           'Sudah punya akun? ',
                           style: TextStyle(
-                              fontSize: 13,
-                              color: AppTheme.secondaryColor),
+                            fontSize: 13,
+                            color: AppTheme.secondaryColor,
+                          ),
                         ),
                         GestureDetector(
                           onTap: () {
                             Navigator.of(context).pushNamedAndRemoveUntil(
-                                '/login', (route) => false);
+                              '/login',
+                              (route) => false,
+                            );
                           },
                           child: const Text(
                             'Masuk',
@@ -1245,10 +1321,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
-      style:
-          const TextStyle(fontSize: 14, color: AppTheme.textPrimaryColor),
+      style: const TextStyle(fontSize: 14, color: AppTheme.textPrimaryColor),
       decoration: _buildInputDecoration(
-          hintText: hintText, prefixIcon: prefixIcon),
+        hintText: hintText,
+        prefixIcon: prefixIcon,
+      ),
       validator: validator,
     );
   }
@@ -1260,33 +1337,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }) {
     return InputDecoration(
       hintText: hintText,
-      hintStyle:
-          TextStyle(color: AppTheme.textSecondaryColor.withOpacity(0.5)),
+      hintStyle: TextStyle(
+        color: AppTheme.textSecondaryColor.withValues(alpha: 0.5),
+      ),
       fillColor: Colors.white,
       filled: true,
-      prefixIcon:
-          Icon(prefixIcon, color: AppTheme.outlineColor, size: 20),
+      prefixIcon: Icon(prefixIcon, color: AppTheme.outlineColor, size: 20),
       suffixIcon: suffixIcon,
       contentPadding: const EdgeInsets.symmetric(vertical: 12),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
         borderSide: const BorderSide(
-            color: AppTheme.outlineVariantColor, width: 1),
+          color: AppTheme.outlineVariantColor,
+          width: 1,
+        ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide:
-            const BorderSide(color: AppTheme.primaryColor, width: 1.5),
+        borderSide: const BorderSide(color: AppTheme.primaryColor, width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide:
-            const BorderSide(color: AppTheme.statusHigh, width: 1),
+        borderSide: const BorderSide(color: AppTheme.statusHigh, width: 1),
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide:
-            const BorderSide(color: AppTheme.statusHigh, width: 1.5),
+        borderSide: const BorderSide(color: AppTheme.statusHigh, width: 1.5),
       ),
     );
   }
@@ -1301,11 +1377,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
       child: Container(
         padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.9),
+          color: Colors.white.withValues(alpha: 0.9),
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.15),
+              color: Colors.black.withValues(alpha: 0.15),
               blurRadius: 6,
               offset: const Offset(0, 2),
             ),
@@ -1320,17 +1396,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
 class _DashedBorderPainter extends CustomPainter {
   final Color color;
   final double borderRadius;
-  final double dashWidth;
-  final double dashSpace;
-  final double strokeWidth;
+  final double dashWidth = 6.0;
+  final double dashSpace = 4.0;
+  final double strokeWidth = 1.5;
 
-  _DashedBorderPainter({
-    required this.color,
-    this.borderRadius = 12,
-    this.dashWidth = 6,
-    this.dashSpace = 4,
-    this.strokeWidth = 1.5,
-  });
+  _DashedBorderPainter({required this.color, this.borderRadius = 12});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -1340,10 +1410,12 @@ class _DashedBorderPainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
 
     final path = Path()
-      ..addRRect(RRect.fromRectAndRadius(
-        Rect.fromLTWH(0, 0, size.width, size.height),
-        Radius.circular(borderRadius),
-      ));
+      ..addRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(0, 0, size.width, size.height),
+          Radius.circular(borderRadius),
+        ),
+      );
 
     final dashPath = Path();
     for (final metric in path.computeMetrics()) {

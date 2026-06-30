@@ -8,8 +8,7 @@ import '../../widgets/status_badge.dart';
 class DetailLaporanAdminScreen extends StatefulWidget {
   final String reportId;
 
-  const DetailLaporanAdminScreen({Key? key, required this.reportId})
-      : super(key: key);
+  const DetailLaporanAdminScreen({super.key, required this.reportId});
 
   @override
   State<DetailLaporanAdminScreen> createState() =>
@@ -19,7 +18,8 @@ class DetailLaporanAdminScreen extends StatefulWidget {
 class _DetailLaporanAdminScreenState extends State<DetailLaporanAdminScreen> {
   bool _showPhotoInput = false;
   final _photoUrlController = TextEditingController(
-      text: 'https://picsum.photos/seed/bukti/400/300');
+    text: 'https://picsum.photos/seed/bukti/400/300',
+  );
 
   @override
   void dispose() {
@@ -32,8 +32,9 @@ class _DetailLaporanAdminScreenState extends State<DetailLaporanAdminScreen> {
     final state = Provider.of<AppState>(context);
     final theme = Theme.of(context);
 
-    final reportIndex =
-        state.reports.indexWhere((r) => r.id == widget.reportId);
+    final reportIndex = state.reports.indexWhere(
+      (r) => r.id == widget.reportId,
+    );
     if (reportIndex == -1) {
       return Scaffold(
         appBar: AppBar(title: const Text('Detail Laporan')),
@@ -91,29 +92,35 @@ class _DetailLaporanAdminScreenState extends State<DetailLaporanAdminScreen> {
                 children: [
                   Text(
                     report.title,
-                    style: theme.textTheme.headlineLarge
-                        ?.copyWith(fontSize: 22),
+                    style: theme.textTheme.headlineLarge?.copyWith(
+                      fontSize: 22,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      const Icon(Icons.person_outline,
-                          size: 18,
-                          color: AppTheme.textSecondaryColor),
+                      const Icon(
+                        Icons.person_outline,
+                        size: 18,
+                        color: AppTheme.textSecondaryColor,
+                      ),
                       const SizedBox(width: 6),
                       Text(
                         'Pelapor: ${report.citizenName}',
-                        style: theme.textTheme.bodyLarge
-                            ?.copyWith(fontWeight: FontWeight.bold),
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(Icons.access_time_outlined,
-                          size: 18,
-                          color: AppTheme.textSecondaryColor),
+                      const Icon(
+                        Icons.access_time_outlined,
+                        size: 18,
+                        color: AppTheme.textSecondaryColor,
+                      ),
                       const SizedBox(width: 6),
                       Text(
                         'Diajukan: ${report.createdAt.day}/${report.createdAt.month}/${report.createdAt.year} - ${report.createdAt.hour.toString().padLeft(2, '0')}:${report.createdAt.minute.toString().padLeft(2, '0')}',
@@ -126,14 +133,17 @@ class _DetailLaporanAdminScreenState extends State<DetailLaporanAdminScreen> {
                   const SizedBox(height: 16),
                   Text(
                     'Detail Kejadian / Masalah:',
-                    style: theme.textTheme.headlineMedium
-                        ?.copyWith(fontSize: 16),
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      fontSize: 16,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     report.description,
                     style: theme.textTheme.bodyLarge?.copyWith(
-                        height: 1.5, color: Colors.grey.shade800),
+                      height: 1.5,
+                      color: Colors.grey.shade800,
+                    ),
                   ),
                 ],
               ),
@@ -143,10 +153,7 @@ class _DetailLaporanAdminScreenState extends State<DetailLaporanAdminScreen> {
             // Completion photo (if resolved with photo)
             if (report.status == ReportStatus.resolved &&
                 report.completionPhotoUrl != null) ...[
-              Text(
-                'Bukti Penyelesaian',
-                style: theme.textTheme.headlineMedium,
-              ),
+              Text('Bukti Penyelesaian', style: theme.textTheme.headlineMedium),
               const SizedBox(height: 12),
               Container(
                 width: double.infinity,
@@ -160,7 +167,8 @@ class _DetailLaporanAdminScreenState extends State<DetailLaporanAdminScreen> {
                   children: [
                     ClipRRect(
                       borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(16)),
+                        top: Radius.circular(16),
+                      ),
                       child: Container(
                         height: 200,
                         width: double.infinity,
@@ -173,14 +181,18 @@ class _DetailLaporanAdminScreenState extends State<DetailLaporanAdminScreen> {
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: const [
-                                  Icon(Icons.photo,
-                                      size: 40,
-                                      color: AppTheme.outlineColor),
+                                  Icon(
+                                    Icons.photo,
+                                    size: 40,
+                                    color: AppTheme.outlineColor,
+                                  ),
                                   SizedBox(height: 4),
-                                  Text('Bukti Foto Penyelesaian',
-                                      style: TextStyle(
-                                          color: AppTheme
-                                              .textSecondaryColor)),
+                                  Text(
+                                    'Bukti Foto Penyelesaian',
+                                    style: TextStyle(
+                                      color: AppTheme.textSecondaryColor,
+                                    ),
+                                  ),
                                 ],
                               ),
                             );
@@ -195,9 +207,11 @@ class _DetailLaporanAdminScreenState extends State<DetailLaporanAdminScreen> {
                         children: [
                           Row(
                             children: [
-                              const Icon(Icons.check_circle,
-                                  size: 16,
-                                  color: AppTheme.statusLow),
+                              const Icon(
+                                Icons.check_circle,
+                                size: 16,
+                                color: AppTheme.statusLow,
+                              ),
                               const SizedBox(width: 6),
                               const Text(
                                 'Tugas telah diselesaikan',
@@ -262,11 +276,13 @@ class _DetailLaporanAdminScreenState extends State<DetailLaporanAdminScreen> {
                       Colors.indigo,
                       () {
                         state.updateReportStatus(
-                            report.id, ReportStatus.processed);
+                          report.id,
+                          ReportStatus.processed,
+                        );
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                              content: Text(
-                                  'Status laporan: Diproses')),
+                            content: Text('Status laporan: Diproses'),
+                          ),
                         );
                       },
                     ),
@@ -293,8 +309,10 @@ class _DetailLaporanAdminScreenState extends State<DetailLaporanAdminScreen> {
                           color: AppTheme.surfaceContainerLow,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                              color: AppTheme.tertiaryContainerColor
-                                  .withOpacity(0.3)),
+                            color: AppTheme.tertiaryContainerColor.withValues(
+                              alpha: 0.3,
+                            ),
+                          ),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -312,32 +330,33 @@ class _DetailLaporanAdminScreenState extends State<DetailLaporanAdminScreen> {
                             TextField(
                               controller: _photoUrlController,
                               style: const TextStyle(
-                                  fontSize: 13,
-                                  color: AppTheme.textPrimaryColor),
+                                fontSize: 13,
+                                color: AppTheme.textPrimaryColor,
+                              ),
                               decoration: InputDecoration(
                                 hintText: 'URL foto bukti...',
                                 fillColor: Colors.white,
                                 filled: true,
-                                prefixIcon: const Icon(Icons.link,
-                                    size: 18,
-                                    color: AppTheme.outlineColor),
-                                contentPadding:
-                                    const EdgeInsets.symmetric(
-                                        vertical: 10),
+                                prefixIcon: const Icon(
+                                  Icons.link,
+                                  size: 18,
+                                  color: AppTheme.outlineColor,
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  vertical: 10,
+                                ),
                                 border: OutlineInputBorder(
-                                  borderRadius:
-                                      BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(8),
                                   borderSide: const BorderSide(
-                                      color: AppTheme
-                                          .outlineVariantColor),
+                                    color: AppTheme.outlineVariantColor,
+                                  ),
                                 ),
                                 focusedBorder: OutlineInputBorder(
-                                  borderRadius:
-                                      BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(8),
                                   borderSide: const BorderSide(
-                                      color: AppTheme
-                                          .tertiaryContainerColor,
-                                      width: 1.5),
+                                    color: AppTheme.tertiaryContainerColor,
+                                    width: 1.5,
+                                  ),
                                 ),
                               ),
                             ),
@@ -355,64 +374,64 @@ class _DetailLaporanAdminScreenState extends State<DetailLaporanAdminScreen> {
                                 Expanded(
                                   child: OutlinedButton(
                                     style: OutlinedButton.styleFrom(
-                                      foregroundColor:
-                                          AppTheme.secondaryColor,
+                                      foregroundColor: AppTheme.secondaryColor,
                                       side: const BorderSide(
-                                          color:
-                                              AppTheme.outlineColor),
+                                        color: AppTheme.outlineColor,
+                                      ),
                                       shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(
-                                                  8)),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
                                     ),
-                                    onPressed: () => setState(
-                                        () => _showPhotoInput = false),
-                                    child: const Text('Batal',
-                                        style: TextStyle(
-                                            fontWeight:
-                                                FontWeight.bold)),
+                                    onPressed: () =>
+                                        setState(() => _showPhotoInput = false),
+                                    child: const Text(
+                                      'Batal',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: ElevatedButton.icon(
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppTheme
-                                          .tertiaryContainerColor,
+                                      backgroundColor:
+                                          AppTheme.tertiaryContainerColor,
                                       foregroundColor: Colors.white,
                                       elevation: 0,
                                       shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(
-                                                  8)),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
                                     ),
                                     onPressed: () {
-                                      final url =
-                                          _photoUrlController.text
-                                              .trim();
+                                      final url = _photoUrlController.text
+                                          .trim();
                                       if (url.isNotEmpty) {
-                                        state.completeReport(
-                                            report.id, url);
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
+                                        state.completeReport(report.id, url);
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
                                           const SnackBar(
                                             content: Text(
-                                                'Laporan selesai dengan bukti foto!'),
-                                            backgroundColor:
-                                                AppTheme.statusLow,
+                                              'Laporan selesai dengan bukti foto!',
+                                            ),
+                                            backgroundColor: AppTheme.statusLow,
                                           ),
                                         );
-                                        setState(() =>
-                                            _showPhotoInput = false);
+                                        setState(() => _showPhotoInput = false);
                                       }
                                     },
                                     icon: const Icon(
-                                        Icons.check_circle,
-                                        size: 16),
-                                    label: const Text('Selesaikan',
-                                        style: TextStyle(
-                                            fontWeight:
-                                                FontWeight.bold)),
+                                      Icons.check_circle,
+                                      size: 16,
+                                    ),
+                                    label: const Text(
+                                      'Selesaikan',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ],
@@ -428,8 +447,11 @@ class _DetailLaporanAdminScreenState extends State<DetailLaporanAdminScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: const [
-                        Icon(Icons.check_circle,
-                            color: AppTheme.statusLow, size: 24),
+                        Icon(
+                          Icons.check_circle,
+                          color: AppTheme.statusLow,
+                          size: 24,
+                        ),
                         SizedBox(width: 8),
                         Text(
                           'Laporan ini telah selesai ditangani.',
@@ -465,8 +487,7 @@ class _DetailLaporanAdminScreenState extends State<DetailLaporanAdminScreen> {
           foregroundColor: Colors.white,
           elevation: 0,
           padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
         onPressed: onPressed,
         child: Row(
@@ -474,9 +495,10 @@ class _DetailLaporanAdminScreenState extends State<DetailLaporanAdminScreen> {
           children: [
             Icon(icon),
             const SizedBox(width: 8),
-            Text(label,
-                style: const TextStyle(
-                    fontWeight: FontWeight.bold, fontSize: 15)),
+            Text(
+              label,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+            ),
           ],
         ),
       ),

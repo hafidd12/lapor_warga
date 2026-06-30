@@ -8,7 +8,7 @@ import '../../widgets/report_card.dart';
 import '../../widgets/status_badge.dart';
 
 class AktivitasLaporanScreen extends StatefulWidget {
-  const AktivitasLaporanScreen({Key? key}) : super(key: key);
+  const AktivitasLaporanScreen({super.key});
 
   @override
   State<AktivitasLaporanScreen> createState() => _AktivitasLaporanScreenState();
@@ -195,10 +195,8 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
                       ),
                       const SizedBox(height: 12),
                       GestureDetector(
-                        onTap: () => _showPhotoPreview(
-                          context,
-                          report.reportPhotoUrl!,
-                        ),
+                        onTap: () =>
+                            _showPhotoPreview(context, report.reportPhotoUrl!),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(16),
                           child: SizedBox(
@@ -217,7 +215,9 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
                                       vertical: 6,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.6),
+                                      color: Colors.black.withValues(
+                                        alpha: 0.6,
+                                      ),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: const Row(
@@ -306,7 +306,9 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
                                       vertical: 6,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.6),
+                                      color: Colors.black.withValues(
+                                        alpha: 0.6,
+                                      ),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: const Row(
@@ -408,7 +410,7 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
                 right: 8,
                 child: IconButton.filled(
                   style: IconButton.styleFrom(
-                    backgroundColor: Colors.black.withOpacity(0.6),
+                    backgroundColor: Colors.black.withValues(alpha: 0.6),
                     foregroundColor: Colors.white,
                   ),
                   onPressed: () => Navigator.pop(context),
@@ -656,7 +658,8 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
       return Image.network(
         path,
         fit: fit,
-        errorBuilder: (context, error, stackTrace) => _buildErrorImagePlaceholder(),
+        errorBuilder: (context, error, stackTrace) =>
+            _buildErrorImagePlaceholder(),
       );
     } else if (path.startsWith('data:image/')) {
       final commaIndex = path.indexOf(',');
@@ -669,7 +672,8 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
         return Image.memory(
           base64Decode(base64Part),
           fit: fit,
-          errorBuilder: (context, error, stackTrace) => _buildErrorImagePlaceholder(),
+          errorBuilder: (context, error, stackTrace) =>
+              _buildErrorImagePlaceholder(),
         );
       } catch (_) {
         return _buildErrorImagePlaceholder();
@@ -678,7 +682,8 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
       return Image.network(
         'https://picsum.photos/seed/laporan/600/400',
         fit: fit,
-        errorBuilder: (context, error, stackTrace) => _buildErrorImagePlaceholder(),
+        errorBuilder: (context, error, stackTrace) =>
+            _buildErrorImagePlaceholder(),
       );
     } else {
       return _buildErrorImagePlaceholder();
@@ -705,7 +710,7 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AppTheme.outlineVariantColor.withOpacity(0.35),
+          color: AppTheme.outlineVariantColor.withValues(alpha: 0.35),
         ),
       ),
       child: Column(

@@ -4,7 +4,7 @@ import '../../theme.dart';
 import 'register_screen.dart';
 
 class RoleSelectionScreen extends StatefulWidget {
-  const RoleSelectionScreen({Key? key}) : super(key: key);
+  const RoleSelectionScreen({super.key});
 
   @override
   State<RoleSelectionScreen> createState() => _RoleSelectionScreenState();
@@ -62,7 +62,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
               height: 280,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppTheme.primaryFixed.withOpacity(0.18),
+                color: AppTheme.primaryFixed.withValues(alpha: 0.18),
               ),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
@@ -78,7 +78,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
               height: 240,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppTheme.tertiaryFixedDim.withOpacity(0.12),
+                color: AppTheme.tertiaryFixedDim.withValues(alpha: 0.12),
               ),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
@@ -92,8 +92,10 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
               opacity: _fadeAnimation,
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
                 child: Column(
                   children: [
                     // Header
@@ -105,10 +107,12 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
                         borderRadius: BorderRadius.circular(18),
                         boxShadow: [
                           BoxShadow(
-                            color: AppTheme.primaryColor.withOpacity(0.12),
+                            color: AppTheme.primaryColor.withValues(
+                              alpha: 0.12,
+                            ),
                             blurRadius: 16,
                             offset: const Offset(0, 8),
-                          )
+                          ),
                         ],
                       ),
                       child: const Icon(
@@ -196,7 +200,9 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
                         const Text(
                           'Sudah punya akun? ',
                           style: TextStyle(
-                              fontSize: 13, color: AppTheme.secondaryColor),
+                            fontSize: 13,
+                            color: AppTheme.secondaryColor,
+                          ),
                         ),
                         GestureDetector(
                           onTap: () => Navigator.pop(context),
@@ -246,20 +252,20 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: isHovered
-              ? AppTheme.primaryFixed.withOpacity(0.15)
-              : Colors.white.withOpacity(0.92),
+              ? AppTheme.primaryFixed.withValues(alpha: 0.15)
+              : Colors.white.withValues(alpha: 0.92),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isHovered
-                ? AppTheme.primaryColor.withOpacity(0.4)
-                : AppTheme.outlineVariantColor.withOpacity(0.4),
+                ? AppTheme.primaryColor.withValues(alpha: 0.4)
+                : AppTheme.outlineVariantColor.withValues(alpha: 0.4),
             width: isHovered ? 2 : 1,
           ),
           boxShadow: [
             BoxShadow(
               color: isHovered
-                  ? AppTheme.primaryColor.withOpacity(0.08)
-                  : AppTheme.primaryColor.withOpacity(0.03),
+                  ? AppTheme.primaryColor.withValues(alpha: 0.08)
+                  : AppTheme.primaryColor.withValues(alpha: 0.03),
               blurRadius: isHovered ? 20 : 12,
               offset: const Offset(0, 6),
             ),
@@ -274,7 +280,9 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
                   width: 52,
                   height: 52,
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryContainerColor.withOpacity(0.12),
+                    color: AppTheme.primaryContainerColor.withValues(
+                      alpha: 0.12,
+                    ),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Icon(
@@ -311,7 +319,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
                 Icon(
                   Icons.arrow_forward_ios,
                   size: 16,
-                  color: AppTheme.primaryColor.withOpacity(0.5),
+                  color: AppTheme.primaryColor.withValues(alpha: 0.5),
                 ),
               ],
             ),
@@ -325,29 +333,31 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
               ),
             ),
             const SizedBox(height: 14),
-            ...features.map((f) => Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.check_circle,
-                        size: 16,
-                        color: AppTheme.tertiaryContainerColor,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          f,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppTheme.textSecondaryColor,
-                            fontWeight: FontWeight.w500,
-                          ),
+            ...features.map(
+              (f) => Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.check_circle,
+                      size: 16,
+                      color: AppTheme.tertiaryContainerColor,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        f,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppTheme.textSecondaryColor,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
-                    ],
-                  ),
-                )),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),

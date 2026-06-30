@@ -5,10 +5,10 @@ import '../../theme.dart';
 import '../../widgets/custom_button.dart';
 
 class BuatVotingAdminScreen extends StatefulWidget {
-  const BuatVotingAdminScreen({Key? key}) : super(key: key);
+  const BuatVotingAdminScreen({super.key});
 
   @override
-  _BuatVotingAdminScreenState createState() => _BuatVotingAdminScreenState();
+  State<BuatVotingAdminScreen> createState() => _BuatVotingAdminScreenState();
 }
 
 class _BuatVotingAdminScreenState extends State<BuatVotingAdminScreen> {
@@ -16,7 +16,7 @@ class _BuatVotingAdminScreenState extends State<BuatVotingAdminScreen> {
   final _questionController = TextEditingController();
   final List<TextEditingController> _optionControllers = [
     TextEditingController(text: 'Pilihan A'),
-    TextEditingController(text: 'Pilihan B')
+    TextEditingController(text: 'Pilihan B'),
   ];
 
   @override
@@ -35,7 +35,9 @@ class _BuatVotingAdminScreenState extends State<BuatVotingAdminScreen> {
       });
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Maksimal hanya diperbolehkan 5 pilihan.')),
+        const SnackBar(
+          content: Text('Maksimal hanya diperbolehkan 5 pilihan.'),
+        ),
       );
     }
   }
@@ -63,7 +65,9 @@ class _BuatVotingAdminScreenState extends State<BuatVotingAdminScreen> {
 
       if (options.length < 2) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Minimal terdapat 2 pilihan yang valid.')),
+          const SnackBar(
+            content: Text('Minimal terdapat 2 pilihan yang valid.'),
+          ),
         );
         return;
       }
@@ -114,17 +118,24 @@ class _BuatVotingAdminScreenState extends State<BuatVotingAdminScreen> {
                 controller: _questionController,
                 maxLines: 2,
                 decoration: InputDecoration(
-                  hintText: 'Misal: Apakah warga setuju diadakan fogging demam berdarah?',
+                  hintText:
+                      'Misal: Apakah warga setuju diadakan fogging demam berdarah?',
                   fillColor: Colors.white,
                   filled: true,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide(color: Colors.grey.shade300),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: AppTheme.primaryColor, width: 2),
+                    borderSide: const BorderSide(
+                      color: AppTheme.primaryColor,
+                      width: 2,
+                    ),
                   ),
                 ),
                 validator: (value) {
@@ -150,8 +161,13 @@ class _BuatVotingAdminScreenState extends State<BuatVotingAdminScreen> {
                   TextButton.icon(
                     onPressed: _addOption,
                     icon: const Icon(Icons.add, size: 18),
-                    label: const Text('Tambah Opsi', style: TextStyle(fontWeight: FontWeight.bold)),
-                    style: TextButton.styleFrom(foregroundColor: AppTheme.primaryColor),
+                    label: const Text(
+                      'Tambah Opsi',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppTheme.primaryColor,
+                    ),
                   ),
                 ],
               ),
@@ -172,14 +188,22 @@ class _BuatVotingAdminScreenState extends State<BuatVotingAdminScreen> {
                               hintText: 'Pilihan ${index + 1}',
                               fillColor: Colors.white,
                               filled: true,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 14,
+                              ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
-                                borderSide: BorderSide(color: Colors.grey.shade300),
+                                borderSide: BorderSide(
+                                  color: Colors.grey.shade300,
+                                ),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(color: AppTheme.primaryColor, width: 2),
+                                borderSide: const BorderSide(
+                                  color: AppTheme.primaryColor,
+                                  width: 2,
+                                ),
                               ),
                             ),
                             validator: (value) {
@@ -192,7 +216,10 @@ class _BuatVotingAdminScreenState extends State<BuatVotingAdminScreen> {
                         ),
                         const SizedBox(width: 8),
                         IconButton(
-                          icon: const Icon(Icons.delete_outline, color: Colors.red),
+                          icon: const Icon(
+                            Icons.delete_outline,
+                            color: Colors.red,
+                          ),
                           onPressed: () => _removeOption(index),
                         ),
                       ],

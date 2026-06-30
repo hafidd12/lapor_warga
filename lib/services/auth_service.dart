@@ -134,6 +134,14 @@ class AuthService {
       final authResponse = await _client.auth.signUp(
         email: normalizedEmail,
         password: password,
+        data: {
+          'name': normalizedName,
+          'role': 'warga',
+          'phone': normalizedPhone,
+          'rt_rw': rtRw,
+          'address': normalizedAddress,
+          'registration_code': normalizedCode,
+        },
       );
 
       final authUser = authResponse.user;
@@ -147,7 +155,7 @@ class AuthService {
       debugPrint(
         'auth_service after signUp | '
         'authResponse.session=${authResponse.session} | '
-        'currentSession=${sessionAfterSignUp} | '
+        'currentSession=$sessionAfterSignUp | '
         'authResponse.user.id=${authUser.id} | '
         'currentSession?.user.id=${sessionAfterSignUp?.user.id} | '
         'currentSession?.accessToken!=null=${sessionAfterSignUp?.accessToken != null}',
@@ -164,12 +172,12 @@ class AuthService {
       debugPrint(
         'auth_service before insert | '
         'authResponse.session=${authResponse.session} | '
-        'currentSession=${sessionBeforeInsert} | '
+        'currentSession=$sessionBeforeInsert | '
         'authResponse.user.id=${authUser.id} | '
         'currentSession?.user.id=${sessionBeforeInsert?.user.id} | '
         'currentSession?.accessToken!=null=${sessionBeforeInsert?.accessToken != null}',
       );
-      await _client.from('profiles').insert({
+      await _client.from('profiles').upsert({
         'id': authUser.id,
         'name': normalizedName,
         'email': normalizedEmail,
@@ -186,7 +194,7 @@ class AuthService {
         'registered_at': nowIso,
         'created_at': nowIso,
         'updated_at': nowIso,
-      });
+      }, onConflict: 'id');
 
       return getProfileByUserId(authUser.id);
     } on AuthException catch (error, stackTrace) {
