@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb, TargetPlatform;
 import 'package:in_app_update/in_app_update.dart';
 import 'package:provider/provider.dart';
 import '../../models/models.dart';
@@ -57,7 +57,7 @@ class LoadingScreenState extends State<LoadingScreen> {
   }
 
   Future<bool> _checkAndHandleAppUpdate() async {
-    if (Platform.isAndroid == false) {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
       return false;
     }
 
