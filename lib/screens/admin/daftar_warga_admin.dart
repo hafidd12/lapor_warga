@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import '../../models/models.dart';
-import '../../providers/app_state.dart';
 import '../../theme.dart';
+import '../../services/warga_verification_service.dart';
 import 'warga_verification_detail_screen.dart';
 
 class DaftarWargaAdminScreen extends StatefulWidget {
@@ -17,8 +16,10 @@ class _DaftarWargaAdminScreenState extends State<DaftarWargaAdminScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
+  final WargaVerificationService _service = WargaVerificationService();
   String _searchQuery = '';
   bool _isRefreshing = false;
+  List<AppUser> _allWarga = [];
 
   @override
   void initState() {
@@ -39,7 +40,18 @@ class _DaftarWargaAdminScreenState extends State<DaftarWargaAdminScreen>
   Future<void> _refreshData() async {
     if (!mounted) return;
     setState(() => _isRefreshing = true);
-    await context.read<AppState>().refreshVerificationUsers();
+    try {
+      final warga = await _service.fetchAllWarga();
+      if (!mounted) return;
+      setState(() {
+        _allWarga = warga;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _allWarga = [];
+      });
+    }
     if (!mounted) return;
     setState(() => _isRefreshing = false);
   }
@@ -84,10 +96,18 @@ class _DaftarWargaAdminScreenState extends State<DaftarWargaAdminScreen>
 
   @override
   Widget build(BuildContext context) {
-    final state = context.watch<AppState>();
-    final pending = state.pendingWarga.where(_matchesSearch).toList();
-    final verified = state.verifiedWarga.where(_matchesSearch).toList();
-    final rejected = state.rejectedWarga.where(_matchesSearch).toList();
+    final pending = _allWarga
+        .where((user) => user.verificationStatus == VerificationStatus.pending)
+        .where(_matchesSearch)
+        .toList();
+    final verified = _allWarga
+        .where((user) => user.verificationStatus == VerificationStatus.verified)
+        .where(_matchesSearch)
+        .toList();
+    final rejected = _allWarga
+        .where((user) => user.verificationStatus == VerificationStatus.rejected)
+        .where(_matchesSearch)
+        .toList();
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
