@@ -2,6 +2,18 @@
 
 A new Flutter project.
 
+## Supabase Environment
+
+Set the following values in `.env`:
+
+```env
+SUPABASE_URL=https://your-project-ref.supabase.co
+SUPABASE_PUBLISHABLE_KEY=your-publishable-key
+SUPABASE_ANON_KEY=your-anon-key
+```
+
+`SUPABASE_ANON_KEY` is also accepted as a fallback if that is what your project already uses, but `SUPABASE_PUBLISHABLE_KEY` is preferred.
+
 ## Getting Started
 
 This project is a starting point for a Flutter application.

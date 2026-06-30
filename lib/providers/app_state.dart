@@ -1,5 +1,6 @@
-import 'package:flutter/foundation.dart';
 import 'dart:math';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import '../models/models.dart';
 import '../services/auth_service.dart';
 import '../services/supabase_service.dart';
@@ -376,9 +377,7 @@ class AppState with ChangeNotifier {
 
     try {
       return await _activeAuthService.lookupActiveRegistrationCodeRtRw(code);
-    } catch (error, stackTrace) {
-      debugPrint(error.toString());
-      debugPrint(stackTrace.toString());
+    } catch (_) {
       return null;
     }
   }
@@ -394,11 +393,6 @@ class AppState with ChangeNotifier {
     required Uint8List ktpImageBytes,
     required String ktpImageName,
   }) async {
-    debugPrint(
-      'app_state email received="$email" '
-      'length=${email.length} '
-      'codeUnits=${email.codeUnits}',
-    );
     if (name.trim().isEmpty ||
         email.trim().isEmpty ||
         password.isEmpty ||
@@ -436,14 +430,11 @@ class AppState with ChangeNotifier {
       };
     } on AuthServiceException catch (error) {
       return {'success': false, 'message': error.message};
-    } catch (error, stackTrace) {
-      debugPrint(error.toString());
-      debugPrint(stackTrace.toString());
+    } catch (error) {
       return {
         'success': false,
         'message': 'Registrasi gagal. Silakan coba lagi.',
         'debugMessage': error.toString(),
-        'debugStackTrace': stackTrace.toString(),
       };
     }
   }

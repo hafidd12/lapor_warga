@@ -317,11 +317,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
         if (widget.isWarga) {
           final normalizedEmail = _normalizeEmail(_emailController.text);
-          debugPrint(
-            'register_screen email normalized="$normalizedEmail" '
-            'length=${normalizedEmail.length} '
-            'codeUnits=${normalizedEmail.codeUnits}',
-          );
           final result = await state.registerWargaWithSupabase(
             name: _nameController.text,
             email: normalizedEmail,

@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class SupabaseService {
   static const String _urlKey = 'SUPABASE_URL';
   static const String _publishableKey = 'SUPABASE_PUBLISHABLE_KEY';
+  static const String _anonKey = 'SUPABASE_ANON_KEY';
 
   static bool _isInitialized = false;
 
@@ -19,8 +20,9 @@ class SupabaseService {
   static Future<void> initialize() async {
     await dotenv.load(fileName: '.env');
 
-    final supabaseUrl = dotenv.env[_urlKey]?.trim() ?? '';
-    final publishableKey = dotenv.env[_publishableKey]?.trim() ?? '';
+    final supabaseUrl = _normalizeSupabaseUrl(dotenv.env[_urlKey]);
+    final publishableKey =
+        _firstNonEmpty(dotenv.env[_publishableKey], dotenv.env[_anonKey]);
 
     if (!_hasUsableConfig(supabaseUrl, publishableKey)) {
       return;
@@ -39,5 +41,19 @@ class SupabaseService {
         !supabaseUrl.contains('your-supabase-url') &&
         publishableKey.isNotEmpty &&
         !publishableKey.contains('your-supabase-publishable-key');
+  }
+
+  static String _normalizeSupabaseUrl(String? rawUrl) {
+    final value = rawUrl?.trim() ?? '';
+    if (value.isEmpty) return '';
+
+    final withoutRestPath = value.replaceFirst(RegExp(r'/rest/v1/?$'), '');
+    return withoutRestPath;
+  }
+
+  static String _firstNonEmpty(String? primary, String? fallback) {
+    final primaryValue = primary?.trim() ?? '';
+    if (primaryValue.isNotEmpty) return primaryValue;
+    return fallback?.trim() ?? '';
   }
 }
