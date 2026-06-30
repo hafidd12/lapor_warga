@@ -20,10 +20,11 @@ class SupabaseService {
   static Future<void> initialize() async {
     await dotenv.load(fileName: '.env');
 
-    final supabaseUrl = dotenv.env[_urlKey]?.trim() ?? '';
-    final publishableKey = dotenv.env[_publishableKey]?.trim() ?? '';
-    final anonKey = dotenv.env[_anonKey]?.trim() ?? '';
-    final supabaseKey = publishableKey.isNotEmpty ? publishableKey : anonKey;
+    final supabaseUrl = _normalizeSupabaseUrl(dotenv.env[_urlKey]);
+    final supabaseKey = _firstNonEmpty(
+      dotenv.env[_publishableKey],
+      dotenv.env[_anonKey],
+    );
 
     if (!_hasUsableConfig(supabaseUrl, supabaseKey)) {
       return;
@@ -43,5 +44,19 @@ class SupabaseService {
         supabaseKey.isNotEmpty &&
         !supabaseKey.contains('your-supabase-publishable-key') &&
         !supabaseKey.contains('your-supabase-anon-key');
+  }
+
+  static String _normalizeSupabaseUrl(String? rawUrl) {
+    final value = rawUrl?.trim() ?? '';
+    if (value.isEmpty) return '';
+
+    final withoutRestPath = value.replaceFirst(RegExp(r'/rest/v1/?$'), '');
+    return withoutRestPath;
+  }
+
+  static String _firstNonEmpty(String? primary, String? fallback) {
+    final primaryValue = primary?.trim() ?? '';
+    if (primaryValue.isNotEmpty) return primaryValue;
+    return fallback?.trim() ?? '';
   }
 }

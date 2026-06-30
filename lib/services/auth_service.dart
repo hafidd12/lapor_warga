@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/models.dart';
@@ -79,7 +79,7 @@ class AuthService {
     }
 
     final extension = _extractFileExtension(sourceName);
-    final sanitizedPrefix = _sanitizeStorageSegment(storagePrefix);
+    final sanitizedPrefix = _normalizeStoragePrefix(storagePrefix);
     final storagePath =
         '$sanitizedPrefix/${DateTime.now().millisecondsSinceEpoch}$extension';
 
@@ -113,11 +113,6 @@ class AuthService {
     final normalizedAddress = address.trim();
 
     try {
-      debugPrint(
-        'auth_service email normalized="$normalizedEmail" '
-        'length=${normalizedEmail.length} '
-        'codeUnits=${normalizedEmail.codeUnits}',
-      );
       if (!_emailPattern.hasMatch(normalizedEmail)) {
         throw const AuthServiceException(
           'Format email tidak valid. Periksa kembali alamat email Anda.',
@@ -151,32 +146,21 @@ class AuthService {
         );
       }
 
-      final sessionAfterSignUp = _client.auth.currentSession;
-      debugPrint(
-        'auth_service after signUp | '
-        'authResponse.session=${authResponse.session} | '
-        'currentSession=$sessionAfterSignUp | '
-        'authResponse.user.id=${authUser.id} | '
-        'currentSession?.user.id=${sessionAfterSignUp?.user.id} | '
-        'currentSession?.accessToken!=null=${sessionAfterSignUp?.accessToken != null}',
-      );
+      if (authResponse.session == null && _client.auth.currentSession == null) {
+        throw const AuthServiceException(
+          'Akun sudah dibuat, tetapi email confirmation aktif sehingga sesi belum tersedia. '
+          'Untuk registrasi warga yang menyimpan foto KTP dan profil ke Supabase, nonaktifkan email confirmation '
+          'atau gunakan trigger database untuk membuat profil setelah email terverifikasi.',
+        );
+      }
 
       final uploadedKtpPath = await uploadKtpImage(
         imageBytes: ktpImageBytes,
         sourceName: ktpImageName,
-        storagePrefix: 'registrations/${_sanitizeStorageSegment(authUser.id)}',
+        storagePrefix: 'registrations/${authUser.id}',
       );
 
       final nowIso = DateTime.now().toUtc().toIso8601String();
-      final sessionBeforeInsert = _client.auth.currentSession;
-      debugPrint(
-        'auth_service before insert | '
-        'authResponse.session=${authResponse.session} | '
-        'currentSession=$sessionBeforeInsert | '
-        'authResponse.user.id=${authUser.id} | '
-        'currentSession?.user.id=${sessionBeforeInsert?.user.id} | '
-        'currentSession?.accessToken!=null=${sessionBeforeInsert?.accessToken != null}',
-      );
       await _client.from('profiles').upsert({
         'id': authUser.id,
         'name': normalizedName,
@@ -197,15 +181,46 @@ class AuthService {
       }, onConflict: 'id');
 
       return getProfileByUserId(authUser.id);
-    } on AuthException catch (error, stackTrace) {
-      debugPrint(error.toString());
-      debugPrint(stackTrace.toString());
+    } on AuthException catch (error) {
       throw AuthServiceException(_mapAuthErrorMessage(error.toString()));
-    } catch (error, stackTrace) {
-      debugPrint(error.toString());
-      debugPrint(stackTrace.toString());
-      throw AuthServiceException(_mapAuthErrorMessage(error.toString()));
+    } catch (error) {
+      throw AuthServiceException(
+        _mapRegistrationErrorMessage(error.toString()),
+      );
     }
+  }
+
+  String _mapRegistrationErrorMessage(String rawMessage) {
+    final normalized = rawMessage.toLowerCase();
+
+    if (normalized.contains('row-level security') ||
+        normalized.contains('rls') ||
+        normalized.contains('permission denied')) {
+      return 'Supabase menolak akses saat menyimpan data registrasi. Periksa RLS policy pada tabel profiles dan bucket ktp-images.';
+    }
+
+    if (normalized.contains('relation "profiles" does not exist') ||
+        normalized.contains('table "profiles" does not exist')) {
+      return 'Tabel profiles belum ada di Supabase.';
+    }
+
+    if (normalized.contains('bucket not found') ||
+        (normalized.contains('ktp-images') &&
+            normalized.contains('not found'))) {
+      return 'Bucket storage ktp-images belum ada di Supabase.';
+    }
+
+    if (normalized.contains('session') &&
+        normalized.contains('null') &&
+        normalized.contains('email confirmation')) {
+      return 'Email confirmation aktif. Registrasi warga butuh sesi login untuk mengupload KTP dan menyimpan profil.';
+    }
+
+    if (normalized.contains('user already registered')) {
+      return _emailAlreadyRegisteredMessage;
+    }
+
+    return 'Registrasi gagal. Silakan coba lagi.';
   }
 
   Future<AppUser?> getCurrentUserProfile() async {
@@ -238,14 +253,12 @@ class AuthService {
     return filePath.substring(index).toLowerCase();
   }
 
-  String _sanitizeStorageSegment(String value) {
-    final sanitized = value
-        .trim()
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
-        .replaceAll(RegExp(r'_+'), '_')
-        .replaceAll(RegExp(r'^_|_$'), '');
-    return sanitized.isEmpty ? 'registration' : sanitized;
+  String _normalizeStoragePrefix(String value) {
+    final normalized = value.trim().replaceAll('\\', '/');
+    final cleaned = normalized.replaceAll(RegExp(r'[^a-zA-Z0-9/_-]+'), '_');
+    return cleaned
+        .replaceAll(RegExp(r'/+'), '/')
+        .replaceAll(RegExp(r'^/+|/+$'), '');
   }
 
   String _mapAuthErrorMessage(String rawMessage) {
