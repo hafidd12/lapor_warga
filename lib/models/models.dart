@@ -1,6 +1,10 @@
+import 'package:flutter/foundation.dart';
+
 enum UserRole { warga, admin }
 
 enum VerificationStatus { pending, verified, rejected }
+
+enum RegistrationCodeType { warga, admin }
 
 class AppUser {
   final String id;
@@ -122,6 +126,82 @@ class AppUser {
       default:
         return VerificationStatus.pending;
     }
+  }
+}
+
+class RegistrationCodeLookupResult {
+  final String code;
+  final RegistrationCodeType registrationType;
+  final String rt;
+  final String rw;
+  final String rtRw;
+  final bool isActive;
+  final DateTime? usedAt;
+
+  const RegistrationCodeLookupResult({
+    required this.code,
+    required this.registrationType,
+    required this.rt,
+    required this.rw,
+    required this.rtRw,
+    required this.isActive,
+    this.usedAt,
+  });
+
+  factory RegistrationCodeLookupResult.fromRow(Map<String, dynamic> row) {
+    debugPrint('[RegistrationCodeLookupResult] fromRow raw=$row');
+    final code = _stringValue(row['code']) ?? '';
+    final rt = _stringValue(row['rt']) ?? _extractCodePart(code, 1) ?? '';
+    final rw = _stringValue(row['rw']) ?? _extractCodePart(code, 2) ?? '';
+    final rtRw = _stringValue(row['rt_rw']) ?? _composeRtRw(rt, rw);
+
+    final result = RegistrationCodeLookupResult(
+      code: code,
+      registrationType: _parseRegistrationCodeType(row['registration_type']),
+      rt: rt,
+      rw: rw,
+      rtRw: rtRw,
+      isActive: row['is_active'] == true,
+      usedAt: _dateTimeValue(row['used_at']),
+    );
+
+    debugPrint(
+      '[RegistrationCodeLookupResult] parsed code=${result.code} type=${result.registrationType.name} rt=${result.rt} rw=${result.rw} rtRw=${result.rtRw} active=${result.isActive} usedAt=${result.usedAt}',
+    );
+    return result;
+  }
+
+  static String? _extractCodePart(String code, int partIndex) {
+    final match = RegExp(
+      r'^RT(\d+)-(\d+)$',
+      caseSensitive: false,
+    ).firstMatch(code.trim());
+    if (match == null) return null;
+    return match.group(partIndex);
+  }
+
+  static String _composeRtRw(String rt, String rw) {
+    if (rt.isEmpty || rw.isEmpty) return '';
+    return '$rt/$rw';
+  }
+
+  static RegistrationCodeType _parseRegistrationCodeType(dynamic value) {
+    final text = value?.toString().toLowerCase().trim();
+    return text == 'admin'
+        ? RegistrationCodeType.admin
+        : RegistrationCodeType.warga;
+  }
+
+  static String? _stringValue(dynamic value) {
+    if (value == null) return null;
+    final text = value.toString().trim();
+    return text.isEmpty ? null : text;
+  }
+
+  static DateTime? _dateTimeValue(dynamic value) {
+    if (value == null) return null;
+    if (value is DateTime) return value;
+    return DateTime.tryParse(value.toString());
   }
 }
 
@@ -274,18 +354,26 @@ class RegistrationCode {
   final String id;
   final String code; // Kode unik, misal "RT05-XY7K"
   final String rtRw; // Nomor RT/RW terkait, misal "005/002"
+  final String? rt;
+  final String? rw;
   final String createdBy; // ID admin yang membuat
   final String createdByName; // Nama admin yang membuat
+  final RegistrationCodeType registrationType;
   final DateTime createdAt;
+  final DateTime? usedAt;
   final bool isActive;
 
   RegistrationCode({
     required this.id,
     required this.code,
     required this.rtRw,
+    this.rt,
+    this.rw,
     required this.createdBy,
     required this.createdByName,
+    this.registrationType = RegistrationCodeType.warga,
     required this.createdAt,
+    this.usedAt,
     this.isActive = true,
   });
 
@@ -293,18 +381,26 @@ class RegistrationCode {
     String? id,
     String? code,
     String? rtRw,
+    String? rt,
+    String? rw,
     String? createdBy,
     String? createdByName,
+    RegistrationCodeType? registrationType,
     DateTime? createdAt,
+    DateTime? usedAt,
     bool? isActive,
   }) {
     return RegistrationCode(
       id: id ?? this.id,
       code: code ?? this.code,
       rtRw: rtRw ?? this.rtRw,
+      rt: rt ?? this.rt,
+      rw: rw ?? this.rw,
       createdBy: createdBy ?? this.createdBy,
       createdByName: createdByName ?? this.createdByName,
+      registrationType: registrationType ?? this.registrationType,
       createdAt: createdAt ?? this.createdAt,
+      usedAt: usedAt ?? this.usedAt,
       isActive: isActive ?? this.isActive,
     );
   }

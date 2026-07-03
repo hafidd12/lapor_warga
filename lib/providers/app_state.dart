@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import '../models/models.dart';
@@ -17,7 +17,10 @@ class AppState with ChangeNotifier {
   final List<Poll> _polls = [];
   final List<AdminActivity> _activities = [];
   final List<RegistrationCode> _registrationCodes = [];
-  final List<AppUser> _verificationUsers = [];
+  RegistrationCodeLookupResult? _pendingRtRegistrationCode;
+  final List<AppUser> _pendingVerificationUsers = [];
+  final List<AppUser> _verifiedVerificationUsers = [];
+  final List<AppUser> _rejectedVerificationUsers = [];
   final WargaVerificationService? _verificationService;
   bool _verificationUsersLoaded = false;
 
@@ -39,48 +42,26 @@ class AppState with ChangeNotifier {
   List<AdminActivity> get activities => List.unmodifiable(_activities);
   List<RegistrationCode> get registrationCodes =>
       List.unmodifiable(_registrationCodes);
+  RegistrationCodeLookupResult? get pendingRtRegistrationCode =>
+      _pendingRtRegistrationCode;
 
   // Warga queries
-  List<AppUser> get allWarga =>
-      _verificationUsersLoaded
-          ? List.unmodifiable(_verificationUsers)
-          : _registeredUsers.where((u) => u.role == UserRole.warga).toList();
-  List<AppUser> get verifiedWarga =>
-      _verificationUsersLoaded
-          ? _verificationUsers
-              .where((u) => u.verificationStatus == VerificationStatus.verified)
-              .toList()
-          : _registeredUsers
-              .where(
-                (u) =>
-                    u.role == UserRole.warga &&
-                    u.verificationStatus == VerificationStatus.verified,
-              )
-              .toList();
-  List<AppUser> get pendingWarga =>
-      _verificationUsersLoaded
-          ? _verificationUsers
-              .where((u) => u.verificationStatus == VerificationStatus.pending)
-              .toList()
-          : _registeredUsers
-              .where(
-                (u) =>
-                    u.role == UserRole.warga &&
-                    u.verificationStatus == VerificationStatus.pending,
-              )
-              .toList();
-  List<AppUser> get rejectedWarga =>
-      _verificationUsersLoaded
-          ? _verificationUsers
-              .where((u) => u.verificationStatus == VerificationStatus.rejected)
-              .toList()
-          : _registeredUsers
-              .where(
-                (u) =>
-                    u.role == UserRole.warga &&
-                    u.verificationStatus == VerificationStatus.rejected,
-              )
-              .toList();
+  List<AppUser> get allWarga => _verificationUsersLoaded
+      ? List.unmodifiable([
+          ..._pendingVerificationUsers,
+          ..._verifiedVerificationUsers,
+          ..._rejectedVerificationUsers,
+        ])
+      : const [];
+  List<AppUser> get verifiedWarga => _verificationUsersLoaded
+      ? List.unmodifiable(_verifiedVerificationUsers)
+      : const [];
+  List<AppUser> get pendingWarga => _verificationUsersLoaded
+      ? List.unmodifiable(_pendingVerificationUsers)
+      : const [];
+  List<AppUser> get rejectedWarga => _verificationUsersLoaded
+      ? List.unmodifiable(_rejectedVerificationUsers)
+      : const [];
 
   // Completed reports with photos
   List<Report> get completedReportsWithPhotos => _reports
@@ -342,15 +323,61 @@ class AppState with ChangeNotifier {
 
   Future<void> refreshVerificationUsers() async {
     if (!SupabaseService.isInitialized) return;
+    final currentRtRw = _currentUser?.rtRw?.trim() ?? '';
+    debugPrint(
+      '[AppState][verification] refreshVerificationUsers currentUserId=${_currentUser?.id ?? "null"} currentUserRole=${_currentUser?.role.name ?? "null"} currentUser.rtRw=${_currentUser?.rtRw ?? "null"} normalizedRtRw="$currentRtRw"',
+    );
+    if (currentRtRw.isEmpty) {
+      _clearVerificationUsers();
+      _verificationUsersLoaded = false;
+      debugPrint(
+        '[AppState][verification] refreshVerificationUsers skipped because rtRw is empty',
+      );
+      return;
+    }
 
     try {
-      final users = await _activeVerificationService.fetchAllWarga();
-      _verificationUsers
+      final users = await _activeVerificationService.fetchAllWarga(
+        rtRw: currentRtRw,
+      );
+      final pendingUsers = users
+          .where(
+            (user) => user.verificationStatus == VerificationStatus.pending,
+          )
+          .toList();
+      final verifiedUsers = users
+          .where(
+            (user) => user.verificationStatus == VerificationStatus.verified,
+          )
+          .toList();
+      final rejectedUsers = users
+          .where(
+            (user) => user.verificationStatus == VerificationStatus.rejected,
+          )
+          .toList();
+      debugPrint(
+        '[AppState][verification] refreshVerificationUsers received=${users.length} rtRws=${users.map((u) => u.rtRw ?? "-").toList()} pending=${pendingUsers.length} verified=${verifiedUsers.length} rejected=${rejectedUsers.length}',
+      );
+      _pendingVerificationUsers
         ..clear()
-        ..addAll(users);
+        ..addAll(pendingUsers);
+      _verifiedVerificationUsers
+        ..clear()
+        ..addAll(verifiedUsers);
+      _rejectedVerificationUsers
+        ..clear()
+        ..addAll(rejectedUsers);
       _verificationUsersLoaded = true;
+      debugPrint(
+        '[AppState][verification] refreshVerificationUsers loaded=$_verificationUsersLoaded sentToUI=${users.length}',
+      );
       notifyListeners();
-    } catch (_) {
+    } catch (error, stackTrace) {
+      debugPrint(
+        '[AppState][verification] refreshVerificationUsers error=${error.runtimeType}: $error',
+      );
+      debugPrint(stackTrace.toString());
+      _clearVerificationUsers();
       _verificationUsersLoaded = false;
     }
   }
@@ -408,6 +435,10 @@ class AppState with ChangeNotifier {
     );
   }
 
+  void _logRegistrationLookup(String message) {
+    debugPrint('[AppState][registration_codes] $message');
+  }
+
   Future<Map<String, dynamic>> loginWithSupabase(
     String email,
     String password,
@@ -426,6 +457,9 @@ class AppState with ChangeNotifier {
         password: password,
       );
       _setCurrentUser(user);
+      debugPrint(
+        '[AppState][verification] loginWithSupabase currentUser.rtRw=${_currentUser?.rtRw ?? "null"}',
+      );
       await refreshRemoteData();
       if (user.role == UserRole.admin) {
         await refreshVerificationUsers();
@@ -454,6 +488,9 @@ class AppState with ChangeNotifier {
       }
 
       _setCurrentUser(user);
+      debugPrint(
+        '[AppState][verification] restoreSession currentUser.rtRw=${_currentUser?.rtRw ?? "null"}',
+      );
       await refreshRemoteData();
       if (user.role == UserRole.admin) {
         await refreshVerificationUsers();
@@ -475,7 +512,15 @@ class AppState with ChangeNotifier {
     }
 
     _setCurrentUser(null);
+    _clearVerificationUsers();
     _verificationUsersLoaded = false;
+    _pendingRtRegistrationCode = null;
+  }
+
+  void _clearVerificationUsers() {
+    _pendingVerificationUsers.clear();
+    _verifiedVerificationUsers.clear();
+    _rejectedVerificationUsers.clear();
   }
 
   Future<String?> lookupRegistrationCodeRemote(String code) async {
@@ -486,8 +531,64 @@ class AppState with ChangeNotifier {
     }
 
     try {
-      return await _activeAuthService.lookupActiveRegistrationCodeRtRw(code);
-    } catch (_) {
+      final rtRw = await _activeAuthService.lookupActiveRegistrationCodeRtRw(
+        code,
+      );
+      _logRegistrationLookup(
+        'lookupRegistrationCodeRemote input="$code" result=${rtRw ?? "null"}',
+      );
+      return rtRw;
+    } catch (error, stackTrace) {
+      _logRegistrationLookup(
+        'lookupRegistrationCodeRemote error=${error.runtimeType}: $error',
+      );
+      _logRegistrationLookup(stackTrace.toString());
+      return null;
+    }
+  }
+
+  Future<RegistrationCodeLookupResult?> lookupRtRegistrationCodeRemote(
+    String code,
+  ) async {
+    _logRegistrationLookup(
+      'lookupRtRegistrationCodeRemote input="$code" initialized=${SupabaseService.isInitialized}',
+    );
+    if (code.trim().isEmpty) {
+      _pendingRtRegistrationCode = null;
+      notifyListeners();
+      _logRegistrationLookup(
+        'lookupRtRegistrationCodeRemote returning null: empty input',
+      );
+      return null;
+    }
+
+    if (!SupabaseService.isInitialized) {
+      _pendingRtRegistrationCode = null;
+      notifyListeners();
+      _logRegistrationLookup(
+        'lookupRtRegistrationCodeRemote returning null: Supabase not initialized',
+      );
+      return null;
+    }
+
+    try {
+      _logRegistrationLookup('CALL AppState lookup input="$code"');
+      final lookup = await _activeAuthService.lookupActiveAdminRegistrationCode(
+        code,
+      );
+      _pendingRtRegistrationCode = lookup;
+      notifyListeners();
+      _logRegistrationLookup(
+        'lookupRtRegistrationCodeRemote result=${lookup == null ? "null" : "${lookup.code} rt=${lookup.rt} rw=${lookup.rw} type=${lookup.registrationType.name}"}',
+      );
+      return lookup;
+    } catch (error, stackTrace) {
+      _pendingRtRegistrationCode = null;
+      notifyListeners();
+      _logRegistrationLookup(
+        'lookupRtRegistrationCodeRemote error=${error.runtimeType}: $error',
+      );
+      _logRegistrationLookup(stackTrace.toString());
       return null;
     }
   }
@@ -542,9 +643,118 @@ class AppState with ChangeNotifier {
     } on AuthServiceException catch (error) {
       return {'success': false, 'message': error.message};
     } catch (error) {
+      debugPrint('registerRTWithSupabase error: $error');
+      return {
+        'success': false,
+        'message': error.toString(),
+        'debugMessage': error.toString(),
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>> registerRTWithSupabase({
+    required String name,
+    required String email,
+    required String password,
+    required String registrationCode,
+    required String phone,
+    required String jabatan,
+  }) async {
+    if (name.trim().isEmpty ||
+        email.trim().isEmpty ||
+        password.isEmpty ||
+        registrationCode.trim().isEmpty ||
+        phone.trim().isEmpty ||
+        jabatan.trim().isEmpty) {
+      return {'success': false, 'message': 'Semua data registrasi wajib diisi'};
+    }
+
+    if (!SupabaseService.isInitialized) {
+      return {'success': false, 'message': 'Konfigurasi Supabase belum aktif'};
+    }
+
+    try {
+      final user = await _activeAuthService.registerRTWithSupabase(
+        name: name,
+        email: email,
+        password: password,
+        registrationCode: registrationCode,
+        phone: phone,
+        jabatan: jabatan,
+      );
+      _setCurrentUser(user);
+
+      if (user.rtRw == null || user.rtRw!.trim().isEmpty) {
+        return {
+          'success': false,
+          'message':
+              'Registrasi RT berhasil, tetapi RT/RW tidak tersedia untuk generate kode warga.',
+        };
+      }
+
+      final generatedWargaCode = await _activeBackendService
+          .createOrGetWargaRegistrationCode(
+            currentUser: user,
+            rtRw: user.rtRw!,
+          );
+
+      await _activeAuthService.markRegistrationCodeAsUsed(registrationCode);
+
+      try {
+        await refreshRemoteData();
+        if (user.role == UserRole.admin) {
+          await refreshVerificationUsers();
+        }
+      } catch (error, stackTrace) {
+        debugPrint('refresh after RT registration failed: $error');
+        debugPrint(stackTrace.toString());
+      }
+
+      _pendingRtRegistrationCode = null;
+      notifyListeners();
+
+      return {
+        'success': true,
+        'role': user.role,
+        'verificationStatus': user.verificationStatus,
+        'rtRw': user.rtRw,
+        'wargaRegistrationCode': generatedWargaCode.code,
+        'wargaRegistrationType': generatedWargaCode.registrationType,
+      };
+    } on AuthServiceException catch (error) {
+      return {'success': false, 'message': error.message};
+    } catch (error) {
       return {
         'success': false,
         'message': 'Registrasi gagal. Silakan coba lagi.',
+        'debugMessage': error.toString(),
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>> generateWargaRegistrationCodeForRt(
+    String rtRw,
+  ) async {
+    if (rtRw.trim().isEmpty) {
+      return {'success': false, 'message': 'Nomor RT/RW wajib diisi'};
+    }
+
+    try {
+      final generatedCode = _activeBackendService.generateWargaRegistrationCode(
+        rtRw,
+      );
+      return {
+        'success': true,
+        'code': generatedCode,
+        'registrationType': RegistrationCodeType.warga,
+        'rtRw': rtRw,
+      };
+    } on BackendServiceException catch (error) {
+      return {'success': false, 'message': error.message};
+    } catch (error) {
+      return {
+        'success': false,
+        'message': 'Gagal membuat kode daftar warga.',
         'debugMessage': error.toString(),
       };
     }
@@ -696,16 +906,27 @@ class AppState with ChangeNotifier {
     return '$rtPart-$randomPart';
   }
 
+  (String, String) _splitRtRw(String rtRw) {
+    final parts = rtRw.split('/');
+    final rt = parts.isNotEmpty ? parts.first.trim() : '';
+    final rw = parts.length > 1 ? parts[1].trim() : '';
+    return (rt, rw);
+  }
+
   /// Add a new registration code (manual or auto-generated)
   void addRegistrationCode({required String code, required String rtRw}) {
     if (_currentUser == null) return;
 
+    final splitRtRw = _splitRtRw(rtRw);
     final newCode = RegistrationCode(
       id: 'regcode-${DateTime.now().millisecondsSinceEpoch}',
       code: code.toUpperCase(),
       rtRw: rtRw,
+      rt: splitRtRw.$1,
+      rw: splitRtRw.$2,
       createdBy: _currentUser!.id,
       createdByName: _currentUser!.name,
+      registrationType: RegistrationCodeType.warga,
       createdAt: DateTime.now(),
       isActive: true,
     );
@@ -717,6 +938,7 @@ class AppState with ChangeNotifier {
         code: code,
         rtRw: rtRw,
         currentUser: _currentUser!,
+        registrationType: RegistrationCodeType.warga,
       );
       await refreshRemoteData();
     });

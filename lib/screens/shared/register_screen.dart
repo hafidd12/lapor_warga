@@ -35,8 +35,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   // RT-specific
   final _jabatanController = TextEditingController();
-  final _wilayahController = TextEditingController();
   final _rtRegistrationCodeController = TextEditingController();
+  final _rtController = TextEditingController();
+  final _rwController = TextEditingController();
+  final _wargaRegistrationCodeController = TextEditingController();
 
   bool _obscureText = true;
   bool _obscureConfirmText = true;
@@ -48,6 +50,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _codeLookupAttempted = false;
   String? _foundRtRw;
   int _registrationLookupToken = 0;
+  String? _rtRegistrationCodeErrorText;
+  int _rtRegistrationLookupToken = 0;
+  bool _isGeneratingWargaCode = false;
+  static final RegExp _rtRegistrationCodePattern = RegExp(
+    r'^RT(\d{2})-(\d{2})$',
+    caseSensitive: false,
+  );
 
   Future<void> _pickKtpImage(ImageSource source) async {
     try {
@@ -201,10 +210,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   void initState() {
     super.initState();
-    // For warga: listen to registration code changes and auto-fill RT/RW
     if (widget.isWarga) {
       _registrationCodeController.addListener(_onRegistrationCodeChanged);
     }
+  }
+
+  void _clearRtRegistrationLookup() {
+    _rtRegistrationLookupToken++;
+    _rtRegistrationCodeErrorText = null;
+    _rtController.text = '';
+    _rwController.text = '';
+    _wargaRegistrationCodeController.text = '';
   }
 
   void _onRegistrationCodeChanged() {
@@ -248,6 +264,65 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
   }
 
+  Future<void> _onRtRegistrationCodeChanged(String value) async {
+    final code = value.trim();
+    debugPrint('TEXTFIELD onChanged value="$code"');
+
+    if (code.isEmpty) {
+      if (!mounted) return;
+      setState(_clearRtRegistrationLookup);
+      return;
+    }
+
+    if (!_rtRegistrationCodePattern.hasMatch(code)) {
+      if (!mounted) return;
+      setState(() {
+        _rtRegistrationCodeErrorText = code.length >= 7
+            ? 'Kode registrasi RT tidak valid, tidak aktif, atau sudah digunakan.'
+            : null;
+        _rtController.text = '';
+        _rwController.text = '';
+        _wargaRegistrationCodeController.text = '';
+      });
+      return;
+    }
+
+    final lookupToken = ++_rtRegistrationLookupToken;
+    final state = Provider.of<AppState>(context, listen: false);
+    final useRemoteLookup = SupabaseService.isInitialized;
+
+    if (!useRemoteLookup) {
+      if (!mounted || lookupToken != _rtRegistrationLookupToken) return;
+      setState(() {
+        _rtRegistrationCodeErrorText =
+            'Konfigurasi Supabase belum aktif untuk memvalidasi kode RT.';
+        _rtController.text = '';
+        _rwController.text = '';
+        _wargaRegistrationCodeController.text = '';
+      });
+      return;
+    }
+
+    debugPrint('CALL AppState lookup code="$code"');
+    final lookup = await state.lookupRtRegistrationCodeRemote(code);
+    if (!mounted || lookupToken != _rtRegistrationLookupToken) return;
+
+    setState(() {
+      if (lookup != null) {
+        _rtRegistrationCodeErrorText = null;
+        _rtController.text = lookup.rt;
+        _rwController.text = lookup.rw;
+        _wargaRegistrationCodeController.text = '';
+      } else {
+        _rtRegistrationCodeErrorText =
+            'Kode registrasi RT tidak valid, tidak aktif, atau sudah digunakan.';
+        _rtController.text = '';
+        _rwController.text = '';
+        _wargaRegistrationCodeController.text = '';
+      }
+    });
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -261,8 +336,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _ktpNumberController.dispose();
     _ktpImage = null;
     _jabatanController.dispose();
-    _wilayahController.dispose();
     _rtRegistrationCodeController.dispose();
+    _rtController.dispose();
+    _rwController.dispose();
+    _wargaRegistrationCodeController.dispose();
     super.dispose();
   }
 
@@ -337,30 +414,66 @@ class _RegisterScreenState extends State<RegisterScreen> {
             address: _addressController.text,
             ktpImagePath: _ktpImage?.localPath,
           );
-          Navigator.of(context).pushNamedAndRemoveUntil(
-            '/waiting-verification',
-            (route) => false,
-          );
+          Navigator.of(
+            context,
+          ).pushNamedAndRemoveUntil('/waiting-verification', (route) => false);
         } else {
-          state.registerRT(
-            name: _nameController.text,
-            email: _emailController.text,
-            password: _passwordController.text,
-            phone: _phoneController.text,
-            jabatan: _jabatanController.text,
-            rtRw: _wilayahController.text,
-          );
-          final regCode = _rtRegistrationCodeController.text.trim();
-          if (regCode.isNotEmpty) {
-            state.addRegistrationCode(
-              code: regCode,
-              rtRw: _wilayahController.text,
+          final rt = _rtController.text.trim();
+          final rw = _rwController.text.trim();
+          final rtRw = '$rt/$rw';
+
+          if (SupabaseService.isInitialized) {
+            final result = await state.registerRTWithSupabase(
+              name: _nameController.text,
+              email: _emailController.text,
+              password: _passwordController.text,
+              registrationCode: _rtRegistrationCodeController.text,
+              phone: _phoneController.text,
+              jabatan: _jabatanController.text,
             );
+
+            if (!mounted) return;
+
+            if (result['success'] == true) {
+              final wargaCode = result['wargaRegistrationCode']?.toString();
+              if (wargaCode != null && wargaCode.isNotEmpty) {
+                setState(() {
+                  _wargaRegistrationCodeController.text = wargaCode;
+                });
+              }
+              Navigator.of(
+                context,
+              ).pushNamedAndRemoveUntil('/home', (route) => false);
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    result['message']?.toString() ??
+                        'Registrasi RT gagal. Silakan coba lagi.',
+                  ),
+                  backgroundColor: AppTheme.statusHigh,
+                ),
+              );
+            }
+          } else {
+            state.registerRT(
+              name: _nameController.text,
+              email: _emailController.text,
+              password: _passwordController.text,
+              phone: _phoneController.text,
+              jabatan: _jabatanController.text,
+              rtRw: rtRw,
+            );
+            final regCode = _wargaRegistrationCodeController.text.trim().isEmpty
+                ? 'WRG$rt-$rw'
+                : _wargaRegistrationCodeController.text.trim();
+            if (regCode.isNotEmpty) {
+              state.addRegistrationCode(code: regCode, rtRw: rtRw);
+            }
+            Navigator.of(
+              context,
+            ).pushNamedAndRemoveUntil('/home', (route) => false);
           }
-          Navigator.of(context).pushNamedAndRemoveUntil(
-            '/home',
-            (route) => false,
-          );
         }
       } finally {
         if (mounted) {
@@ -991,27 +1104,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ),
                               const SizedBox(height: 14),
 
-                              // Wilayah RT/RW
-                              _buildInputLabel('NOMOR RT/RW'),
-                              const SizedBox(height: 4),
-                              _buildTextFormField(
-                                controller: _wilayahController,
-                                hintText: '005/002',
-                                prefixIcon: Icons.location_on_outlined,
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Nomor RT/RW wajib diisi';
-                                  }
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(height: 14),
-
-                              // Kode Registrasi Warga
-                              _buildInputLabel('KODE REGISTRASI UNTUK WARGA'),
+                              // Kode Registrasi RT
+                              _buildInputLabel('KODE REGISTRASI RT'),
                               const SizedBox(height: 4),
                               const Text(
-                                'Buat kode registrasi yang akan digunakan warga untuk mendaftar ke RT Anda. Anda bisa mengisi sendiri atau generate otomatis.',
+                                'Masukkan kode registrasi RT untuk memuat RT/RW otomatis dari backend.',
                                 style: TextStyle(
                                   fontSize: 10,
                                   color: AppTheme.secondaryColor,
@@ -1019,120 +1116,216 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 ),
                               ),
                               const SizedBox(height: 8),
+                              TextFormField(
+                                controller: _rtRegistrationCodeController,
+                                textCapitalization:
+                                    TextCapitalization.characters,
+                                onChanged: (value) {
+                                  _onRtRegistrationCodeChanged(value);
+                                },
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: AppTheme.textPrimaryColor,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 1.2,
+                                ),
+                                decoration:
+                                    _buildInputDecoration(
+                                      hintText: 'RT03-10',
+                                      prefixIcon: Icons.vpn_key_outlined,
+                                    ).copyWith(
+                                      errorText: _rtRegistrationCodeErrorText,
+                                    ),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Kode registrasi RT wajib diisi';
+                                  }
+                                  if (_rtRegistrationCodeErrorText != null) {
+                                    return _rtRegistrationCodeErrorText;
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 14),
+
                               Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Expanded(
-                                    child: TextFormField(
-                                      controller: _rtRegistrationCodeController,
-                                      textCapitalization:
-                                          TextCapitalization.characters,
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        color: AppTheme.textPrimaryColor,
-                                        fontWeight: FontWeight.w600,
-                                        letterSpacing: 1.2,
-                                      ),
-                                      decoration: _buildInputDecoration(
-                                        hintText: 'RT05-XXXX',
-                                        prefixIcon: Icons.vpn_key_outlined,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  SizedBox(
-                                    height: 48,
-                                    child: ElevatedButton.icon(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: AppTheme.primaryFixed,
-                                        foregroundColor: AppTheme.primaryColor,
-                                        elevation: 0,
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            10,
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        _buildInputLabel('RT'),
+                                        const SizedBox(height: 4),
+                                        TextFormField(
+                                          controller: _rtController,
+                                          readOnly: true,
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            color: AppTheme.textPrimaryColor,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                          decoration: _buildInputDecoration(
+                                            hintText: 'RT otomatis',
+                                            prefixIcon: Icons.numbers_outlined,
                                           ),
                                         ),
-                                      ),
-                                      onPressed: () {
-                                        final rtRw = _wilayahController.text
-                                            .trim();
-                                        if (rtRw.isEmpty) {
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            const SnackBar(
-                                              content: Text(
-                                                'Isi Nomor RT/RW terlebih dahulu',
-                                              ),
-                                              backgroundColor:
-                                                  AppTheme.statusMedium,
-                                            ),
-                                          );
-                                          return;
-                                        }
-                                        final state = Provider.of<AppState>(
-                                          context,
-                                          listen: false,
-                                        );
-                                        final code = state
-                                            .generateRegistrationCode(rtRw);
-                                        _rtRegistrationCodeController.text =
-                                            code;
-                                      },
-                                      icon: const Icon(
-                                        Icons.auto_awesome,
-                                        size: 16,
-                                      ),
-                                      label: const Text(
-                                        'Generate',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        _buildInputLabel('RW'),
+                                        const SizedBox(height: 4),
+                                        TextFormField(
+                                          controller: _rwController,
+                                          readOnly: true,
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            color: AppTheme.textPrimaryColor,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                          decoration: _buildInputDecoration(
+                                            hintText: 'RW otomatis',
+                                            prefixIcon: Icons.numbers_outlined,
+                                          ),
                                         ),
-                                      ),
+                                      ],
                                     ),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 6,
+                              const SizedBox(height: 14),
+
+                              _buildInputLabel('KODE DAFTAR WARGA'),
+                              const SizedBox(height: 4),
+                              TextFormField(
+                                controller: _wargaRegistrationCodeController,
+                                readOnly: true,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: AppTheme.textPrimaryColor,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 1.2,
                                 ),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.primaryFixed.withValues(
-                                    alpha: 0.15,
-                                  ),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: AppTheme.primaryColor.withValues(
-                                      alpha: 0.15,
+                                decoration: _buildInputDecoration(
+                                  hintText: 'WRG03-10',
+                                  prefixIcon: Icons.badge_outlined,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton.icon(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppTheme.primaryFixed,
+                                    foregroundColor: AppTheme.primaryColor,
+                                    elevation: 0,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 14,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
                                     ),
                                   ),
-                                ),
-                                child: const Row(
-                                  children: [
-                                    Icon(
-                                      Icons.info_outline,
-                                      size: 14,
-                                      color: AppTheme.primaryColor,
-                                    ),
-                                    SizedBox(width: 6),
-                                    Expanded(
-                                      child: Text(
-                                        'Bagikan kode ini ke warga agar mereka bisa mendaftar ke RT Anda. Opsional — bisa juga dibuat nanti dari Profil.',
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          color: AppTheme.primaryColor,
-                                          height: 1.3,
+                                  onPressed: _isGeneratingWargaCode
+                                      ? null
+                                      : () async {
+                                          final rt = _rtController.text.trim();
+                                          final rw = _rwController.text.trim();
+                                          final rtRw = '$rt/$rw';
+
+                                          if (rt.isEmpty || rw.isEmpty) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                  'Kode registrasi RT harus valid terlebih dahulu.',
+                                                ),
+                                                backgroundColor:
+                                                    AppTheme.statusMedium,
+                                              ),
+                                            );
+                                            return;
+                                          }
+
+                                          setState(() {
+                                            _isGeneratingWargaCode = true;
+                                          });
+
+                                          try {
+                                            final state = Provider.of<AppState>(
+                                              context,
+                                              listen: false,
+                                            );
+                                            final messenger =
+                                                ScaffoldMessenger.of(context);
+                                            final result = await state
+                                                .generateWargaRegistrationCodeForRt(
+                                                  rtRw,
+                                                );
+
+                                            if (!mounted) return;
+
+                                            if (result['success'] == true) {
+                                              setState(() {
+                                                _wargaRegistrationCodeController
+                                                        .text =
+                                                    result['code']
+                                                        ?.toString() ??
+                                                    '';
+                                              });
+                                            } else {
+                                              messenger.showSnackBar(
+                                                SnackBar(
+                                                  content: Text(
+                                                    result['message']
+                                                            ?.toString() ??
+                                                        'Gagal membuat kode daftar warga.',
+                                                  ),
+                                                  backgroundColor:
+                                                      AppTheme.statusHigh,
+                                                ),
+                                              );
+                                            }
+                                          } finally {
+                                            if (mounted) {
+                                              setState(() {
+                                                _isGeneratingWargaCode = false;
+                                              });
+                                            }
+                                          }
+                                        },
+                                  icon: _isGeneratingWargaCode
+                                      ? const SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                                  AppTheme.primaryColor,
+                                                ),
+                                          ),
+                                        )
+                                      : const Icon(
+                                          Icons.auto_awesome,
+                                          size: 16,
                                         ),
-                                      ),
+                                  label: Text(
+                                    _isGeneratingWargaCode
+                                        ? 'Membuat...'
+                                        : 'Generate Kode Daftar Warga',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
                                     ),
-                                  ],
+                                  ),
                                 ),
                               ),
                               const SizedBox(height: 14),

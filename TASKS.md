@@ -46,8 +46,8 @@
 
 - [ ] Backend API Development
   - [x] Auth API
-  - [ ] User registration API
-  - [ ] Warga verification API
+  - [x] User registration API
+  - [x] Warga verification API
   - [ ] Report API
   - [ ] Announcement API
   - [ ] Voting API

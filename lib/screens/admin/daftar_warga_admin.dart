@@ -94,6 +94,9 @@ class _DaftarWargaAdminScreenState extends State<DaftarWargaAdminScreen>
     final pending = state.pendingWarga.where(_matchesSearch).toList();
     final verified = state.verifiedWarga.where(_matchesSearch).toList();
     final rejected = state.rejectedWarga.where(_matchesSearch).toList();
+    debugPrint(
+      '[DaftarWargaAdminScreen] UI data currentUser.rtRw=${state.currentUser?.rtRw ?? "null"} pending=${pending.length} verified=${verified.length} rejected=${rejected.length} pendingRtRws=${pending.map((u) => u.rtRw ?? "-").toList()} verifiedRtRws=${verified.map((u) => u.rtRw ?? "-").toList()} rejectedRtRws=${rejected.map((u) => u.rtRw ?? "-").toList()}',
+    );
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,

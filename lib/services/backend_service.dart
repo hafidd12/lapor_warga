@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/models.dart';
@@ -147,9 +148,8 @@ class BackendService {
       final pollId = _stringValue(row['id']) ?? '';
       final optionRows = optionsByPoll[pollId] ?? [];
       optionRows.sort(
-        (a, b) => _intValue(a['sort_order']).compareTo(
-          _intValue(b['sort_order']),
-        ),
+        (a, b) =>
+            _intValue(a['sort_order']).compareTo(_intValue(b['sort_order'])),
       );
       final options = optionRows
           .map((option) => _stringValue(option['option_text']) ?? '')
@@ -178,10 +178,17 @@ class BackendService {
   }
 
   Future<List<RegistrationCode>> fetchRegistrationCodes() async {
+    _logRegistrationCodes(
+      'fetchRegistrationCodes query=select(id, code, rt_rw, rt, rw, created_by, created_by_name, registration_type, created_at, used_at, is_active).order(created_at, desc)',
+    );
     final data = await _client
         .from('registration_codes')
-        .select('id, code, rt_rw, created_by, created_by_name, created_at, is_active')
+        .select(
+          'id, code, rt_rw, rt, rw, created_by, created_by_name, registration_type, created_at, used_at, is_active',
+        )
         .order('created_at', ascending: false);
+
+    _logRegistrationCodes('fetchRegistrationCodes raw=${data.toString()}');
 
     return _rows(data).map(_registrationCodeFromRow).toList();
   }
@@ -310,11 +317,7 @@ class BackendService {
     final pollId = _stringValue(pollData['id']) ?? '';
     await _client.from('poll_options').insert([
       for (var i = 0; i < options.length; i++)
-        {
-          'poll_id': pollId,
-          'option_text': options[i],
-          'sort_order': i,
-        },
+        {'poll_id': pollId, 'option_text': options[i], 'sort_order': i},
     ]);
 
     await createActivity(
@@ -395,19 +398,116 @@ class BackendService {
     required String code,
     required String rtRw,
     required AppUser currentUser,
+    RegistrationCodeType registrationType = RegistrationCodeType.warga,
   }) async {
+    final splitRtRw = _splitRtRw(rtRw);
+    _logRegistrationCodes(
+      'createRegistrationCode input code="$code" rtRw="$rtRw" splitRt="${splitRtRw.$1}" splitRw="${splitRtRw.$2}" type=${registrationType.name} creator=${currentUser.id}',
+    );
     final data = await _client
         .from('registration_codes')
         .insert({
           'code': code.toUpperCase(),
           'rt_rw': rtRw,
+          'rt': splitRtRw.$1,
+          'rw': splitRtRw.$2,
+          'registration_type': _registrationTypeValue(registrationType),
           'created_by': currentUser.id,
           'created_by_name': currentUser.name,
         })
         .select()
         .single();
 
+    _logRegistrationCodes('createRegistrationCode raw=${data.toString()}');
+
     return _registrationCodeFromRow(Map<String, dynamic>.from(data));
+  }
+
+  String generateWargaRegistrationCode(String rtRw) {
+    final splitRtRw = _splitRtRw(rtRw);
+    _logRegistrationCodes(
+      'generateWargaRegistrationCode input rtRw="$rtRw" splitRt="${splitRtRw.$1}" splitRw="${splitRtRw.$2}"',
+    );
+    if (splitRtRw.$1.isEmpty || splitRtRw.$2.isEmpty) {
+      throw const BackendServiceException(
+        'Format RT/RW tidak valid untuk generate kode warga.',
+      );
+    }
+
+    final generated = 'WRG${splitRtRw.$1}-${splitRtRw.$2}';
+    _logRegistrationCodes('generateWargaRegistrationCode result="$generated"');
+    return generated;
+  }
+
+  Future<RegistrationCode?> findRegistrationCodeByCode(String code) async {
+    final normalizedCode = code.trim().toUpperCase();
+    _logRegistrationCodes(
+      'findRegistrationCodeByCode input="$code" normalized="$normalizedCode"',
+    );
+    if (normalizedCode.isEmpty) return null;
+
+    _logRegistrationCodes(
+      'findRegistrationCodeByCode query=select(code, rt_rw, rt, rw, created_by, created_by_name, registration_type, created_at, used_at, is_active).eq(code, "$normalizedCode").maybeSingle()',
+    );
+    try {
+      final data = await _client
+          .from('registration_codes')
+          .select(
+            'code, rt_rw, rt, rw, created_by, created_by_name, registration_type, created_at, used_at, is_active',
+          )
+          .eq('code', normalizedCode)
+          .maybeSingle();
+
+      _logRegistrationCodes('QUERY RESULT: $data');
+      _logRegistrationCodes(
+        'findRegistrationCodeByCode raw=${data == null ? "null" : data.toString()}',
+      );
+
+      if (data == null) return null;
+      final parsed = _registrationCodeFromRow(Map<String, dynamic>.from(data));
+      _logRegistrationCodes(
+        'findRegistrationCodeByCode parsed code=${parsed.code} type=${parsed.registrationType.name} active=${parsed.isActive} usedAt=${parsed.usedAt}',
+      );
+      return parsed;
+    } on PostgrestException catch (error, stackTrace) {
+      debugPrint('POSTGREST ERROR');
+      debugPrint('message: ${error.message}');
+      debugPrint('details: ${error.details}');
+      debugPrint('hint: ${error.hint}');
+      debugPrint('code: ${error.code}');
+      debugPrintStack(stackTrace: stackTrace);
+      _logRegistrationCodes(
+        'findRegistrationCodeByCode postgrestError message=${error.message} details=${error.details} hint=${error.hint} code=${error.code}',
+      );
+      rethrow;
+    }
+  }
+
+  Future<RegistrationCode> createOrGetWargaRegistrationCode({
+    required AppUser currentUser,
+    required String rtRw,
+  }) async {
+    final code = generateWargaRegistrationCode(rtRw);
+    _logRegistrationCodes(
+      'createOrGetWargaRegistrationCode input rtRw="$rtRw" generatedCode="$code" user=${currentUser.id}',
+    );
+    final existing = await findRegistrationCodeByCode(code);
+    if (existing != null) {
+      _logRegistrationCodes(
+        'createOrGetWargaRegistrationCode existing id=${existing.id} code=${existing.code} type=${existing.registrationType.name} active=${existing.isActive}',
+      );
+      return existing;
+    }
+
+    _logRegistrationCodes(
+      'createOrGetWargaRegistrationCode creating new code="$code"',
+    );
+    return createRegistrationCode(
+      code: code,
+      rtRw: rtRw,
+      currentUser: currentUser,
+      registrationType: RegistrationCodeType.warga,
+    );
   }
 
   Future<void> setRegistrationCodeActive({
@@ -490,13 +590,22 @@ class BackendService {
   }
 
   RegistrationCode _registrationCodeFromRow(Map<String, dynamic> row) {
+    final rt = _stringValue(row['rt']);
+    final rw = _stringValue(row['rw']);
+    _logRegistrationCodes(
+      "_registrationCodeFromRow raw id=${row['id']} code=${row['code']} type=${row['registration_type']} rt=${row['rt']} rw=${row['rw']} rtRw=${row['rt_rw']} active=${row['is_active']} usedAt=${row['used_at']}",
+    );
     return RegistrationCode(
       id: _stringValue(row['id']) ?? '',
       code: _stringValue(row['code']) ?? '',
-      rtRw: _stringValue(row['rt_rw']) ?? '',
+      rtRw: _stringValue(row['rt_rw']) ?? _composeRtRw(rt ?? '', rw ?? ''),
+      rt: rt,
+      rw: rw,
       createdBy: _stringValue(row['created_by']) ?? '',
       createdByName: _stringValue(row['created_by_name']) ?? 'Admin',
+      registrationType: _parseRegistrationType(row['registration_type']),
       createdAt: _dateTimeValue(row['created_at']) ?? DateTime.now(),
+      usedAt: _dateTimeValue(row['used_at']),
       isActive: row['is_active'] == true,
     );
   }
@@ -523,6 +632,32 @@ class BackendService {
       VerificationStatus.verified => 'verified',
       VerificationStatus.rejected => 'rejected',
     };
+  }
+
+  String _registrationTypeValue(RegistrationCodeType type) {
+    return switch (type) {
+      RegistrationCodeType.warga => 'warga',
+      RegistrationCodeType.admin => 'admin',
+    };
+  }
+
+  RegistrationCodeType _parseRegistrationType(dynamic value) {
+    return switch (value?.toString().trim().toLowerCase()) {
+      'admin' => RegistrationCodeType.admin,
+      _ => RegistrationCodeType.warga,
+    };
+  }
+
+  (String, String) _splitRtRw(String rtRw) {
+    final parts = rtRw.split('/');
+    final rt = parts.isNotEmpty ? parts.first.trim() : '';
+    final rw = parts.length > 1 ? parts[1].trim() : '';
+    return (rt, rw);
+  }
+
+  String _composeRtRw(String rt, String rw) {
+    if (rt.isEmpty || rw.isEmpty) return '';
+    return '$rt/$rw';
   }
 
   ReportPriority _parseReportPriority(dynamic value) {
@@ -556,5 +691,9 @@ class BackendService {
   int _intValue(dynamic value) {
     if (value is int) return value;
     return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  void _logRegistrationCodes(String message) {
+    debugPrint('[BackendService][registration_codes] $message');
   }
 }

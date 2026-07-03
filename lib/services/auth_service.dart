@@ -1,4 +1,4 @@
-import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/models.dart';
@@ -23,6 +23,10 @@ class AuthService {
       'Terlalu banyak percobaan registrasi. Silakan tunggu beberapa saat lalu coba lagi.';
   static const String _emailAlreadyRegisteredMessage =
       'Email ini sudah terdaftar. Silakan masuk atau gunakan email lain.';
+  static final RegExp _rtRegistrationCodePattern = RegExp(
+    r'^RT(\d{2})-(\d{2})$',
+    caseSensitive: false,
+  );
   static final RegExp _emailPattern = RegExp(r"^[^@\s]+@[^@\s]+\.[^@\s]+$");
 
   Session? get currentSession => _client.auth.currentSession;
@@ -54,19 +58,52 @@ class AuthService {
 
   Future<String?> lookupActiveRegistrationCodeRtRw(String code) async {
     final normalizedCode = code.trim().toUpperCase();
+    _logRegistrationLookup(
+      'lookupActiveRegistrationCodeRtRw input="$code" normalized="$normalizedCode"',
+    );
     if (normalizedCode.isEmpty) return null;
 
-    final data = await _client
-        .from('registration_codes')
-        .select('rt_rw')
-        .eq('code', normalizedCode)
-        .eq('is_active', true)
-        .maybeSingle();
+    final lookup = await _lookupRegistrationCode(
+      normalizedCode,
+      registrationType: RegistrationCodeType.warga,
+    );
+    _logRegistrationLookup(
+      'lookupActiveRegistrationCodeRtRw result=${lookup == null ? "null" : lookup.rtRw}',
+    );
+    return lookup?.rtRw;
+  }
 
-    if (data == null) return null;
+  Future<RegistrationCodeLookupResult?> lookupActiveAdminRegistrationCode(
+    String code,
+  ) async {
+    final normalizedCode = code.trim().toUpperCase();
+    debugPrint(
+      'CALL AuthService lookup input="$code" normalized="$normalizedCode"',
+    );
+    _logRegistrationLookup(
+      'lookupActiveAdminRegistrationCode input="$code" normalized="$normalizedCode"',
+    );
+    if (normalizedCode.isEmpty) return null;
 
-    final rtRw = data['rt_rw']?.toString().trim();
-    return rtRw?.isEmpty == true ? null : rtRw;
+    final patternMatch = _rtRegistrationCodePattern.hasMatch(normalizedCode);
+    _logRegistrationLookup(
+      'lookupActiveAdminRegistrationCode patternMatch=$patternMatch pattern=${_rtRegistrationCodePattern.pattern}',
+    );
+    if (!patternMatch) {
+      _logRegistrationLookup(
+        'lookupActiveAdminRegistrationCode returning null: code format mismatch',
+      );
+      return null;
+    }
+
+    final lookup = await _lookupRegistrationCode(
+      normalizedCode,
+      registrationType: RegistrationCodeType.admin,
+    );
+    _logRegistrationLookup(
+      'lookupActiveAdminRegistrationCode result=${lookup == null ? "null" : lookup.code}',
+    );
+    return lookup;
   }
 
   Future<String> uploadKtpImage({
@@ -190,8 +227,186 @@ class AuthService {
     }
   }
 
+  Future<AppUser> registerRTWithSupabase({
+    required String name,
+    required String email,
+    required String password,
+    required String registrationCode,
+    required String phone,
+    required String jabatan,
+  }) async {
+    final normalizedEmail = _normalizeEmail(email);
+    final normalizedName = name.trim();
+    final normalizedCode = registrationCode.trim().toUpperCase();
+    final normalizedPhone = phone.trim();
+    final normalizedJabatan = jabatan.trim();
+
+    try {
+      if (!_emailPattern.hasMatch(normalizedEmail)) {
+        throw const AuthServiceException(
+          'Format email tidak valid. Periksa kembali alamat email Anda.',
+        );
+      }
+
+      if (!_rtRegistrationCodePattern.hasMatch(normalizedCode)) {
+        throw const AuthServiceException(
+          'Format kode registrasi RT tidak valid. Gunakan format RT01-01.',
+        );
+      }
+
+      final codeLookup = await lookupActiveAdminRegistrationCode(
+        normalizedCode,
+      );
+      _logRegistrationLookup(
+        'registerRTWithSupabase codeLookup=${codeLookup == null ? "null" : "${codeLookup.code} rt=${codeLookup.rt} rw=${codeLookup.rw} type=${codeLookup.registrationType.name} active=${codeLookup.isActive}"}',
+      );
+      if (codeLookup == null) {
+        throw const AuthServiceException(
+          'Kode registrasi RT tidak ditemukan, tidak valid, atau sudah digunakan.',
+        );
+      }
+
+      if (codeLookup.rt.isEmpty || codeLookup.rw.isEmpty) {
+        throw const AuthServiceException(
+          'Kode registrasi RT tidak memiliki data RT/RW yang lengkap.',
+        );
+      }
+
+      final rtRw = codeLookup.rtRw.isEmpty
+          ? '${codeLookup.rt}/${codeLookup.rw}'
+          : codeLookup.rtRw;
+
+      final authResponse = await _client.auth.signUp(
+        email: normalizedEmail,
+        password: password,
+        data: {
+          'name': normalizedName,
+          'role': 'admin',
+          'phone': normalizedPhone,
+          'jabatan': normalizedJabatan,
+          'rt_rw': rtRw,
+          'rt': codeLookup.rt,
+          'rw': codeLookup.rw,
+          'registration_code': normalizedCode,
+          'registration_type': 'admin',
+        },
+      );
+
+      final authUser = authResponse.user;
+      if (authUser == null) {
+        throw const AuthServiceException(
+          'Registrasi gagal. User tidak terbentuk.',
+        );
+      }
+
+      if (authResponse.session == null && _client.auth.currentSession == null) {
+        throw const AuthServiceException(
+          'Akun sudah dibuat, tetapi email confirmation aktif sehingga sesi belum tersedia. '
+          'Registrasi RT membutuhkan sesi login untuk menandai kode registrasi sebagai terpakai.',
+        );
+      }
+
+      final nowIso = DateTime.now().toUtc().toIso8601String();
+      final profilePayload = {
+        'id': authUser.id,
+        'name': normalizedName,
+        'email': normalizedEmail,
+        'role': 'admin',
+        'avatar_url':
+            'https://api.dicebear.com/7.x/adventurer/svg?seed=$normalizedName',
+        'verification_status': 'verified',
+        'ktp_number': null,
+        'registration_code': normalizedCode,
+        'ktp_image_path': null,
+        'phone': normalizedPhone,
+        'rt_rw': rtRw,
+        'address': null,
+        'jabatan': normalizedJabatan,
+        'registered_at': nowIso,
+        'created_at': nowIso,
+        'updated_at': nowIso,
+      };
+      _logRegistrationLookup(
+        'registerRTWithSupabase profilePayload=$profilePayload',
+      );
+
+      final profileData = await _client
+          .from('profiles')
+          .upsert(profilePayload, onConflict: 'id')
+          .select(
+            'id, name, email, role, avatar_url, verification_status, ktp_number, registration_code, ktp_image_path, phone, rt_rw, address, jabatan, registered_at, created_at, updated_at',
+          )
+          .single();
+
+      _logRegistrationLookup(
+        'registerRTWithSupabase profileUpsertResult=${profileData.toString()}',
+      );
+      final profile = AppUser.fromProfileRow(
+        Map<String, dynamic>.from(profileData),
+      );
+      _logRegistrationLookup(
+        'registerRTWithSupabase created profile id=${profile.id} rtRw=${profile.rtRw} role=${profile.role.name}',
+      );
+
+      return profile;
+    } on AuthException catch (error) {
+      debugPrint('registerRTWithSupabase AuthException: ${error.toString()}');
+      throw AuthServiceException(_mapAuthErrorMessage(error.toString()));
+    } on PostgrestException catch (error) {
+      debugPrint(
+        'registerRTWithSupabase PostgrestException: message=${error.message} details=${error.details} hint=${error.hint} code=${error.code}',
+      );
+      rethrow;
+    } catch (error) {
+      debugPrint('registerRTWithSupabase error: $error');
+      rethrow;
+    }
+  }
+
+  Future<void> markRegistrationCodeAsUsed(String code) async {
+    final normalizedCode = code.trim().toUpperCase();
+    if (normalizedCode.isEmpty) {
+      throw const AuthServiceException('Kode registrasi RT wajib diisi.');
+    }
+
+    _logRegistrationLookup(
+      'markRegistrationCodeAsUsed input="$code" normalized="$normalizedCode"',
+    );
+
+    try {
+      await _client
+          .from('registration_codes')
+          .update({
+            'is_active': false,
+            'used_at': DateTime.now().toUtc().toIso8601String(),
+          })
+          .eq('code', normalizedCode)
+          .eq('registration_type', 'admin')
+          .eq('is_active', true);
+
+      _logRegistrationLookup(
+        'markRegistrationCodeAsUsed marked code as used code=$normalizedCode',
+      );
+    } catch (error, stackTrace) {
+      _logRegistrationLookup(
+        'markRegistrationCodeAsUsed error=${error.runtimeType}: $error',
+      );
+      _logRegistrationLookup(stackTrace.toString());
+      rethrow;
+    }
+  }
+
   String _mapRegistrationErrorMessage(String rawMessage) {
     final normalized = rawMessage.toLowerCase();
+
+    if (normalized.contains('format kode registrasi rt tidak valid')) {
+      return 'Format kode registrasi RT tidak valid. Gunakan format RT01-01.';
+    }
+
+    if (normalized.contains('kode registrasi rt tidak ditemukan') ||
+        normalized.contains('kode registrasi rt tidak memiliki data rt/rw')) {
+      return rawMessage;
+    }
 
     if (normalized.contains('row-level security') ||
         normalized.contains('rls') ||
@@ -293,5 +508,64 @@ class AuthService {
         .replaceAll(RegExp(r'[\u200B-\u200D\uFEFF]'), '')
         .trim()
         .toLowerCase();
+  }
+
+  Future<RegistrationCodeLookupResult?> _lookupRegistrationCode(
+    String normalizedCode, {
+    RegistrationCodeType? registrationType,
+  }) async {
+    _logRegistrationLookup(
+      '_lookupRegistrationCode start code="$normalizedCode" registrationType=${registrationType?.name ?? "any"}',
+    );
+
+    var query = _client
+        .from('registration_codes')
+        .select('code, rt, rw, rt_rw, registration_type, used_at, is_active')
+        .eq('code', normalizedCode)
+        .eq('is_active', true)
+        .isFilter('used_at', null);
+
+    if (registrationType != null) {
+      query = query.eq(
+        'registration_type',
+        _registrationTypeValue(registrationType),
+      );
+    }
+
+    try {
+      final data = await query.maybeSingle();
+      debugPrint(
+        'SUPABASE QUERY RESULT ${data == null ? "null" : data.toString()}',
+      );
+      _logRegistrationLookup(
+        '_lookupRegistrationCode rawResult=${data == null ? "null" : data.toString()}',
+      );
+      if (data == null) return null;
+
+      final parsed = RegistrationCodeLookupResult.fromRow(
+        Map<String, dynamic>.from(data),
+      );
+      _logRegistrationLookup(
+        '_lookupRegistrationCode parsed code=${parsed.code} type=${parsed.registrationType.name} rt=${parsed.rt} rw=${parsed.rw} rtRw=${parsed.rtRw} active=${parsed.isActive} usedAt=${parsed.usedAt}',
+      );
+      return parsed;
+    } catch (error, stackTrace) {
+      _logRegistrationLookup(
+        '_lookupRegistrationCode error=${error.runtimeType}: $error',
+      );
+      _logRegistrationLookup(stackTrace.toString());
+      rethrow;
+    }
+  }
+
+  String _registrationTypeValue(RegistrationCodeType type) {
+    return switch (type) {
+      RegistrationCodeType.warga => 'warga',
+      RegistrationCodeType.admin => 'admin',
+    };
+  }
+
+  void _logRegistrationLookup(String message) {
+    debugPrint('[AuthService][registration_codes] $message');
   }
 }

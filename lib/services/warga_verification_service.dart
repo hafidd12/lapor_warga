@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/models.dart';
@@ -22,23 +23,56 @@ class WargaVerificationService {
   static const String _profileColumns =
       'id, name, email, role, avatar_url, verification_status, ktp_number, registration_code, ktp_image_path, phone, rt_rw, address, jabatan, registered_at, created_at, updated_at';
 
-  Future<List<AppUser>> fetchWargaByStatus(VerificationStatus status) async {
-    final rows = await _client
+  Future<List<AppUser>> fetchWargaByStatus(
+    VerificationStatus status, {
+    String? rtRw,
+  }) async {
+    debugPrint(
+      '[WargaVerificationService] CALL fetchWargaByStatus status=${status.name} rtRw="${rtRw ?? ""}"',
+    );
+    var query = _client
         .from('profiles')
         .select(_profileColumns)
         .eq('role', 'warga')
-        .eq('verification_status', _statusValue(status))
-        .order('created_at', ascending: false);
+        .eq('verification_status', _statusValue(status));
+
+    final normalizedRtRw = rtRw?.trim() ?? '';
+    if (normalizedRtRw.isNotEmpty) {
+      query = query.eq('rt_rw', normalizedRtRw);
+    }
+
+    debugPrint(
+      '[WargaVerificationService] SUPABASE QUERY fetchWargaByStatus select=$_profileColumns.eq(role, warga).eq(verification_status, ${_statusValue(status)})${normalizedRtRw.isNotEmpty ? '.eq(rt_rw, "$normalizedRtRw")' : ""}.order(created_at desc)',
+    );
+    final rows = await query.order('created_at', ascending: false);
+    debugPrint(
+      '[WargaVerificationService] SUPABASE QUERY RESULT fetchWargaByStatus count=${rows.length} rtRws=${rows.map((row) => (row as Map)['rt_rw']?.toString() ?? "-").toList()}',
+    );
 
     return _mapRows(rows);
   }
 
-  Future<List<AppUser>> fetchAllWarga() async {
-    final rows = await _client
+  Future<List<AppUser>> fetchAllWarga({String? rtRw}) async {
+    debugPrint(
+      '[WargaVerificationService] CALL fetchAllWarga rtRw="${rtRw ?? ""}"',
+    );
+    var query = _client
         .from('profiles')
         .select(_profileColumns)
-        .eq('role', 'warga')
-        .order('created_at', ascending: false);
+        .eq('role', 'warga');
+
+    final normalizedRtRw = rtRw?.trim() ?? '';
+    if (normalizedRtRw.isNotEmpty) {
+      query = query.eq('rt_rw', normalizedRtRw);
+    }
+
+    debugPrint(
+      '[WargaVerificationService] SUPABASE QUERY fetchAllWarga select=$_profileColumns.eq(role, warga)${normalizedRtRw.isNotEmpty ? '.eq(rt_rw, "$normalizedRtRw")' : ""}.order(created_at desc)',
+    );
+    final rows = await query.order('created_at', ascending: false);
+    debugPrint(
+      '[WargaVerificationService] SUPABASE QUERY RESULT fetchAllWarga count=${rows.length} rtRws=${rows.map((row) => (row as Map)['rt_rw']?.toString() ?? "-").toList()}',
+    );
 
     return _mapRows(rows);
   }
