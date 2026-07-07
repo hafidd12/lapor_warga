@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../../models/models.dart';
 import '../../providers/app_state.dart';
 import '../../theme.dart';
+import 'daftar_pengumuman.dart';
+import 'detail_pengumuman.dart';
 
 class DashboardWargaScreen extends StatefulWidget {
   const DashboardWargaScreen({super.key});
@@ -21,9 +23,19 @@ class _DashboardWargaScreenState extends State<DashboardWargaScreen> {
     final user = state.currentUser;
     final isReportsLoading = state.reportsLoading;
     final reportError = state.reportsError;
+    final isAnnouncementsLoading = state.announcementsLoading;
+    final announcementError = state.announcementsError;
     final completedReports = state.completedReportsWithPhotos;
     final visibleCompletedReports = completedReports.take(2).toList();
-    final announcements = state.announcements.take(3).toList();
+    final currentRtRw = user?.rtRw?.trim() ?? '';
+    final announcements = state.announcements
+        .where(
+          (announcement) =>
+              announcement.rtRw.trim().isNotEmpty &&
+              announcement.rtRw.trim() == currentRtRw,
+        )
+        .take(2)
+        .toList();
     final myReports = state.myReports;
     final visibleMyReports = myReports.take(2).toList();
     final poll = state.polls.isNotEmpty ? state.polls.first : null;
@@ -54,10 +66,8 @@ class _DashboardWargaScreenState extends State<DashboardWargaScreen> {
                   title: 'Status Laporan Saya',
                   subtitle: 'Pantau laporan yang sudah Anda kirim',
                   actionLabel: 'Lihat Semua',
-                  onActionTap: () => _showMyReportsSheet(
-                    context,
-                    reports: myReports,
-                  ),
+                  onActionTap: () =>
+                      _showMyReportsSheet(context, reports: myReports),
                 ),
                 const SizedBox(height: 14),
                 if (isReportsLoading && myReports.isEmpty)
@@ -97,10 +107,30 @@ class _DashboardWargaScreenState extends State<DashboardWargaScreen> {
                   title: 'Pengumuman Terbaru',
                   subtitle: 'Informasi penting untuk warga',
                   actionLabel: 'Lihat Semua',
-                  onActionTap: () {},
+                  onActionTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const DaftarPengumumanScreen(),
+                      ),
+                    );
+                  },
                 ),
                 const SizedBox(height: 16),
-                if (announcements.isEmpty)
+                if (isAnnouncementsLoading && announcements.isEmpty)
+                  _buildSectionLoadingIndicator(
+                    message: 'Memuat pengumuman...',
+                    height: 228,
+                  )
+                else if (announcementError != null && announcements.isEmpty)
+                  _buildErrorSection(
+                    title: 'Pengumuman Terbaru',
+                    subtitle: announcementError,
+                    onRetry: () {
+                      state.refreshAnnouncements().catchError((_) {});
+                    },
+                    height: 228,
+                  )
+                else if (announcements.isEmpty)
                   _buildEmptyState(
                     icon: Icons.campaign_rounded,
                     title: 'Belum ada pengumuman baru',
@@ -117,7 +147,15 @@ class _DashboardWargaScreenState extends State<DashboardWargaScreen> {
                       itemBuilder: (context, index) {
                         return _AnnouncementCard(
                           announcement: announcements[index],
-                          onSeeAllTap: () {},
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => DetailPengumumanScreen(
+                                  announcement: announcements[index],
+                                ),
+                              ),
+                            );
+                          },
                         );
                       },
                     ),
@@ -1381,103 +1419,95 @@ class _CompletionProofCard extends StatelessWidget {
 
 class _AnnouncementCard extends StatelessWidget {
   final Announcement announcement;
-  final VoidCallback onSeeAllTap;
+  final VoidCallback onTap;
 
-  const _AnnouncementCard({
-    required this.announcement,
-    required this.onSeeAllTap,
-  });
+  const _AnnouncementCard({required this.announcement, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 286,
-      height: 228,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: AppTheme.outlineVariantColor.withValues(alpha: 0.55),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.035),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: AppTheme.primaryColor.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(16),
+        child: Container(
+          width: 286,
+          height: 210,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: AppTheme.outlineVariantColor.withValues(alpha: 0.55),
             ),
-            child: const Icon(
-              Icons.campaign_rounded,
-              color: AppTheme.primaryColor,
-              size: 24,
-            ),
-          ),
-          const SizedBox(height: 14),
-          Text(
-            announcement.title,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: AppTheme.textPrimaryColor,
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              height: 1.25,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            announcement.content,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: AppTheme.textSecondaryColor,
-              fontSize: 12,
-              height: 1.45,
-            ),
-          ),
-          const Spacer(),
-          Row(
-            children: [
-              const Icon(
-                Icons.schedule_rounded,
-                size: 14,
-                color: AppTheme.textSecondaryColor,
-              ),
-              const SizedBox(width: 5),
-              Text(
-                _formatDate(announcement.createdAt),
-                style: const TextStyle(
-                  color: AppTheme.textSecondaryColor,
-                  fontSize: 11,
-                ),
-              ),
-              const Spacer(),
-              TextButton(
-                onPressed: onSeeAllTap,
-                style: TextButton.styleFrom(
-                  foregroundColor: AppTheme.primaryColor,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                ),
-                child: const Text(
-                  'Lihat Semua',
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
-                ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.035),
+                blurRadius: 16,
+                offset: const Offset(0, 8),
               ),
             ],
           ),
-        ],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(
+                  Icons.campaign_rounded,
+                  color: AppTheme.primaryColor,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                announcement.title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: AppTheme.textPrimaryColor,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  height: 1.25,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                announcement.content,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: AppTheme.textSecondaryColor,
+                  fontSize: 12,
+                  height: 1.45,
+                ),
+              ),
+              const Spacer(),
+              Row(
+                children: [
+                  const Icon(
+                    Icons.schedule_rounded,
+                    size: 14,
+                    color: AppTheme.textSecondaryColor,
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    _formatDate(announcement.createdAt),
+                    style: const TextStyle(
+                      color: AppTheme.textSecondaryColor,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

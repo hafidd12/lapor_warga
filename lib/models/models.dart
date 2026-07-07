@@ -289,16 +289,54 @@ class Announcement {
   final String id;
   final String title;
   final String content;
-  final String author;
+  final String authorId;
+  final String authorName;
+  final String rtRw;
   final DateTime createdAt;
+  final DateTime? updatedAt;
+
+  String get author => authorName;
 
   Announcement({
     required this.id,
     required this.title,
     required this.content,
-    required this.author,
+    this.authorId = '',
+    String? author,
+    String? authorName,
+    this.rtRw = '',
     required this.createdAt,
-  });
+    this.updatedAt,
+  }) : authorName = _normalizedDisplayName(authorName ?? author);
+
+  Announcement copyWith({
+    String? id,
+    String? title,
+    String? content,
+    String? authorId,
+    String? author,
+    String? authorName,
+    String? rtRw,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return Announcement(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      content: content ?? this.content,
+      authorId: authorId ?? this.authorId,
+      author: author,
+      authorName: authorName ?? this.authorName,
+      rtRw: rtRw ?? this.rtRw,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  static String _normalizedDisplayName(String? value) {
+    final text = value?.trim() ?? '';
+    return text.isEmpty ? 'Admin' : text;
+  }
 }
 
 class Poll {

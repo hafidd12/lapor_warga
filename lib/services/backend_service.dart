@@ -41,10 +41,10 @@ class BackendService {
   static const String _reportSelectColumns =
       'id, citizen_id, citizen_name, title, description, category, priority, status, votes_count, report_photo_url, location_label, completion_photo_url, completed_at, completed_by_id, completed_by_name, created_at, updated_at';
 
-  Future<BackendSnapshot> fetchSnapshot() async {
+  Future<BackendSnapshot> fetchSnapshot({String? rtRw}) async {
     final users = await fetchUsers();
     const reports = <Report>[];
-    final announcements = await fetchAnnouncements();
+    final announcements = await fetchAnnouncements(rtRw: rtRw);
     final polls = await fetchPolls();
     final activities = await fetchActivities();
     final registrationCodes = await fetchRegistrationCodes();
@@ -145,11 +145,20 @@ class BackendService {
     );
   }
 
-  Future<List<Announcement>> fetchAnnouncements() async {
-    final data = await _client
+  Future<List<Announcement>> fetchAnnouncements({String? rtRw}) async {
+    final normalizedRtRw = rtRw?.trim() ?? '';
+    if (normalizedRtRw.isEmpty) {
+      return const [];
+    }
+
+    final query = _client
         .from('announcements')
-        .select('id, title, content, author_name, created_at')
-        .order('created_at', ascending: false);
+        .select(
+          'id, title, content, author_id, author_name, rt_rw, created_at, updated_at',
+        )
+        .eq('rt_rw', normalizedRtRw);
+
+    final data = await query.order('created_at', ascending: false);
 
     return _rows(data).map(_announcementFromRow).toList();
   }
@@ -409,7 +418,7 @@ class BackendService {
   }) async {
     if (report.upvotedByUserIds.contains(userId)) {
       await _client
-            .from('report_votes')
+          .from('report_votes')
           .delete()
           .eq('report_id', report.id)
           .eq('user_id', userId);
@@ -434,6 +443,9 @@ class BackendService {
           'content': content,
           'author_id': currentUser.id,
           'author_name': currentUser.name,
+          'rt_rw': currentUser.rtRw,
+          'created_at': DateTime.now().toUtc().toIso8601String(),
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
         })
         .select()
         .single();
@@ -447,6 +459,29 @@ class BackendService {
     );
 
     return _announcementFromRow(Map<String, dynamic>.from(data));
+  }
+
+  Future<Announcement> updateAnnouncement({
+    required String id,
+    required String title,
+    required String content,
+  }) async {
+    final data = await _client
+        .from('announcements')
+        .update({
+          'title': title,
+          'content': content,
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+    return _announcementFromRow(Map<String, dynamic>.from(data));
+  }
+
+  Future<void> deleteAnnouncement(String id) async {
+    await _client.from('announcements').delete().eq('id', id);
   }
 
   Future<Poll> createPoll({
@@ -724,8 +759,11 @@ class BackendService {
       id: _stringValue(row['id']) ?? '',
       title: _stringValue(row['title']) ?? '',
       content: _stringValue(row['content']) ?? '',
-      author: _stringValue(row['author_name']) ?? 'Admin',
+      authorId: _stringValue(row['author_id']) ?? '',
+      authorName: _stringValue(row['author_name']) ?? 'Admin',
+      rtRw: _stringValue(row['rt_rw']) ?? '',
       createdAt: _dateTimeValue(row['created_at']) ?? DateTime.now(),
+      updatedAt: _dateTimeValue(row['updated_at']),
     );
   }
 

@@ -48,6 +48,8 @@ class AppState with ChangeNotifier {
       List.unmodifiable(_registrationCodes);
   bool get reportsLoading => _reportsLoading;
   String? get reportsError => _reportsError;
+  bool get announcementsLoading => _announcementsLoading;
+  String? get announcementsError => _announcementsError;
   RegistrationCodeLookupResult? get pendingRtRegistrationCode =>
       _pendingRtRegistrationCode;
 
@@ -79,6 +81,8 @@ class AppState with ChangeNotifier {
 
   bool _reportsLoading = false;
   String? _reportsError;
+  bool _announcementsLoading = false;
+  String? _announcementsError;
 
   void _setReports(List<Report> reports) {
     _reports
@@ -112,6 +116,11 @@ class AppState with ChangeNotifier {
     _adminReports.clear();
     _reportsLoading = false;
     _reportsError = null;
+  }
+
+  void _setAnnouncementLoadState({required bool isLoading, String? error}) {
+    _announcementsLoading = isLoading;
+    _announcementsError = error;
   }
 
   void _loadMockData() {
@@ -205,26 +214,6 @@ class AppState with ChangeNotifier {
       ),
     );
 
-    // Mock Announcements
-    _announcements.addAll([
-      Announcement(
-        id: 'ann-1',
-        title: 'Gotong Royong Kebersihan RT 05',
-        content:
-            'Dihimbau kepada seluruh warga RT 05 untuk berkumpul pada hari Minggu pukul 07.00 WIB di Balai Warga untuk melaksanakan gotong royong membersihkan saluran air dan fasilitas umum guna mengantisipasi musim hujan.',
-        author: 'Ketua RT 05',
-        createdAt: DateTime.now().subtract(const Duration(days: 1)),
-      ),
-      Announcement(
-        id: 'ann-2',
-        title: 'Jadwal Imunisasi Posyandu Dahlia',
-        content:
-            'Pelaksanaan Posyandu balita dan pemeriksaan lansia rutin akan dilaksanakan pada hari Rabu, 10 Juni 2026 pukul 08.00 - 11.00 WIB di Poskamling RT 03. Mohon kehadiran ibu-ibu membawa KIA.',
-        author: 'Kader Posyandu',
-        createdAt: DateTime.now().subtract(const Duration(days: 3)),
-      ),
-    ]);
-
     // Mock Polls
     _polls.addAll([
       Poll(
@@ -259,10 +248,9 @@ class AppState with ChangeNotifier {
       ),
       AdminActivity(
         id: 'act-2',
-        description: 'Membuat pengumuman: Gotong Royong Kebersihan RT 05',
+        description: 'Membuat pengumuman',
         type: 'announcement',
         createdAt: DateTime.now().subtract(const Duration(days: 1)),
-        relatedId: 'ann-1',
       ),
       AdminActivity(
         id: 'act-3',
@@ -375,12 +363,55 @@ class AppState with ChangeNotifier {
     if (!SupabaseService.isInitialized) return;
 
     try {
-      final snapshot = await _activeBackendService.fetchSnapshot();
+      final snapshot = await _activeBackendService.fetchSnapshot(
+        rtRw: _currentUser?.rtRw,
+      );
       _replaceWithSnapshot(snapshot);
     } catch (error, stackTrace) {
       debugPrint(error.toString());
       debugPrint(stackTrace.toString());
     }
+  }
+
+  Future<void> refreshAnnouncements() async {
+    if (!SupabaseService.isInitialized) {
+      _setAnnouncementLoadState(isLoading: false, error: null);
+      notifyListeners();
+      return;
+    }
+
+    final currentRtRw = _currentUser?.rtRw?.trim() ?? '';
+    if (currentRtRw.isEmpty) {
+      _setAnnouncementLoadState(isLoading: false, error: null);
+      notifyListeners();
+      return;
+    }
+
+    _setAnnouncementLoadState(isLoading: true, error: null);
+    notifyListeners();
+
+    try {
+      final announcements = await _activeBackendService.fetchAnnouncements(
+        rtRw: currentRtRw,
+      );
+      _announcements
+        ..clear()
+        ..addAll(announcements);
+      _setAnnouncementLoadState(isLoading: false, error: null);
+    } catch (error, stackTrace) {
+      debugPrint(
+        '[AppState][announcement] refreshAnnouncements error=${error.runtimeType}: $error',
+      );
+      debugPrint(stackTrace.toString());
+      _announcements.clear();
+      _setAnnouncementLoadState(
+        isLoading: false,
+        error: 'Gagal memuat pengumuman.',
+      );
+      rethrow;
+    }
+
+    notifyListeners();
   }
 
   void _replaceWithSnapshot(BackendSnapshot snapshot) {
@@ -390,6 +421,7 @@ class AppState with ChangeNotifier {
     _announcements
       ..clear()
       ..addAll(snapshot.announcements);
+    _setAnnouncementLoadState(isLoading: false, error: null);
     _polls
       ..clear()
       ..addAll(snapshot.polls);
@@ -534,6 +566,7 @@ class AppState with ChangeNotifier {
         '[AppState][verification] loginWithSupabase currentUser.rtRw=${_currentUser?.rtRw ?? "null"}',
       );
       await refreshRemoteData();
+      await refreshAnnouncements();
       if (user.role == UserRole.admin) {
         await refreshAdminReports();
       } else {
@@ -570,6 +603,7 @@ class AppState with ChangeNotifier {
         '[AppState][verification] restoreSession currentUser.rtRw=${_currentUser?.rtRw ?? "null"}',
       );
       await refreshRemoteData();
+      await refreshAnnouncements();
       if (user.role == UserRole.admin) {
         await refreshAdminReports();
       } else {
@@ -597,6 +631,8 @@ class AppState with ChangeNotifier {
     _setCurrentUser(null);
     _clearVerificationUsers();
     _clearReportState();
+    _announcements.clear();
+    _setAnnouncementLoadState(isLoading: false, error: null);
     _verificationUsersLoaded = false;
     _pendingRtRegistrationCode = null;
     notifyListeners();
@@ -1359,38 +1395,132 @@ class AppState with ChangeNotifier {
   }
 
   void addAnnouncement(String title, String content) {
-    final author = _currentUser?.name ?? 'Admin';
-    final newAnn = Announcement(
-      id: 'ann-${DateTime.now().millisecondsSinceEpoch}',
+    unawaited(createAnnouncement(title: title, content: content));
+  }
+
+  Future<void> createAnnouncement({
+    required String title,
+    required String content,
+  }) async {
+    final currentUser = _currentUser;
+    if (currentUser == null || currentUser.role != UserRole.admin) {
+      return;
+    }
+
+    final now = DateTime.now();
+    final localAnnouncement = Announcement(
+      id: 'ann-${now.microsecondsSinceEpoch}',
       title: title,
       content: content,
-      author: author,
-      createdAt: DateTime.now(),
+      authorId: currentUser.id,
+      authorName: currentUser.name,
+      rtRw: currentUser.rtRw ?? '',
+      createdAt: now,
+      updatedAt: now,
     );
-    _announcements.insert(0, newAnn);
 
+    _announcements.insert(0, localAnnouncement);
     _activities.insert(
       0,
       AdminActivity(
-        id: 'act-${DateTime.now().millisecondsSinceEpoch}',
+        id: 'act-${now.microsecondsSinceEpoch}',
         description: 'Membuat pengumuman: $title',
         type: 'announcement',
-        createdAt: DateTime.now(),
-        relatedId: newAnn.id,
+        createdAt: now,
+        relatedId: localAnnouncement.id,
       ),
     );
-
     notifyListeners();
 
-    if (_currentUser != null) {
-      _runRemote(() async {
-        await _activeBackendService.createAnnouncement(
-          title: title,
-          content: content,
-          currentUser: _currentUser!,
-        );
-        await refreshRemoteData();
-      });
+    if (!SupabaseService.isInitialized) {
+      return;
+    }
+
+    try {
+      await _activeBackendService.createAnnouncement(
+        title: title,
+        content: content,
+        currentUser: currentUser,
+      );
+      await refreshRemoteData();
+    } catch (error, stackTrace) {
+      debugPrint(
+        '[AppState][announcement] createAnnouncement error=${error.runtimeType}: $error',
+      );
+      debugPrint(stackTrace.toString());
+    }
+  }
+
+  Future<void> updateAnnouncement({
+    required String id,
+    required String title,
+    required String content,
+  }) async {
+    final currentUser = _currentUser;
+    if (currentUser == null || currentUser.role != UserRole.admin) {
+      return;
+    }
+
+    final index = _announcements.indexWhere(
+      (announcement) => announcement.id == id,
+    );
+    if (index == -1) return;
+
+    final now = DateTime.now();
+    _announcements[index] = _announcements[index].copyWith(
+      title: title,
+      content: content,
+      updatedAt: now,
+    );
+    notifyListeners();
+
+    if (!SupabaseService.isInitialized) {
+      return;
+    }
+
+    try {
+      await _activeBackendService.updateAnnouncement(
+        id: id,
+        title: title,
+        content: content,
+      );
+      await refreshRemoteData();
+    } catch (error, stackTrace) {
+      debugPrint(
+        '[AppState][announcement] updateAnnouncement error=${error.runtimeType}: $error',
+      );
+      debugPrint(stackTrace.toString());
+    }
+  }
+
+  Future<void> deleteAnnouncement(String id) async {
+    final currentUser = _currentUser;
+    if (currentUser == null || currentUser.role != UserRole.admin) {
+      return;
+    }
+
+    final index = _announcements.indexWhere(
+      (announcement) => announcement.id == id,
+    );
+    if (index == -1) return;
+
+    final removedAnnouncement = _announcements.removeAt(index);
+    notifyListeners();
+
+    if (!SupabaseService.isInitialized) {
+      return;
+    }
+
+    try {
+      await _activeBackendService.deleteAnnouncement(id);
+      await refreshRemoteData();
+    } catch (error, stackTrace) {
+      debugPrint(
+        '[AppState][announcement] deleteAnnouncement error=${error.runtimeType}: $error',
+      );
+      debugPrint(stackTrace.toString());
+      _announcements.insert(index, removedAnnouncement);
+      notifyListeners();
     }
   }
 

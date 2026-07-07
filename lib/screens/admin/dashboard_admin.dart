@@ -20,6 +20,7 @@ class DashboardAdminScreen extends StatefulWidget {
 class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
   final ScrollController _scrollController = ScrollController();
   final GlobalKey _reportSectionKey = GlobalKey();
+  final GlobalKey _announcementSectionKey = GlobalKey();
   final GlobalKey _activitySectionKey = GlobalKey();
 
   String _selectedStatusFilter = 'Semua Status';
@@ -143,6 +144,54 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
     );
   }
 
+  Future<void> _openAnnouncementForm(
+    BuildContext context, {
+    Announcement? announcement,
+  }) async {
+    final result = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => BuatPengumumanAdminScreen(announcement: announcement),
+      ),
+    );
+
+    if (!mounted) return;
+    if (result == true) {
+      await context.read<AppState>().refreshAnnouncements().catchError((_) {});
+    }
+  }
+
+  Future<void> _confirmDeleteAnnouncement(
+    BuildContext context,
+    Announcement announcement,
+  ) async {
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Hapus Pengumuman?'),
+        content: Text(
+          'Pengumuman "${announcement.title}" akan dihapus permanen. Lanjutkan?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Batal'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: FilledButton.styleFrom(backgroundColor: AppTheme.statusHigh),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldDelete != true || !mounted) return;
+
+    final state = context.read<AppState>();
+    await state.deleteAnnouncement(announcement.id);
+    await state.refreshAnnouncements().catchError((_) {});
+  }
+
   void _openQuickAction(BuildContext context, String action) {
     switch (action) {
       case 'warga':
@@ -172,6 +221,9 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
     final user = state.currentUser;
     final isReportsLoading = state.reportsLoading;
     final reportError = state.reportsError;
+    final announcements = state.announcements;
+    final isAnnouncementsLoading = state.announcementsLoading;
+    final announcementError = state.announcementsError;
 
     final reports = state.adminReports;
     final newCount = reports
@@ -245,6 +297,86 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
                 const SizedBox(height: 16),
                 _buildQuickActions(context),
                 const SizedBox(height: 28),
+                Container(
+                  key: _announcementSectionKey,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: AppTheme.outlineVariantColor.withValues(
+                        alpha: 0.55,
+                      ),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 16,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _SectionHeader(
+                        title: 'Pengumuman RT (${announcements.length})',
+                        subtitle: 'Kelola pengumuman terbaru untuk warga',
+                      ),
+                      const SizedBox(height: 16),
+                      if (isAnnouncementsLoading && announcements.isEmpty)
+                        const _LoadingDashboardState(
+                          title: 'Memuat pengumuman',
+                          subtitle: 'Mengambil data pengumuman dari Supabase.',
+                        )
+                      else if (announcementError != null &&
+                          announcements.isEmpty)
+                        _AnnouncementSectionErrorState(
+                          message: announcementError,
+                          onRetry: () {
+                            state.refreshAnnouncements().catchError((_) {});
+                          },
+                        )
+                      else if (announcements.isEmpty)
+                        const _EmptyDashboardState(
+                          icon: Icons.campaign_rounded,
+                          title: 'Belum ada pengumuman',
+                          subtitle: 'Pengumuman terbaru akan tampil di sini.',
+                        )
+                      else
+                        Column(
+                          children: [
+                            for (var i = 0; i < announcements.length; i++) ...[
+                              _AdminAnnouncementCard(
+                                announcement: announcements[i],
+                                formatTimeAgo: _formatTimeAgo,
+                                onEditTap: () => _openAnnouncementForm(
+                                  context,
+                                  announcement: announcements[i],
+                                ),
+                                onDeleteTap: () => _confirmDeleteAnnouncement(
+                                  context,
+                                  announcements[i],
+                                ),
+                              ),
+                              if (i != announcements.length - 1)
+                                const SizedBox(height: 12),
+                            ],
+                          ],
+                        ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.icon(
+                          onPressed: () => _openAnnouncementForm(context),
+                          icon: const Icon(Icons.add_rounded),
+                          label: const Text('Tambah Pengumuman'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 28),
                 _SectionHeader(
                   title: 'Laporan 7 Hari Terakhir',
                   subtitle: 'Distribusi laporan masuk dalam seminggu terakhir',
@@ -275,7 +407,8 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _SectionHeader(
-                        title: 'Daftar Laporan Masuk (${filteredReports.length})',
+                        title:
+                            'Daftar Laporan Masuk (${filteredReports.length})',
                         subtitle:
                             'Kelola laporan warga dengan filter yang lebih cepat',
                       ),
@@ -286,11 +419,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
                           color: AppTheme.surfaceContainerLow,
                           borderRadius: BorderRadius.circular(16),
                         ),
-                        child: Column(
-                          children: [
-                            _buildReportFilters(),
-                          ],
-                        ),
+                        child: Column(children: [_buildReportFilters()]),
                       ),
                       const SizedBox(height: 16),
                       if (isReportsLoading && filteredReports.isEmpty)
@@ -369,8 +498,8 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
                               if (i != filteredReports.length - 1)
                                 const SizedBox(height: 12),
                             ],
-                        ],
-                      ),
+                          ],
+                        ),
                     ],
                   ),
                 ),
@@ -1777,6 +1906,171 @@ class _ReportSectionErrorState extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           TextButton(onPressed: onRetry, child: const Text('Coba Lagi')),
+        ],
+      ),
+    );
+  }
+}
+
+class _AnnouncementSectionErrorState extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+
+  const _AnnouncementSectionErrorState({
+    required this.message,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: AppTheme.outlineVariantColor.withValues(alpha: 0.55),
+        ),
+      ),
+      child: Column(
+        children: [
+          const Icon(
+            Icons.cloud_off_rounded,
+            color: AppTheme.statusHigh,
+            size: 30,
+          ),
+          const SizedBox(height: 10),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: AppTheme.textPrimaryColor,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 10),
+          TextButton(onPressed: onRetry, child: const Text('Coba Lagi')),
+        ],
+      ),
+    );
+  }
+}
+
+class _AdminAnnouncementCard extends StatelessWidget {
+  final Announcement announcement;
+  final String Function(DateTime) formatTimeAgo;
+  final VoidCallback onEditTap;
+  final VoidCallback onDeleteTap;
+
+  const _AdminAnnouncementCard({
+    required this.announcement,
+    required this.formatTimeAgo,
+    required this.onEditTap,
+    required this.onDeleteTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: AppTheme.outlineVariantColor.withValues(alpha: 0.55),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.campaign_rounded,
+                  color: AppTheme.primaryColor,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      announcement.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppTheme.textPrimaryColor,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        height: 1.25,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      announcement.content,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppTheme.textSecondaryColor,
+                        fontSize: 12,
+                        height: 1.45,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Column(
+                children: [
+                  IconButton(
+                    onPressed: onEditTap,
+                    icon: const Icon(Icons.edit_outlined),
+                    tooltip: 'Edit',
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: AppTheme.primaryColor,
+                      shape: const CircleBorder(),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: onDeleteTap,
+                    icon: const Icon(Icons.delete_outline_rounded),
+                    tooltip: 'Hapus',
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: AppTheme.statusHigh,
+                      shape: const CircleBorder(),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              _ActivityChip(label: announcement.authorName),
+              if (announcement.rtRw.isNotEmpty)
+                _ActivityChip(label: 'RT/RW ${announcement.rtRw}'),
+              _ActivityChip(label: formatTimeAgo(announcement.createdAt)),
+            ],
+          ),
         ],
       ),
     );
