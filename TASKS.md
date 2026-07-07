@@ -48,7 +48,7 @@
   - [x] Auth API
   - [x] User registration API
   - [x] Warga verification API
-  - [ ] Report API
+  - [x] Report API
   - [ ] Announcement API
   - [ ] Voting API
 - [ ] System Logic

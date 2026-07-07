@@ -185,13 +185,19 @@ class _HomeScreenWrapperState extends State<HomeScreenWrapper> {
   int _currentCitizenIndex = 0;
   int _currentAdminIndex = 0;
 
+  void _goToAdminHome() {
+    setState(() => _currentAdminIndex = 0);
+  }
+
   // Admin tabs (added Warga management and Aktivitas)
-  final List<Widget> _adminScreens = [
-    const DashboardAdminScreen(),
-    const DaftarWargaAdminScreen(),
-    const AktivitasAdminScreen(),
-    const ProfilAdminScreen(),
-  ];
+  List<Widget> get _adminScreens {
+    return [
+      const DashboardAdminScreen(),
+      const DaftarWargaAdminScreen(),
+      AktivitasAdminScreen(onBackPressed: _goToAdminHome),
+      const ProfilAdminScreen(),
+    ];
+  }
 
   List<Widget> get _citizenScreens {
     return [

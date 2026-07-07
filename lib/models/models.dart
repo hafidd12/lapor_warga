@@ -224,6 +224,7 @@ class Report {
   final String? locationLabel;
   final String? completionPhotoUrl;
   final DateTime? completedAt;
+  final String? completedById;
   final String? completedBy;
 
   Report({
@@ -241,6 +242,7 @@ class Report {
     this.locationLabel,
     this.completionPhotoUrl,
     this.completedAt,
+    this.completedById,
     this.completedBy,
   });
 
@@ -259,6 +261,7 @@ class Report {
     String? locationLabel,
     String? completionPhotoUrl,
     DateTime? completedAt,
+    String? completedById,
     String? completedBy,
   }) {
     return Report(
@@ -276,6 +279,7 @@ class Report {
       locationLabel: locationLabel ?? this.locationLabel,
       completionPhotoUrl: completionPhotoUrl ?? this.completionPhotoUrl,
       completedAt: completedAt ?? this.completedAt,
+      completedById: completedById ?? this.completedById,
       completedBy: completedBy ?? this.completedBy,
     );
   }

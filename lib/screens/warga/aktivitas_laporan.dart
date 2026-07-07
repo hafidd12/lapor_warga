@@ -81,10 +81,11 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) {
         final theme = Theme.of(context);
+        final currentReport = report;
         final hasCompletionPhoto =
-            report.status == ReportStatus.resolved &&
-            report.completionPhotoUrl != null &&
-            report.completionPhotoUrl!.trim().isNotEmpty;
+            currentReport.status == ReportStatus.resolved &&
+            currentReport.completionPhotoUrl != null &&
+            currentReport.completionPhotoUrl!.trim().isNotEmpty;
 
         return DraggableScrollableSheet(
           initialChildSize: 0.88,
@@ -119,13 +120,13 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        PriorityBadge(priority: report.priority),
-                        StatusBadge(status: report.status),
+                        PriorityBadge(priority: currentReport.priority),
+                        StatusBadge(status: currentReport.status),
                       ],
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      report.title,
+                      currentReport.title,
                       style: theme.textTheme.headlineLarge?.copyWith(
                         fontSize: 24,
                         letterSpacing: 0,
@@ -135,30 +136,33 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
                     const SizedBox(height: 14),
                     _metadataRow(
                       Icons.person_outline,
-                      'Pelapor: ${report.citizenName}',
+                      'Pelapor: ${currentReport.citizenName}',
                     ),
                     const SizedBox(height: 8),
                     _metadataRow(
                       Icons.schedule_outlined,
-                      'Dilaporkan pada: ${_formatDateTime(report.createdAt)}',
+                      'Dilaporkan pada: ${_formatDateTime(currentReport.createdAt)}',
                     ),
                     const SizedBox(height: 8),
-                    _metadataRow(Icons.category_outlined, report.category),
-                    if (report.locationLabel != null) ...[
+                    _metadataRow(
+                      Icons.category_outlined,
+                      currentReport.category,
+                    ),
+                    if (currentReport.locationLabel != null) ...[
                       const SizedBox(height: 8),
                       _metadataRow(
                         Icons.location_on_outlined,
-                        report.locationLabel!,
+                        currentReport.locationLabel!,
                       ),
                     ],
-                    if (report.reportPhotoUrl != null) ...[
+                    if (currentReport.reportPhotoUrl != null) ...[
                       const SizedBox(height: 8),
                       _metadataRow(
                         Icons.photo_camera_outlined,
                         'Foto kejadian terlampir',
                       ),
                     ],
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 18),
                     Text(
                       'Deskripsi Laporan',
                       style: theme.textTheme.headlineMedium?.copyWith(
@@ -167,14 +171,14 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      report.description,
+                      currentReport.description,
                       style: theme.textTheme.bodyLarge?.copyWith(
                         height: 1.5,
                         color: AppTheme.textPrimaryColor,
                       ),
                     ),
-                    if (report.reportPhotoUrl != null &&
-                        report.reportPhotoUrl!.trim().isNotEmpty) ...[
+                    if (currentReport.reportPhotoUrl != null &&
+                        currentReport.reportPhotoUrl!.trim().isNotEmpty) ...[
                       const SizedBox(height: 24),
                       Row(
                         children: [
@@ -195,8 +199,10 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
                       ),
                       const SizedBox(height: 12),
                       GestureDetector(
-                        onTap: () =>
-                            _showPhotoPreview(context, report.reportPhotoUrl!),
+                        onTap: () => _showPhotoPreview(
+                          context,
+                          currentReport.reportPhotoUrl!,
+                        ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(16),
                           child: SizedBox(
@@ -205,7 +211,9 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
                             child: Stack(
                               fit: StackFit.expand,
                               children: [
-                                _buildReportImageWidget(report.reportPhotoUrl!),
+                                _buildReportImageWidget(
+                                  currentReport.reportPhotoUrl!,
+                                ),
                                 Positioned(
                                   right: 12,
                                   bottom: 12,
@@ -270,7 +278,7 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
                       GestureDetector(
                         onTap: () => _showPhotoPreview(
                           context,
-                          report.completionPhotoUrl!,
+                          currentReport.completionPhotoUrl!,
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(16),
@@ -281,7 +289,7 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
                               fit: StackFit.expand,
                               children: [
                                 Image.network(
-                                  report.completionPhotoUrl!,
+                                  currentReport.completionPhotoUrl!,
                                   fit: BoxFit.cover,
                                   errorBuilder: (context, error, stackTrace) {
                                     return Container(
@@ -290,7 +298,8 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
                                         child: Text(
                                           'Foto bukti tidak dapat dimuat',
                                           style: TextStyle(
-                                            color: AppTheme.textSecondaryColor,
+                                            color:
+                                                AppTheme.textSecondaryColor,
                                           ),
                                         ),
                                       ),
@@ -339,8 +348,8 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        'Diselesaikan oleh ${report.completedBy ?? 'RT'}'
-                        '${report.completedAt == null ? '' : ' pada ${_formatDate(report.completedAt!)}'}',
+                        'Diselesaikan oleh ${currentReport.completedBy ?? 'RT'}'
+                        '${currentReport.completedAt == null ? '' : ' pada ${_formatDate(currentReport.completedAt!)}'}',
                         style: const TextStyle(
                           fontSize: 12,
                           color: AppTheme.textSecondaryColor,
@@ -356,7 +365,7 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    _buildProgressTracker(report.status),
+                    _buildProgressTracker(currentReport.status),
                     const SizedBox(height: 28),
                     SizedBox(
                       width: double.infinity,
@@ -503,7 +512,9 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
   @override
   Widget build(BuildContext context) {
     final state = Provider.of<AppState>(context);
-    final reports = _filteredReports(state.reports);
+    final isLoading = state.reportsLoading;
+    final error = state.reportsError;
+    final reports = _filteredReports(state.myReports);
     final completedWithPhoto = state.completedReportsWithPhotos.length;
 
     return Scaffold(
@@ -521,41 +532,14 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
         automaticallyImplyLeading: false,
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
         children: [
           Text(
             'History Laporan',
             style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-              fontSize: 24,
+              fontSize: 23,
               letterSpacing: 0,
               color: AppTheme.primaryColor,
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            onChanged: (value) => setState(() => _query = value),
-            decoration: InputDecoration(
-              hintText: 'Cari laporan...',
-              prefixIcon: const Icon(
-                Icons.search,
-                color: AppTheme.outlineColor,
-              ),
-              fillColor: Colors.white,
-              filled: true,
-              contentPadding: const EdgeInsets.symmetric(vertical: 14),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(
-                  color: AppTheme.outlineVariantColor,
-                ),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(
-                  color: AppTheme.primaryColor,
-                  width: 2,
-                ),
-              ),
             ),
           ),
           const SizedBox(height: 12),
@@ -593,10 +577,52 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
               }).toList(),
             ),
           ),
-          const SizedBox(height: 18),
-          _buildStatsCard(state.reports.length, completedWithPhoto),
-          const SizedBox(height: 18),
-          if (reports.isEmpty)
+          const SizedBox(height: 12),
+          TextField(
+            onChanged: (value) => setState(() => _query = value),
+            decoration: InputDecoration(
+              hintText: 'Cari laporan...',
+              prefixIcon: const Icon(
+                Icons.search,
+                size: 20,
+                color: AppTheme.outlineColor,
+              ),
+              fillColor: Colors.white,
+              filled: true,
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 12,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(
+                  color: AppTheme.outlineVariantColor,
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(
+                  color: AppTheme.outlineVariantColor,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(
+                  color: AppTheme.primaryColor,
+                  width: 1.5,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          _buildStatsCard(state.myReports.length, completedWithPhoto),
+          const SizedBox(height: 14),
+          if (isLoading && reports.isEmpty)
+            _buildLoadingState()
+          else if (error != null && reports.isEmpty)
+            _buildErrorState(error, () => state.refreshMyReports())
+          else if (reports.isEmpty)
             _buildEmptyState()
           else
             ...reports.map(
@@ -612,7 +638,7 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
 
   Widget _buildStatsCard(int totalReports, int completedWithPhoto) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppTheme.primaryContainerColor,
         borderRadius: BorderRadius.circular(16),
@@ -622,9 +648,9 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
           const Icon(
             Icons.analytics_outlined,
             color: AppTheme.onPrimaryContainerColor,
-            size: 30,
+            size: 26,
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -634,7 +660,7 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    fontSize: 15,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -642,7 +668,7 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
                   '$completedWithPhoto laporan selesai punya bukti foto RT',
                   style: const TextStyle(
                     color: AppTheme.onPrimaryContainerColor,
-                    fontSize: 12,
+                    fontSize: 11,
                   ),
                 ),
               ],
@@ -678,16 +704,68 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
       } catch (_) {
         return _buildErrorImagePlaceholder();
       }
-    } else if (path.startsWith('mock://')) {
-      return Image.network(
-        'https://picsum.photos/seed/laporan/600/400',
-        fit: fit,
-        errorBuilder: (context, error, stackTrace) =>
-            _buildErrorImagePlaceholder(),
-      );
     } else {
       return _buildErrorImagePlaceholder();
     }
+  }
+
+  Widget _buildLoadingState() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 52, horizontal: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppTheme.outlineVariantColor.withValues(alpha: 0.35),
+        ),
+      ),
+      child: const Column(
+        children: [
+          CircularProgressIndicator(),
+          SizedBox(height: 12),
+          Text(
+            'Memuat laporan dari Supabase...',
+            style: TextStyle(
+              color: AppTheme.textSecondaryColor,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState(String message, VoidCallback onRetry) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 52, horizontal: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppTheme.outlineVariantColor.withValues(alpha: 0.35),
+        ),
+      ),
+      child: Column(
+        children: [
+          const Icon(
+            Icons.cloud_off_rounded,
+            size: 44,
+            color: AppTheme.statusHigh,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: AppTheme.textSecondaryColor,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextButton(onPressed: onRetry, child: const Text('Coba Lagi')),
+        ],
+      ),
+    );
   }
 
   Widget _buildErrorImagePlaceholder() {

@@ -13,6 +13,8 @@ class AppState with ChangeNotifier {
   final BackendService? _backendService;
   final List<AppUser> _registeredUsers = [];
   final List<Report> _reports = [];
+  final List<Report> _myReports = [];
+  final List<Report> _adminReports = [];
   final List<Announcement> _announcements = [];
   final List<Poll> _polls = [];
   final List<AdminActivity> _activities = [];
@@ -36,12 +38,16 @@ class AppState with ChangeNotifier {
 
   AppUser? get currentUser => _currentUser;
   List<Report> get reports => List.unmodifiable(_reports);
+  List<Report> get myReports => List.unmodifiable(_myReports);
+  List<Report> get adminReports => List.unmodifiable(_adminReports);
   List<Announcement> get announcements => List.unmodifiable(_announcements);
   List<Poll> get polls => List.unmodifiable(_polls);
   List<AppUser> get registeredUsers => List.unmodifiable(_registeredUsers);
   List<AdminActivity> get activities => List.unmodifiable(_activities);
   List<RegistrationCode> get registrationCodes =>
       List.unmodifiable(_registrationCodes);
+  bool get reportsLoading => _reportsLoading;
+  String? get reportsError => _reportsError;
   RegistrationCodeLookupResult? get pendingRtRegistrationCode =>
       _pendingRtRegistrationCode;
 
@@ -70,6 +76,43 @@ class AppState with ChangeNotifier {
             r.status == ReportStatus.resolved && r.completionPhotoUrl != null,
       )
       .toList();
+
+  bool _reportsLoading = false;
+  String? _reportsError;
+
+  void _setReports(List<Report> reports) {
+    _reports
+      ..clear()
+      ..addAll(reports);
+    _syncReportCacheForCurrentRole();
+  }
+
+  void _syncReportCacheForCurrentRole() {
+    final target = switch (_currentUser?.role) {
+      UserRole.admin => _adminReports,
+      UserRole.warga => _myReports,
+      null => null,
+    };
+
+    if (target == null) return;
+
+    target
+      ..clear()
+      ..addAll(_reports);
+  }
+
+  void _setReportLoadState({required bool isLoading, String? error}) {
+    _reportsLoading = isLoading;
+    _reportsError = error;
+  }
+
+  void _clearReportState() {
+    _reports.clear();
+    _myReports.clear();
+    _adminReports.clear();
+    _reportsLoading = false;
+    _reportsError = null;
+  }
 
   void _loadMockData() {
     // Mock registered users (warga)
@@ -206,77 +249,23 @@ class AppState with ChangeNotifier {
       ),
     ]);
 
-    // Mock Reports
-    _reports.addAll([
-      Report(
-        id: 'rep-1',
-        citizenName: 'Budi Santoso',
-        title: 'Jalan Berlubang di Dekat Gapura RT 02',
-        description:
-            'Ada lubang yang cukup besar dan dalam di aspal tepat setelah melewati gapura masuk RT 02. Sangat membahayakan pengendara motor saat malam hari karena minim penerangan.',
-        category: 'Infrastruktur',
-        priority: ReportPriority.high,
-        status: ReportStatus.submitted,
-        createdAt: DateTime.now().subtract(const Duration(hours: 4)),
-        votesCount: 15,
-        upvotedByUserIds: ['user-2', 'user-3'],
-      ),
-      Report(
-        id: 'rep-2',
-        citizenName: 'Siti Rahma',
-        title: 'Lampu Penerangan Jalan Umum Mati di Gang Mawar',
-        description:
-            'Sudah tiga hari lampu tiang PJU nomor 4 di Gang Mawar mati total. Gang menjadi sangat gelap dan rawan tindakan kriminal.',
-        category: 'Penerangan Jalan',
-        priority: ReportPriority.medium,
-        status: ReportStatus.processed,
-        createdAt: DateTime.now().subtract(const Duration(days: 2)),
-        votesCount: 8,
-        upvotedByUserIds: ['user-1'],
-      ),
-      Report(
-        id: 'rep-3',
-        citizenName: 'Rian Hidayat',
-        title: 'Penumpukan Sampah Liar di Lapangan Bulutangkis',
-        description:
-            'Banyak warga atau pihak luar membuang sampah kantong plastik di pinggir lapangan bulutangkis. Bau menyengat dan merusak pemandangan tempat bermain anak.',
-        category: 'Kebersihan',
-        priority: ReportPriority.low,
-        status: ReportStatus.resolved,
-        createdAt: DateTime.now().subtract(const Duration(days: 5)),
-        votesCount: 22,
-        upvotedByUserIds: ['user-1', 'user-2', 'user-4'],
-        completionPhotoUrl: 'https://picsum.photos/seed/cleanup1/400/300',
-        completedAt: DateTime.now().subtract(const Duration(days: 3)),
-        completedBy: 'Pak Harto (RT 05)',
-      ),
-    ]);
-
     // Mock Activities
     _activities.addAll([
       AdminActivity(
         id: 'act-1',
-        description: 'Menyelesaikan laporan "Penumpukan Sampah Liar"',
-        type: 'report_completed',
-        createdAt: DateTime.now().subtract(const Duration(days: 3)),
-        photoUrl: 'https://picsum.photos/seed/cleanup1/400/300',
-        relatedId: 'rep-3',
-      ),
-      AdminActivity(
-        id: 'act-2',
         description: 'Memverifikasi warga baru: Rian Hidayat',
         type: 'verification',
         createdAt: DateTime.now().subtract(const Duration(days: 10)),
       ),
       AdminActivity(
-        id: 'act-3',
+        id: 'act-2',
         description: 'Membuat pengumuman: Gotong Royong Kebersihan RT 05',
         type: 'announcement',
         createdAt: DateTime.now().subtract(const Duration(days: 1)),
         relatedId: 'ann-1',
       ),
       AdminActivity(
-        id: 'act-4',
+        id: 'act-3',
         description: 'Membuat voting: Hari senam pagi warga',
         type: 'poll',
         createdAt: DateTime.now().subtract(const Duration(days: 7)),
@@ -398,9 +387,6 @@ class AppState with ChangeNotifier {
     _registeredUsers
       ..clear()
       ..addAll(snapshot.users);
-    _reports
-      ..clear()
-      ..addAll(snapshot.reports);
     _announcements
       ..clear()
       ..addAll(snapshot.announcements);
@@ -419,6 +405,93 @@ class AppState with ChangeNotifier {
       if (matches.isNotEmpty) {
         _currentUser = matches.first;
       }
+    }
+
+    notifyListeners();
+  }
+
+  Future<void> refreshMyReports() async {
+    if (_currentUser == null || _currentUser!.role != UserRole.warga) {
+      _myReports.clear();
+      _setReports(const []);
+      _setReportLoadState(isLoading: false, error: null);
+      notifyListeners();
+      return;
+    }
+
+    if (!SupabaseService.isInitialized) {
+      _myReports.clear();
+      _setReports(const []);
+      _setReportLoadState(isLoading: false, error: null);
+      notifyListeners();
+      return;
+    }
+
+    _setReportLoadState(isLoading: true, error: null);
+    notifyListeners();
+
+    try {
+      final reports = await _activeBackendService.fetchReportsForCurrentUser(
+        _currentUser!.id,
+      );
+      _myReports
+        ..clear()
+        ..addAll(reports);
+      _setReports(reports);
+      _setReportLoadState(isLoading: false, error: null);
+    } catch (e, st) {
+      debugPrint('REPORT ERROR: ${e.runtimeType}');
+      debugPrint(e.toString());
+      debugPrint(st.toString());
+      _myReports.clear();
+      _setReports(const []);
+      _setReportLoadState(
+        isLoading: false,
+        error: 'Gagal memuat laporan warga.',
+      );
+      rethrow;
+    }
+
+    notifyListeners();
+  }
+
+  Future<void> refreshAdminReports() async {
+    final rtRw = _currentUser?.rtRw?.trim() ?? '';
+    if (_currentUser == null || _currentUser!.role != UserRole.admin) {
+      _adminReports.clear();
+      _setReports(const []);
+      _setReportLoadState(isLoading: false, error: null);
+      notifyListeners();
+      return;
+    }
+
+    if (!SupabaseService.isInitialized || rtRw.isEmpty) {
+      _adminReports.clear();
+      _setReports(const []);
+      _setReportLoadState(isLoading: false, error: null);
+      notifyListeners();
+      return;
+    }
+
+    _setReportLoadState(isLoading: true, error: null);
+    notifyListeners();
+
+    try {
+      final reports = await _activeBackendService.fetchReportsForAdminRtRw(
+        rtRw,
+      );
+      _adminReports
+        ..clear()
+        ..addAll(reports);
+      _setReports(reports);
+      _setReportLoadState(isLoading: false, error: null);
+    } catch (_) {
+      _adminReports.clear();
+      _setReports(const []);
+      _setReportLoadState(
+        isLoading: false,
+        error: 'Gagal memuat laporan admin.',
+      );
     }
 
     notifyListeners();
@@ -462,6 +535,11 @@ class AppState with ChangeNotifier {
       );
       await refreshRemoteData();
       if (user.role == UserRole.admin) {
+        await refreshAdminReports();
+      } else {
+        await refreshMyReports();
+      }
+      if (user.role == UserRole.admin) {
         await refreshVerificationUsers();
       }
 
@@ -493,6 +571,11 @@ class AppState with ChangeNotifier {
       );
       await refreshRemoteData();
       if (user.role == UserRole.admin) {
+        await refreshAdminReports();
+      } else {
+        await refreshMyReports();
+      }
+      if (user.role == UserRole.admin) {
         await refreshVerificationUsers();
       }
       return true;
@@ -513,8 +596,10 @@ class AppState with ChangeNotifier {
 
     _setCurrentUser(null);
     _clearVerificationUsers();
+    _clearReportState();
     _verificationUsersLoaded = false;
     _pendingRtRegistrationCode = null;
+    notifyListeners();
   }
 
   void _clearVerificationUsers() {
@@ -1094,15 +1179,36 @@ class AppState with ChangeNotifier {
   // Citizen Actions
   // ============================================
 
-  void addReport(
+  Future<void> addReport(
     String title,
     String description,
     String category,
     ReportPriority priority, {
+    Uint8List? reportPhotoBytes,
+    String? reportPhotoName,
     String? reportPhotoUrl,
     String? locationLabel,
-  }) {
+  }) async {
     if (_currentUser == null) return;
+
+    if (SupabaseService.isInitialized) {
+      final createdReport = await _activeBackendService.createReport(
+        currentUser: _currentUser!,
+        title: title,
+        description: description,
+        category: category,
+        priority: priority,
+        reportPhotoBytes: reportPhotoBytes,
+        reportPhotoName: reportPhotoName,
+        reportPhotoUrl: reportPhotoUrl,
+        locationLabel: locationLabel,
+      );
+
+      _reports.insert(0, createdReport);
+      _syncReportCacheForCurrentRole();
+      notifyListeners();
+      return;
+    }
 
     final newReport = Report(
       id: 'rep-${DateTime.now().millisecondsSinceEpoch}',
@@ -1120,20 +1226,8 @@ class AppState with ChangeNotifier {
     );
 
     _reports.insert(0, newReport);
+    _syncReportCacheForCurrentRole();
     notifyListeners();
-
-    _runRemote(() async {
-      await _activeBackendService.createReport(
-        currentUser: _currentUser!,
-        title: title,
-        description: description,
-        category: category,
-        priority: priority,
-        reportPhotoUrl: reportPhotoUrl,
-        locationLabel: locationLabel,
-      );
-      await refreshRemoteData();
-    });
   }
 
   void upvoteReport(String reportId) {
@@ -1158,6 +1252,7 @@ class AppState with ChangeNotifier {
         upvotedByUserIds: upvotes,
         votesCount: votesCount,
       );
+      _syncReportCacheForCurrentRole();
       notifyListeners();
 
       _runRemote(() async {
@@ -1212,6 +1307,7 @@ class AppState with ChangeNotifier {
     int index = _reports.indexWhere((r) => r.id == reportId);
     if (index != -1) {
       _reports[index] = _reports[index].copyWith(status: status);
+      _syncReportCacheForCurrentRole();
       notifyListeners();
 
       _runRemote(() async {
@@ -1230,6 +1326,7 @@ class AppState with ChangeNotifier {
         status: ReportStatus.resolved,
         completionPhotoUrl: photoUrl,
         completedAt: DateTime.now(),
+        completedById: _currentUser?.id,
         completedBy: _currentUser?.name ?? 'Admin',
       );
 
@@ -1245,6 +1342,7 @@ class AppState with ChangeNotifier {
         ),
       );
 
+      _syncReportCacheForCurrentRole();
       notifyListeners();
 
       if (_currentUser != null) {

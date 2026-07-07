@@ -170,8 +170,10 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
   Widget build(BuildContext context) {
     final state = Provider.of<AppState>(context);
     final user = state.currentUser;
+    final isReportsLoading = state.reportsLoading;
+    final reportError = state.reportsError;
 
-    final reports = state.reports;
+    final reports = state.adminReports;
     final newCount = reports
         .where((r) => r.status == ReportStatus.submitted)
         .length;
@@ -202,7 +204,6 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
     }).toList();
 
     final weeklyPoints = _buildWeeklyPoints(reports);
-    final latestActivities = state.activities.take(5).toList();
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -253,7 +254,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
                 const SizedBox(height: 28),
                 Container(
                   key: _reportSectionKey,
-                  padding: const EdgeInsets.all(18),
+                  padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(24),
@@ -273,33 +274,45 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          const Expanded(
-                            child: _SectionHeader(
-                              title: 'Daftar Laporan Masuk',
-                              subtitle:
-                                  'Kelola laporan warga dengan filter yang lebih cepat',
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          TextButton(
-                            onPressed: () =>
-                                _scrollToSection(_activitySectionKey),
-                            child: const Text(
-                              'Lihat Aktivitas',
-                              style: TextStyle(fontWeight: FontWeight.w700),
-                            ),
-                          ),
-                        ],
+                      _SectionHeader(
+                        title: 'Daftar Laporan Masuk (${filteredReports.length})',
+                        subtitle:
+                            'Kelola laporan warga dengan filter yang lebih cepat',
+                      ),
+                      const SizedBox(height: 18),
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: AppTheme.surfaceContainerLow,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Column(
+                          children: [
+                            _buildReportFilters(),
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 16),
-                      _buildReportFilters(),
-                      const SizedBox(height: 16),
-                      if (filteredReports.isEmpty)
+                      if (isReportsLoading && filteredReports.isEmpty)
+                        const _LoadingDashboardState(
+                          title: 'Memuat laporan masuk',
+                          subtitle: 'Mengambil data laporan dari Supabase.',
+                        )
+                      else if (reportError != null && filteredReports.isEmpty)
+                        _ReportSectionErrorState(
+                          message: reportError,
+                          onRetry: () => state.refreshAdminReports(),
+                        )
+                      else if (reports.isEmpty)
                         const _EmptyDashboardState(
                           icon: Icons.inbox_rounded,
+                          title: 'Belum ada laporan masuk',
+                          subtitle:
+                              'Laporan warga yang baru masuk akan tampil di sini.',
+                        )
+                      else if (filteredReports.isEmpty)
+                        const _EmptyDashboardState(
+                          icon: Icons.filter_alt_off_rounded,
                           title: 'Tidak ada laporan yang sesuai',
                           subtitle:
                               'Coba ubah filter untuk melihat laporan lain.',
@@ -356,65 +369,8 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
                               if (i != filteredReports.length - 1)
                                 const SizedBox(height: 12),
                             ],
-                          ],
-                        ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 28),
-                Container(
-                  key: _activitySectionKey,
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: AppTheme.outlineVariantColor.withValues(
-                        alpha: 0.55,
+                        ],
                       ),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.04),
-                        blurRadius: 16,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const _SectionHeader(
-                        title: 'Aktivitas Terbaru',
-                        subtitle: 'Riwayat tindakan terbaru dari admin RT',
-                      ),
-                      const SizedBox(height: 16),
-                      if (latestActivities.isEmpty)
-                        const _EmptyDashboardState(
-                          icon: Icons.history_rounded,
-                          title: 'Belum ada aktivitas terbaru',
-                          subtitle:
-                              'Saat ada tindakan baru, semuanya muncul di sini.',
-                        )
-                      else
-                        Column(
-                          children: [
-                            for (
-                              var i = 0;
-                              i < latestActivities.length;
-                              i++
-                            ) ...[
-                              _ActivityTile(
-                                activity: latestActivities[i],
-                                icon: _activityIcon(latestActivities[i].type),
-                                color: _activityColor(latestActivities[i].type),
-                                formatTimeAgo: _formatTimeAgo,
-                              ),
-                              if (i != latestActivities.length - 1)
-                                const SizedBox(height: 10),
-                            ],
-                          ],
-                        ),
                     ],
                   ),
                 ),
@@ -1728,6 +1684,99 @@ class _EmptyDashboardState extends StatelessWidget {
               height: 1.45,
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LoadingDashboardState extends StatelessWidget {
+  final String title;
+  final String subtitle;
+
+  const _LoadingDashboardState({required this.title, required this.subtitle});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: AppTheme.outlineVariantColor.withValues(alpha: 0.55),
+        ),
+      ),
+      child: Column(
+        children: [
+          const CircularProgressIndicator(),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: AppTheme.textPrimaryColor,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: AppTheme.textSecondaryColor,
+              fontSize: 12,
+              height: 1.45,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReportSectionErrorState extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+
+  const _ReportSectionErrorState({
+    required this.message,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: AppTheme.outlineVariantColor.withValues(alpha: 0.55),
+        ),
+      ),
+      child: Column(
+        children: [
+          const Icon(
+            Icons.cloud_off_rounded,
+            color: AppTheme.statusHigh,
+            size: 30,
+          ),
+          const SizedBox(height: 10),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: AppTheme.textPrimaryColor,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 10),
+          TextButton(onPressed: onRetry, child: const Text('Coba Lagi')),
         ],
       ),
     );

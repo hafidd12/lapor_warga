@@ -67,66 +67,83 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
     super.dispose();
   }
 
-  void _handleSubmit() {
-    setState(() => _showValidationErrors = true);
+  Future<void> _handleSubmit() async {
+    try {
+      FocusScope.of(context).unfocus();
+      if (!mounted) return;
 
-    final isFormValid = _formKey.currentState!.validate();
-    final isAttachmentValid =
-        _selectedPriority != null &&
-        _reportImageBytes != null &&
-        _hasSelectedLocation;
+      setState(() => _showValidationErrors = true);
 
-    if (!isFormValid || !isAttachmentValid) {
+      final formState = _formKey.currentState;
+      if (formState == null) {
+        return;
+      }
+
+      final isFormValid = formState.validate();
+      final isAttachmentValid =
+          _selectedPriority != null &&
+          _reportImageBytes != null &&
+          _hasSelectedLocation;
+
+      if (!isFormValid || !isAttachmentValid) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Lengkapi semua data laporan terlebih dahulu.'),
+            backgroundColor: AppTheme.statusHigh,
+          ),
+        );
+        return;
+      }
+
+      final state = Provider.of<AppState>(context, listen: false);
+      final locationLabel = _isTesting
+          ? _mockLocationLabel
+          : _customLocationLabel;
+
+      await state.addReport(
+        _titleController.text.trim(),
+        _descriptionController.text.trim(),
+        _selectedCategory!,
+        _selectedPriority!,
+        reportPhotoBytes: _isTesting ? null : _reportImageBytes,
+        reportPhotoName: _isTesting ? null : _reportImageName,
+        reportPhotoUrl: _isTesting ? _mockReportPhotoUrl : null,
+        locationLabel: locationLabel,
+      );
+
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Lengkapi semua data laporan terlebih dahulu.'),
+          content: Text('Laporan Anda berhasil dikirim!'),
+          backgroundColor: AppTheme.primaryColor,
+        ),
+      );
+
+      _formKey.currentState?.reset();
+      _titleController.clear();
+      _descriptionController.clear();
+      setState(() {
+        _selectedCategory = null;
+        _selectedPriority = null;
+        _reportImageBytes = null;
+        _reportImageName = null;
+        _customLocationLabel = null;
+        _hasSelectedLocation = false;
+        _showValidationErrors = false;
+      });
+
+      if (!mounted) return;
+      if (widget.showBackButton && Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal mengirim laporan: $error'),
           backgroundColor: AppTheme.statusHigh,
         ),
       );
-      return;
-    }
-
-    final state = Provider.of<AppState>(context, listen: false);
-    final reportPhotoUrl = _isTesting
-        ? _mockReportPhotoUrl
-        : (_reportImageBytes != null && _reportImageName != null
-              ? _buildDataUrl(_reportImageBytes!, _reportImageName!)
-              : null);
-    final locationLabel = _isTesting
-        ? _mockLocationLabel
-        : _customLocationLabel;
-
-    state.addReport(
-      _titleController.text.trim(),
-      _descriptionController.text.trim(),
-      _selectedCategory!,
-      _selectedPriority!,
-      reportPhotoUrl: reportPhotoUrl,
-      locationLabel: locationLabel,
-    );
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Laporan Anda berhasil dikirim!'),
-        backgroundColor: AppTheme.primaryColor,
-      ),
-    );
-
-    _formKey.currentState?.reset();
-    _titleController.clear();
-    _descriptionController.clear();
-    setState(() {
-      _selectedCategory = null;
-      _selectedPriority = null;
-      _reportImageBytes = null;
-      _reportImageName = null;
-      _customLocationLabel = null;
-      _hasSelectedLocation = false;
-      _showValidationErrors = false;
-    });
-
-    if (widget.showBackButton && Navigator.of(context).canPop()) {
-      Navigator.of(context).pop();
     }
   }
 
@@ -530,6 +547,39 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
     );
   }
 
+  Future<void> _useCurrentLocation() async {
+    if (_isTesting) {
+      setState(() {
+        _hasSelectedLocation = true;
+        _customLocationLabel = _mockLocationLabel;
+      });
+      return;
+    }
+
+    try {
+      final locationLabel = await _getCurrentLocationLabel();
+      if (!mounted) return;
+      setState(() {
+        _customLocationLabel = locationLabel;
+        _hasSelectedLocation = true;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Lokasi saat ini berhasil digunakan.'),
+          backgroundColor: AppTheme.primaryColor,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('$e'),
+          backgroundColor: AppTheme.statusHigh,
+        ),
+      );
+    }
+  }
+
   Future<String> _getCurrentLocationLabel() async {
     final isServiceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!isServiceEnabled) {
@@ -711,7 +761,7 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
                       onTap: _showImageSourcePicker,
                       child: Container(
                         width: double.infinity,
-                        height: _reportImageBytes != null ? null : 130,
+                        height: _reportImageBytes != null ? 176 : 116,
                         decoration: BoxDecoration(
                           color: AppTheme.primaryFixed.withValues(alpha: 0.06),
                           borderRadius: BorderRadius.circular(12),
@@ -726,85 +776,13 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
                           ),
                         ),
                         child: _reportImageBytes != null
-                            ? Stack(
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(11),
-                                    child: Image.memory(
-                                      _reportImageBytes!,
-                                      width: double.infinity,
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                  Positioned(
-                                    top: 8,
-                                    right: 8,
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        _buildReportPhotoActionButton(
-                                          icon: Icons.edit_rounded,
-                                          color: AppTheme.primaryColor,
-                                          onTap: _showImageSourcePicker,
-                                        ),
-                                        const SizedBox(width: 6),
-                                        _buildReportPhotoActionButton(
-                                          icon: Icons.delete_rounded,
-                                          color: AppTheme.statusHigh,
-                                          onTap: () {
-                                            setState(() {
-                                              _reportImageBytes = null;
-                                              _reportImageName = null;
-                                            });
-                                          },
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Positioned(
-                                    bottom: 0,
-                                    left: 0,
-                                    right: 0,
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 8,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        borderRadius:
-                                            const BorderRadius.vertical(
-                                              bottom: Radius.circular(11),
-                                            ),
-                                        gradient: LinearGradient(
-                                          begin: Alignment.topCenter,
-                                          end: Alignment.bottomCenter,
-                                          colors: [
-                                            Colors.transparent,
-                                            Colors.black.withValues(alpha: 0.6),
-                                          ],
-                                        ),
-                                      ),
-                                      child: const Row(
-                                        children: [
-                                          Icon(
-                                            Icons.check_circle,
-                                            size: 14,
-                                            color: Colors.white,
-                                          ),
-                                          SizedBox(width: 6),
-                                          Text(
-                                            'Foto laporan berhasil diupload',
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(11),
+                                child: Image.memory(
+                                  _reportImageBytes!,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                ),
                               )
                             : Container(
                                 decoration: BoxDecoration(
@@ -822,7 +800,7 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
                                       children: [
                                         Icon(
                                           Icons.add_a_photo_rounded,
-                                          size: 32,
+                                          size: 28,
                                           color: AppTheme.primaryColor,
                                         ),
                                         SizedBox(height: 8),
@@ -849,6 +827,61 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
                               ),
                       ),
                     ),
+                    if (_reportImageBytes != null) ...[
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: _showImageSourcePicker,
+                              icon: const Icon(Icons.edit_rounded, size: 18),
+                              label: const Text('Ganti Foto'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppTheme.primaryColor,
+                                side: BorderSide(
+                                  color: AppTheme.primaryColor.withValues(
+                                    alpha: 0.35,
+                                  ),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () {
+                                setState(() {
+                                  _reportImageBytes = null;
+                                  _reportImageName = null;
+                                });
+                              },
+                              icon: const Icon(Icons.delete_rounded, size: 18),
+                              label: const Text('Hapus'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppTheme.statusHigh,
+                                side: BorderSide(
+                                  color: AppTheme.statusHigh.withValues(
+                                    alpha: 0.35,
+                                  ),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                     _validationMessage(
                       _showValidationErrors && _reportImageBytes == null
                           ? 'Foto kejadian wajib dipilih'
@@ -950,20 +983,63 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
                         ),
                       ),
                     ),
-                    if (_hasSelectedLocation)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Text(
-                          _isTesting
-                              ? _mockLocationLabel
-                              : (_customLocationLabel ?? ''),
-                          style: const TextStyle(
-                            color: AppTheme.textSecondaryColor,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
+                    if (_customLocationLabel != null &&
+                        _customLocationLabel!.trim().isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      Text(
+                        _customLocationLabel!,
+                        style: const TextStyle(
+                          color: AppTheme.textSecondaryColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          height: 1.35,
                         ),
                       ),
+                    ],
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _useCurrentLocation,
+                            icon: const Icon(Icons.my_location, size: 18),
+                            label: const Text('Gunakan Lokasi Saya'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppTheme.primaryColor,
+                              side: BorderSide(
+                                color: AppTheme.primaryColor.withValues(
+                                  alpha: 0.35,
+                                ),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _showLocationPicker,
+                            icon: const Icon(Icons.map_outlined, size: 18),
+                            label: const Text('Pilih di Peta'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppTheme.primaryColor,
+                              side: BorderSide(
+                                color: AppTheme.primaryColor.withValues(
+                                  alpha: 0.35,
+                                ),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                     _validationMessage(
                       _showValidationErrors && !_hasSelectedLocation
                           ? 'Lokasi laporan wajib ditentukan'
@@ -998,19 +1074,6 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
         ),
       ),
     );
-  }
-
-  String _buildDataUrl(Uint8List bytes, String fileName) {
-    final mimeType = _mimeTypeFromFileName(fileName);
-    return 'data:$mimeType;base64,${base64Encode(bytes)}';
-  }
-
-  String _mimeTypeFromFileName(String fileName) {
-    final lower = fileName.toLowerCase();
-    if (lower.endsWith('.png')) return 'image/png';
-    if (lower.endsWith('.webp')) return 'image/webp';
-    if (lower.endsWith('.gif')) return 'image/gif';
-    return 'image/jpeg';
   }
 
   InputDecoration _inputDecoration(String hint) {

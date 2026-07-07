@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../providers/app_state.dart';
@@ -228,9 +228,7 @@ class _ProfilWargaScreenState extends State<ProfilWargaScreen> {
   }
 
   Widget _buildQuickLinkCard(BuildContext context, AppState state) {
-    final myReportsCount = state.reports
-        .where((r) => r.citizenName == state.currentUser?.name)
-        .length;
+    final myReportsCount = state.myReports.length;
 
     return GestureDetector(
       onTap: () {

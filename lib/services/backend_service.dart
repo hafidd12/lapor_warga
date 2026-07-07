@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -36,10 +37,13 @@ class BackendService {
     : _client = client ?? SupabaseService.client;
 
   final SupabaseClient _client;
+  static const String _reportPhotoBucket = 'report-photos';
+  static const String _reportSelectColumns =
+      'id, citizen_id, citizen_name, title, description, category, priority, status, votes_count, report_photo_url, location_label, completion_photo_url, completed_at, completed_by_id, completed_by_name, created_at, updated_at';
 
   Future<BackendSnapshot> fetchSnapshot() async {
     final users = await fetchUsers();
-    final reports = await fetchReports();
+    const reports = <Report>[];
     final announcements = await fetchAnnouncements();
     final polls = await fetchPolls();
     final activities = await fetchActivities();
@@ -67,29 +71,78 @@ class BackendService {
   }
 
   Future<List<Report>> fetchReports() async {
-    final reportRows = _rows(
-      await _client
+    return _fetchReportsFromQuery(
+      _client
           .from('reports')
-          .select(
-            'id, citizen_id, citizen_name, title, description, category, priority, status, votes_count, report_photo_url, location_label, completion_photo_url, completed_at, completed_by_name, created_at',
-          )
+          .select(_reportSelectColumns)
           .order('created_at', ascending: false),
     );
-    final upvoteRows = _rows(
-      await _client.from('report_upvotes').select('report_id, user_id'),
-    );
+  }
+
+  Future<List<Report>> fetchReportsForCurrentUser(String currentUserId) async {
+    final normalizedUserId = currentUserId.trim();
+    if (normalizedUserId.isEmpty) {
+      return const [];
+    }
+
+    final query = _client
+        .from('reports')
+        .select(_reportSelectColumns)
+        .eq('citizen_id', normalizedUserId)
+        .order('created_at', ascending: false);
+
+    final reportRows = _rows(await query);
+    final reportIds = reportRows
+        .map((row) => _stringValue(row['id']))
+        .whereType<String>()
+        .toList();
 
     final upvotesByReport = <String, List<String>>{};
-    for (final row in upvoteRows) {
-      final reportId = _stringValue(row['report_id']);
-      final userId = _stringValue(row['user_id']);
-      if (reportId == null || userId == null) continue;
-      upvotesByReport.putIfAbsent(reportId, () => []).add(userId);
+    if (reportIds.isNotEmpty) {
+      final upvoteRows = _rows(
+        await _client
+            .from('report_votes')
+            .select('report_id, user_id')
+            .inFilter('report_id', reportIds),
+      );
+
+      for (final row in upvoteRows) {
+        final reportId = _stringValue(row['report_id']);
+        final userId = _stringValue(row['user_id']);
+        if (reportId == null || userId == null) continue;
+        upvotesByReport.putIfAbsent(reportId, () => []).add(userId);
+      }
     }
 
     return reportRows
         .map((row) => _reportFromRow(row, upvotesByReport[row['id']] ?? []))
         .toList();
+  }
+
+  Future<List<Report>> fetchReportsForAdminRtRw(String rtRw) async {
+    final normalizedRtRw = rtRw.trim();
+    if (normalizedRtRw.isEmpty) return const [];
+
+    final citizenRows = _rows(
+      await _client
+          .from('profiles')
+          .select('id')
+          .eq('role', 'warga')
+          .eq('rt_rw', normalizedRtRw),
+    );
+    final citizenIds = citizenRows
+        .map((row) => _stringValue(row['id']))
+        .whereType<String>()
+        .toList();
+    if (citizenIds.isEmpty) return const [];
+
+    return _fetchReportsFromQuery(
+      _client
+          .from('reports')
+          .select(_reportSelectColumns)
+          .inFilter('citizen_id', citizenIds)
+          .order('created_at', ascending: false),
+    );
   }
 
   Future<List<Announcement>> fetchAnnouncements() async {
@@ -199,9 +252,19 @@ class BackendService {
     required String description,
     required String category,
     required ReportPriority priority,
+    Uint8List? reportPhotoBytes,
+    String? reportPhotoName,
     String? reportPhotoUrl,
     String? locationLabel,
   }) async {
+    final resolvedReportPhotoUrl = reportPhotoBytes != null
+        ? await _uploadReportPhoto(
+            currentUser: currentUser,
+            reportPhotoBytes: reportPhotoBytes,
+            reportPhotoName: reportPhotoName,
+          )
+        : reportPhotoUrl;
+
     final data = await _client
         .from('reports')
         .insert({
@@ -211,13 +274,100 @@ class BackendService {
           'description': description,
           'category': category,
           'priority': _priorityValue(priority),
-          'report_photo_url': reportPhotoUrl,
+          'report_photo_url': resolvedReportPhotoUrl,
           'location_label': locationLabel,
         })
         .select()
         .single();
 
     return _reportFromRow(Map<String, dynamic>.from(data), const []);
+  }
+
+  Future<List<Report>> _fetchReportsFromQuery(dynamic query) async {
+    final reportRows = _rows(await query);
+    final reportIds = reportRows
+        .map((row) => _stringValue(row['id']))
+        .whereType<String>()
+        .toList();
+
+    final upvotesByReport = <String, List<String>>{};
+    if (reportIds.isNotEmpty) {
+      final upvoteRows = _rows(
+        await _client
+            .from('report_votes')
+            .select('report_id, user_id')
+            .inFilter('report_id', reportIds),
+      );
+
+      for (final row in upvoteRows) {
+        final reportId = _stringValue(row['report_id']);
+        final userId = _stringValue(row['user_id']);
+        if (reportId == null || userId == null) continue;
+        upvotesByReport.putIfAbsent(reportId, () => []).add(userId);
+      }
+    }
+
+    return reportRows
+        .map((row) => _reportFromRow(row, upvotesByReport[row['id']] ?? []))
+        .toList();
+  }
+
+  Future<String> _uploadReportPhoto({
+    required AppUser currentUser,
+    required Uint8List reportPhotoBytes,
+    required String? reportPhotoName,
+  }) async {
+    if (reportPhotoBytes.isEmpty) {
+      throw const BackendServiceException('Foto laporan tidak valid.');
+    }
+
+    final extension = _extractFileExtension(reportPhotoName);
+    final normalizedName = _sanitizeStorageSegment(
+      _extractFileNameStem(reportPhotoName ?? 'report-photo'),
+    );
+    final storagePath =
+        'reports/${currentUser.id}/${DateTime.now().microsecondsSinceEpoch}_${_randomSuffix()}_$normalizedName$extension';
+
+    await _client.storage
+        .from(_reportPhotoBucket)
+        .uploadBinary(
+          storagePath,
+          reportPhotoBytes,
+          fileOptions: const FileOptions(upsert: false),
+        );
+
+    return _client.storage
+        .from(_reportPhotoBucket)
+        .createSignedUrl(storagePath, 60 * 60 * 24 * 365);
+  }
+
+  Future<String> uploadCompletionPhoto({
+    required AppUser currentUser,
+    required Uint8List completionPhotoBytes,
+    required String? completionPhotoName,
+  }) async {
+    if (completionPhotoBytes.isEmpty) {
+      throw const BackendServiceException('Foto penyelesaian tidak valid.');
+    }
+
+    final extension = _extractFileExtension(completionPhotoName);
+    final normalizedName = _sanitizeStorageSegment(
+      _extractFileNameStem(completionPhotoName ?? 'completion-photo'),
+    );
+    final storagePath =
+        'reports/${currentUser.id}/${DateTime.now().microsecondsSinceEpoch}_${_randomSuffix()}_$normalizedName$extension';
+
+    await _client.storage
+        .from('completion-photos')
+        .uploadBinary(
+          storagePath,
+          completionPhotoBytes,
+          fileOptions: const FileOptions(upsert: false),
+        );
+
+    return _client.storage
+        .from('completion-photos')
+        .createSignedUrl(storagePath, 60 * 60 * 24 * 365);
   }
 
   Future<void> setReportStatus(String reportId, ReportStatus status) async {
@@ -238,7 +388,7 @@ class BackendService {
           'status': 'resolved',
           'completion_photo_url': photoUrl,
           'completed_at': DateTime.now().toUtc().toIso8601String(),
-          'completed_by': currentUser.id,
+          'completed_by_id': currentUser.id,
           'completed_by_name': currentUser.name,
         })
         .eq('id', reportId);
@@ -259,14 +409,14 @@ class BackendService {
   }) async {
     if (report.upvotedByUserIds.contains(userId)) {
       await _client
-          .from('report_upvotes')
+            .from('report_votes')
           .delete()
           .eq('report_id', report.id)
           .eq('user_id', userId);
       return;
     }
 
-    await _client.from('report_upvotes').insert({
+    await _client.from('report_votes').insert({
       'report_id': report.id,
       'user_id': userId,
     });
@@ -564,6 +714,7 @@ class BackendService {
       locationLabel: _stringValue(row['location_label']),
       completionPhotoUrl: _stringValue(row['completion_photo_url']),
       completedAt: _dateTimeValue(row['completed_at']),
+      completedById: _stringValue(row['completed_by_id']),
       completedBy: _stringValue(row['completed_by_name']),
     );
   }
@@ -691,6 +842,42 @@ class BackendService {
   int _intValue(dynamic value) {
     if (value is int) return value;
     return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  String _extractFileExtension(String? fileName) {
+    final name = fileName?.trim() ?? '';
+    if (name.isEmpty) return '.jpg';
+
+    final index = name.lastIndexOf('.');
+    if (index == -1 || index == name.length - 1) {
+      return '.jpg';
+    }
+    return name.substring(index).toLowerCase();
+  }
+
+  String _extractFileNameStem(String fileName) {
+    final name = fileName.trim();
+    if (name.isEmpty) return 'report-photo';
+
+    final index = name.lastIndexOf('.');
+    if (index <= 0) return name;
+    return name.substring(0, index);
+  }
+
+  String _sanitizeStorageSegment(String value) {
+    final cleaned = value
+        .trim()
+        .replaceAll('\\', '/')
+        .replaceAll(RegExp(r'[^a-zA-Z0-9/_-]+'), '_');
+    return cleaned
+        .replaceAll(RegExp(r'/+'), '/')
+        .replaceAll(RegExp(r'^/+|/+$'), '');
+  }
+
+  String _randomSuffix() {
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    final random = Random();
+    return List.generate(8, (_) => chars[random.nextInt(chars.length)]).join();
   }
 
   void _logRegistrationCodes(String message) {

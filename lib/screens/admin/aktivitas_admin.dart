@@ -1,84 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import '../../models/models.dart';
 import '../../providers/app_state.dart';
 import '../../theme.dart';
-import '../../models/models.dart';
 
 class AktivitasAdminScreen extends StatelessWidget {
-  const AktivitasAdminScreen({super.key});
+  final VoidCallback? onBackPressed;
 
-  String _formatTimeAgo(DateTime dateTime) {
-    final diff = DateTime.now().difference(dateTime);
-    if (diff.inDays > 0) {
-      return '${diff.inDays} hari yang lalu';
-    } else if (diff.inHours > 0) {
-      return '${diff.inHours} jam yang lalu';
-    } else if (diff.inMinutes > 0) {
-      return '${diff.inMinutes} menit yang lalu';
-    } else {
-      return 'Baru saja';
-    }
-  }
-
-  IconData _getActivityIcon(String type) {
-    switch (type) {
-      case 'verification':
-        return Icons.verified_user;
-      case 'announcement':
-        return Icons.campaign;
-      case 'report_completed':
-        return Icons.task_alt;
-      case 'poll':
-        return Icons.poll;
-      case 'warga_removed':
-        return Icons.person_remove;
-      default:
-        return Icons.info_outline;
-    }
-  }
-
-  Color _getActivityColor(String type) {
-    switch (type) {
-      case 'verification':
-        return AppTheme.statusLow;
-      case 'announcement':
-        return AppTheme.primaryColor;
-      case 'report_completed':
-        return AppTheme.tertiaryContainerColor;
-      case 'poll':
-        return AppTheme.statusMedium;
-      case 'warga_removed':
-        return AppTheme.statusHigh;
-      default:
-        return AppTheme.secondaryColor;
-    }
-  }
-
-  String _getActivityLabel(String type) {
-    switch (type) {
-      case 'verification':
-        return 'VERIFIKASI';
-      case 'announcement':
-        return 'PENGUMUMAN';
-      case 'report_completed':
-        return 'LAPORAN SELESAI';
-      case 'poll':
-        return 'VOTING';
-      case 'warga_removed':
-        return 'WARGA KELUAR';
-      default:
-        return 'AKTIVITAS';
-    }
-  }
+  const AktivitasAdminScreen({super.key, this.onBackPressed});
 
   @override
   Widget build(BuildContext context) {
     final state = Provider.of<AppState>(context);
-    final activities = state.activities;
+    final reports = state.adminReports;
+    final activities = _buildActivitiesFromReports(reports);
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: onBackPressed ?? () => Navigator.of(context).maybePop(),
+        ),
         title: const Text(
           'Aktivitas Admin',
           style: TextStyle(
@@ -88,90 +32,149 @@ class AktivitasAdminScreen extends StatelessWidget {
           ),
         ),
         backgroundColor: Colors.white,
+        foregroundColor: AppTheme.textPrimaryColor,
         elevation: 0.5,
         scrolledUnderElevation: 1,
-        automaticallyImplyLeading: false,
       ),
       body: activities.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: const [
-                  Icon(
-                    Icons.history,
-                    size: 48,
-                    color: AppTheme.outlineVariantColor,
-                  ),
-                  SizedBox(height: 12),
-                  Text(
-                    'Belum ada aktivitas',
-                    style: TextStyle(
-                      color: AppTheme.textSecondaryColor,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
-            )
+          ? const Center(child: Text('Belum ada aktivitas.'))
           : ListView.builder(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 18, 16, 24),
               itemCount: activities.length,
               itemBuilder: (context, index) {
                 final activity = activities[index];
-                return _buildActivityCard(context, activity);
+                final isLast = index == activities.length - 1;
+                return _ActivityCard(
+                  activity: activity,
+                  isLast: isLast,
+                );
               },
             ),
     );
   }
 
-  Widget _buildActivityCard(BuildContext context, AdminActivity activity) {
-    final color = _getActivityColor(activity.type);
+  List<_ActivityEntry> _buildActivitiesFromReports(List<Report> reports) {
+    final entries = <_ActivityEntry>[];
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+    for (final report in reports) {
+      entries.add(
+        _ActivityEntry(
+          icon: Icons.assignment_outlined,
+          color: AppTheme.primaryColor,
+          label: 'Laporan dibuat',
+          title: report.title,
+          status: report.status,
+          time: report.createdAt,
+          subtitle:
+              '${report.category} • ${_statusLabel(report.status)}',
+        ),
+      );
+
+      if (report.status == ReportStatus.processed ||
+          report.status == ReportStatus.resolved) {
+        entries.add(
+          _ActivityEntry(
+            icon: Icons.play_arrow_rounded,
+            color: AppTheme.statusMedium,
+            label: 'Laporan diproses',
+            title: report.title,
+            status: report.status,
+            time: report.completedAt ?? report.createdAt,
+            subtitle: report.citizenName,
+          ),
+        );
+      }
+
+      if (report.status == ReportStatus.resolved) {
+        entries.add(
+          _ActivityEntry(
+            icon: Icons.verified_rounded,
+            color: AppTheme.statusLow,
+            label: 'Laporan diselesaikan',
+            title: report.title,
+            status: report.status,
+            time: report.completedAt ?? report.createdAt,
+            subtitle: report.completedByNameText,
+          ),
+        );
+      }
+    }
+
+    entries.sort((a, b) => b.time.compareTo(a.time));
+    return entries;
+  }
+}
+
+class _ActivityEntry {
+  final IconData icon;
+  final Color color;
+  final String label;
+  final String title;
+  final ReportStatus status;
+  final DateTime time;
+  final String subtitle;
+
+  const _ActivityEntry({
+    required this.icon,
+    required this.color,
+    required this.label,
+    required this.title,
+    required this.status,
+    required this.time,
+    required this.subtitle,
+  });
+}
+
+class _ActivityCard extends StatelessWidget {
+  final _ActivityEntry activity;
+  final bool isLast;
+
+  const _ActivityCard({
+    required this.activity,
+    required this.isLast,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Timeline indicator
           Column(
             children: [
               Container(
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
+                  color: activity.color.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  _getActivityIcon(activity.type),
-                  size: 20,
-                  color: color,
+                child: Icon(activity.icon, size: 20, color: activity.color),
+              ),
+              if (!isLast)
+                Container(
+                  width: 2,
+                  height: 42,
+                  color: AppTheme.outlineVariantColor.withValues(alpha: 0.4),
                 ),
-              ),
-              Container(
-                width: 2,
-                height: 40,
-                color: AppTheme.outlineVariantColor.withValues(alpha: 0.4),
-              ),
             ],
           ),
           const SizedBox(width: 12),
-
-          // Content
           Expanded(
             child: Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: AppTheme.outlineVariantColor.withValues(alpha: 0.3),
+                  color: AppTheme.outlineVariantColor.withValues(alpha: 0.35),
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.primaryColor.withValues(alpha: 0.02),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
+                    color: Colors.black.withValues(alpha: 0.03),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
@@ -182,26 +185,26 @@ class AktivitasAdminScreen extends StatelessWidget {
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
+                          horizontal: 8,
+                          vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: color.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(4),
+                          color: activity.color.withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(999),
                         ),
                         child: Text(
-                          _getActivityLabel(activity.type),
+                          activity.label,
                           style: TextStyle(
-                            fontSize: 8,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.5,
-                            color: color,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.4,
+                            color: activity.color,
                           ),
                         ),
                       ),
                       const Spacer(),
                       Text(
-                        _formatTimeAgo(activity.createdAt),
+                        _formatTimeAgo(activity.time),
                         style: const TextStyle(
                           fontSize: 10,
                           color: AppTheme.textSecondaryColor,
@@ -211,94 +214,27 @@ class AktivitasAdminScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    activity.description,
+                    activity.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
                       color: AppTheme.textPrimaryColor,
                       height: 1.3,
                     ),
                   ),
-
-                  // Photo proof if available
-                  if (activity.photoUrl != null) ...[
-                    const SizedBox(height: 10),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Container(
-                        height: 150,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: AppTheme.surfaceContainerHigh,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            Image.network(
-                              activity.photoUrl!,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Center(
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: const [
-                                      Icon(
-                                        Icons.photo,
-                                        size: 32,
-                                        color: AppTheme.outlineColor,
-                                      ),
-                                      SizedBox(height: 4),
-                                      Text(
-                                        'Bukti Foto',
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          color: AppTheme.textSecondaryColor,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
-                            ),
-                            Positioned(
-                              bottom: 6,
-                              left: 6,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 3,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withValues(alpha: 0.6),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: const [
-                                    Icon(
-                                      Icons.camera_alt,
-                                      size: 10,
-                                      color: Colors.white,
-                                    ),
-                                    SizedBox(width: 4),
-                                    Text(
-                                      'Bukti Foto',
-                                      style: TextStyle(
-                                        fontSize: 9,
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                  const SizedBox(height: 4),
+                  Text(
+                    activity.subtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.textSecondaryColor,
+                      height: 1.35,
                     ),
-                  ],
+                  ),
                 ],
               ),
             ),
@@ -307,4 +243,32 @@ class AktivitasAdminScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+String _formatTimeAgo(DateTime dateTime) {
+  final diff = DateTime.now().difference(dateTime);
+  if (diff.inDays > 0) {
+    return '${diff.inDays} hari yang lalu';
+  }
+  if (diff.inHours > 0) {
+    return '${diff.inHours} jam yang lalu';
+  }
+  if (diff.inMinutes > 0) {
+    return '${diff.inMinutes} menit yang lalu';
+  }
+  return 'Baru saja';
+}
+
+String _statusLabel(ReportStatus status) {
+  return switch (status) {
+    ReportStatus.submitted => 'Diajukan',
+    ReportStatus.processed => 'Diproses',
+    ReportStatus.resolved => 'Selesai',
+  };
+}
+
+extension on Report {
+  String get completedByNameText => completedBy?.trim().isNotEmpty == true
+      ? completedBy!.trim()
+      : 'Admin';
 }
