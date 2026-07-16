@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import '../../models/models.dart';
 import '../../providers/app_state.dart';
 import '../../theme.dart';
 import '../../widgets/custom_button.dart';
 
 class BuatVotingAdminScreen extends StatefulWidget {
-  const BuatVotingAdminScreen({super.key});
+  const BuatVotingAdminScreen({super.key, this.poll});
+
+  final Poll? poll;
 
   @override
   State<BuatVotingAdminScreen> createState() => _BuatVotingAdminScreenState();
@@ -13,16 +17,39 @@ class BuatVotingAdminScreen extends StatefulWidget {
 
 class _BuatVotingAdminScreenState extends State<BuatVotingAdminScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _questionController = TextEditingController();
-  final List<TextEditingController> _optionControllers = [
-    TextEditingController(text: 'Pilihan A'),
-    TextEditingController(text: 'Pilihan B'),
-  ];
+  late final TextEditingController _questionController;
+  late final List<TextEditingController> _optionControllers;
+  bool _isActive = true;
+  bool _isSubmitting = false;
+
+  bool get _isEditing => widget.poll != null;
+
+  @override
+  void initState() {
+    super.initState();
+    _questionController = TextEditingController(
+      text: widget.poll?.question ?? '',
+    );
+    final initialOptions =
+        widget.poll?.options ?? const ['Pilihan A', 'Pilihan B'];
+    _optionControllers = initialOptions
+        .map((option) => TextEditingController(text: option))
+        .toList();
+    if (_optionControllers.length < 2) {
+      _optionControllers.addAll(
+        List.generate(
+          2 - _optionControllers.length,
+          (_) => TextEditingController(),
+        ),
+      );
+    }
+    _isActive = widget.poll?.isActive ?? true;
+  }
 
   @override
   void dispose() {
     _questionController.dispose();
-    for (var controller in _optionControllers) {
+    for (final controller in _optionControllers) {
       controller.dispose();
     }
     super.dispose();
@@ -55,45 +82,60 @@ class _BuatVotingAdminScreenState extends State<BuatVotingAdminScreen> {
     }
   }
 
-  void _handleSubmit() {
-    if (_formKey.currentState!.validate()) {
-      final question = _questionController.text;
-      final options = _optionControllers
-          .map((c) => c.text.trim())
-          .where((text) => text.isNotEmpty)
-          .toList();
+  Future<void> _handleSubmit() async {
+    if (!_formKey.currentState!.validate()) return;
 
-      if (options.length < 2) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Minimal terdapat 2 pilihan yang valid.'),
-          ),
+    final question = _questionController.text.trim();
+    final options = _optionControllers
+        .map((controller) => controller.text.trim())
+        .where((text) => text.isNotEmpty)
+        .toList();
+
+    if (options.length < 2) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Minimal terdapat 2 pilihan yang valid.')),
+      );
+      return;
+    }
+
+    final state = context.read<AppState>();
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      if (_isEditing) {
+        await state.updatePoll(
+          pollId: widget.poll!.id,
+          question: question,
+          isActive: _isActive,
+          options: options,
         );
-        return;
+      } else {
+        await state.createPoll(question: question, options: options);
       }
 
-      final state = Provider.of<AppState>(context, listen: false);
-      state.addPoll(question, options);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Voting komunitas berhasil dipublikasikan!'),
-          backgroundColor: AppTheme.primaryColor,
-        ),
-      );
-
-      Navigator.of(context).pop();
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final title = _isEditing ? 'Edit Voting' : 'Buat Voting Komunitas';
+    final submitText = _isEditing ? 'Simpan Perubahan' : 'Publikasikan Voting';
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('Buat Voting Komunitas'),
+        title: Text(title),
         backgroundColor: Colors.white,
         foregroundColor: AppTheme.textPrimaryColor,
         elevation: 0.5,
@@ -105,7 +147,6 @@ class _BuatVotingAdminScreenState extends State<BuatVotingAdminScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Question Input
               Text(
                 'Pertanyaan / Topik Voting',
                 style: theme.textTheme.bodyMedium?.copyWith(
@@ -139,15 +180,35 @@ class _BuatVotingAdminScreenState extends State<BuatVotingAdminScreen> {
                   ),
                 ),
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
+                  if (value == null || value.trim().isEmpty) {
                     return 'Topik voting tidak boleh kosong';
                   }
                   return null;
                 },
               ),
-              const SizedBox(height: 28),
-
-              // Dynamic Options List
+              const SizedBox(height: 20),
+              SwitchListTile.adaptive(
+                contentPadding: EdgeInsets.zero,
+                title: const Text(
+                  'Status Voting',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textPrimaryColor,
+                  ),
+                ),
+                subtitle: Text(
+                  _isActive ? 'Voting aktif untuk warga' : 'Voting ditutup',
+                  style: const TextStyle(color: AppTheme.textSecondaryColor),
+                ),
+                value: _isActive,
+                activeColor: AppTheme.primaryColor,
+                onChanged: (value) {
+                  setState(() {
+                    _isActive = value;
+                  });
+                },
+              ),
+              const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -207,7 +268,7 @@ class _BuatVotingAdminScreenState extends State<BuatVotingAdminScreen> {
                               ),
                             ),
                             validator: (value) {
-                              if (value == null || value.isEmpty) {
+                              if (value == null || value.trim().isEmpty) {
                                 return 'Pilihan tidak boleh kosong';
                               }
                               return null;
@@ -228,10 +289,9 @@ class _BuatVotingAdminScreenState extends State<BuatVotingAdminScreen> {
                 },
               ),
               const SizedBox(height: 40),
-
-              // Submit Button
               CustomButton(
-                text: 'Publikasikan Voting',
+                text: submitText,
+                isLoading: _isSubmitting,
                 onPressed: _handleSubmit,
               ),
             ],

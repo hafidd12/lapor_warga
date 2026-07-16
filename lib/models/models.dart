@@ -343,32 +343,48 @@ class Poll {
   final String id;
   final String question;
   final List<String> options;
+  final List<String> optionIds;
   final Map<String, int> votes; // option -> vote count
   final Map<String, String> userVotes; // userId -> voted option
+  final bool isActive;
 
   Poll({
     required this.id,
     required this.question,
     required this.options,
+    this.optionIds = const [],
     required this.votes,
     required this.userVotes,
+    this.isActive = true,
   });
 
   int get totalVotes => votes.values.fold(0, (sum, val) => sum + val);
+
+  String? optionIdForLabel(String optionLabel) {
+    final index = options.indexOf(optionLabel);
+    if (index == -1 || index >= optionIds.length) return null;
+
+    final optionId = optionIds[index].trim();
+    return optionId.isEmpty ? null : optionId;
+  }
 
   Poll copyWith({
     String? id,
     String? question,
     List<String>? options,
+    List<String>? optionIds,
     Map<String, int>? votes,
     Map<String, String>? userVotes,
+    bool? isActive,
   }) {
     return Poll(
       id: id ?? this.id,
       question: question ?? this.question,
       options: options ?? this.options,
+      optionIds: optionIds ?? this.optionIds,
       votes: votes ?? this.votes,
       userVotes: userVotes ?? this.userVotes,
+      isActive: isActive ?? this.isActive,
     );
   }
 }

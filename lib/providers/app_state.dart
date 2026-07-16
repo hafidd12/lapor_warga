@@ -50,6 +50,8 @@ class AppState with ChangeNotifier {
   String? get reportsError => _reportsError;
   bool get announcementsLoading => _announcementsLoading;
   String? get announcementsError => _announcementsError;
+  bool get pollsLoading => _pollsLoading;
+  String? get pollsError => _pollsError;
   RegistrationCodeLookupResult? get pendingRtRegistrationCode =>
       _pendingRtRegistrationCode;
 
@@ -83,6 +85,8 @@ class AppState with ChangeNotifier {
   String? _reportsError;
   bool _announcementsLoading = false;
   String? _announcementsError;
+  bool _pollsLoading = false;
+  String? _pollsError;
 
   void _setReports(List<Report> reports) {
     _reports
@@ -121,6 +125,11 @@ class AppState with ChangeNotifier {
   void _setAnnouncementLoadState({required bool isLoading, String? error}) {
     _announcementsLoading = isLoading;
     _announcementsError = error;
+  }
+
+  void _setPollLoadState({required bool isLoading, String? error}) {
+    _pollsLoading = isLoading;
+    _pollsError = error;
   }
 
   void _loadMockData() {
@@ -213,30 +222,6 @@ class AppState with ChangeNotifier {
         registeredAt: DateTime.now().subtract(const Duration(days: 60)),
       ),
     );
-
-    // Mock Polls
-    _polls.addAll([
-      Poll(
-        id: 'poll-1',
-        question:
-            'Hari apa yang paling sesuai untuk diadakan senam pagi warga bersama?',
-        options: ['Sabtu Pagi', 'Minggu Pagi', 'Jumat Sore'],
-        votes: {'Sabtu Pagi': 12, 'Minggu Pagi': 28, 'Jumat Sore': 5},
-        userVotes: {},
-      ),
-      Poll(
-        id: 'poll-2',
-        question:
-            'Setujukan Anda jika area samping balai RT dijadikan taman bermain anak?',
-        options: ['Sangat Setuju', 'Setuju', 'Kurang Setuju / Ada Usulan Lain'],
-        votes: {
-          'Sangat Setuju': 32,
-          'Setuju': 15,
-          'Kurang Setuju / Ada Usulan Lain': 2,
-        },
-        userVotes: {},
-      ),
-    ]);
 
     // Mock Activities
     _activities.addAll([
@@ -412,6 +397,44 @@ class AppState with ChangeNotifier {
     }
 
     notifyListeners();
+  }
+
+  Future<void> refreshPolls() async {
+    if (!SupabaseService.isInitialized) {
+      _polls.clear();
+      _setPollLoadState(isLoading: false, error: null);
+      notifyListeners();
+      return;
+    }
+
+    final currentRtRw = _currentUser?.rtRw?.trim() ?? '';
+    if (currentRtRw.isEmpty) {
+      _polls.clear();
+      _setPollLoadState(isLoading: false, error: null);
+      notifyListeners();
+      return;
+    }
+
+    _setPollLoadState(isLoading: true, error: null);
+    notifyListeners();
+
+    try {
+      final polls = await _activeBackendService.fetchPolls();
+      _polls
+        ..clear()
+        ..addAll(polls);
+    } catch (error, stackTrace) {
+      debugPrint(
+        '[AppState][poll] refreshPolls error=${error.runtimeType}: $error',
+      );
+      debugPrint(stackTrace.toString());
+      _polls.clear();
+      _setPollLoadState(isLoading: false, error: 'Gagal memuat voting.');
+      rethrow;
+    } finally {
+      _setPollLoadState(isLoading: false, error: _pollsError);
+      notifyListeners();
+    }
   }
 
   void _replaceWithSnapshot(BackendSnapshot snapshot) {
@@ -1302,36 +1325,73 @@ class AppState with ChangeNotifier {
   }
 
   void voteInPoll(String pollId, String option) {
-    if (_currentUser == null) return;
-    final userId = _currentUser!.id;
+    unawaited(submitVote(pollId: pollId, optionLabel: option));
+  }
 
-    int index = _polls.indexWhere((p) => p.id == pollId);
-    if (index != -1) {
-      Poll poll = _polls[index];
-      Map<String, int> votes = Map.from(poll.votes);
-      Map<String, String> userVotes = Map.from(poll.userVotes);
+  Future<void> submitVote({
+    required String pollId,
+    required String optionLabel,
+  }) async {
+    final currentUser = _currentUser;
+    if (currentUser == null) return;
 
-      // If user already voted, remove old vote
-      if (userVotes.containsKey(userId)) {
-        String oldOption = userVotes[userId]!;
-        votes[oldOption] = (votes[oldOption] ?? 1) - 1;
+    final pollIndex = _polls.indexWhere((poll) => poll.id == pollId);
+    if (pollIndex == -1) return;
+
+    final poll = _polls[pollIndex];
+    final userId = currentUser.id;
+    final alreadyVotedLocally = poll.userVotes.containsKey(userId);
+    final optionIndex = poll.options.indexOf(optionLabel);
+    if (optionIndex == -1) return;
+
+    if (!SupabaseService.isInitialized) {
+      if (alreadyVotedLocally) return;
+
+      final votes = Map<String, int>.from(poll.votes);
+      final userVotes = Map<String, String>.from(poll.userVotes);
+      votes[optionLabel] = (votes[optionLabel] ?? 0) + 1;
+      userVotes[userId] = optionLabel;
+
+      _polls[pollIndex] = poll.copyWith(votes: votes, userVotes: userVotes);
+      notifyListeners();
+      return;
+    }
+
+    final optionId = poll.optionIdForLabel(optionLabel);
+    if (optionId == null) {
+      return;
+    }
+
+    if (alreadyVotedLocally) {
+      return;
+    }
+
+    try {
+      final alreadyVoted = await _activeBackendService.hasUserVoted(
+        pollId: pollId,
+        userId: userId,
+      );
+      if (alreadyVoted) {
+        return;
       }
 
-      // Add new vote
-      userVotes[userId] = option;
-      votes[option] = (votes[option] ?? 0) + 1;
+      await _activeBackendService.submitVote(
+        pollId: pollId,
+        optionId: optionId,
+        userId: userId,
+      );
 
-      _polls[index] = poll.copyWith(votes: votes, userVotes: userVotes);
+      _polls[pollIndex] = poll.copyWith(
+        userVotes: Map<String, String>.from(poll.userVotes)
+          ..[userId] = optionLabel,
+      );
       notifyListeners();
-
-      _runRemote(() async {
-        await _activeBackendService.voteInPoll(
-          pollId: pollId,
-          option: option,
-          userId: userId,
-        );
-        await refreshRemoteData();
-      });
+      await refreshPolls();
+    } catch (error, stackTrace) {
+      debugPrint(
+        '[AppState][poll] submitVote error=${error.runtimeType}: $error',
+      );
+      debugPrint(stackTrace.toString());
     }
   }
 
@@ -1525,42 +1585,152 @@ class AppState with ChangeNotifier {
   }
 
   void addPoll(String question, List<String> options) {
-    final Map<String, int> votes = {};
-    for (var opt in options) {
-      votes[opt] = 0;
+    unawaited(createPoll(question: question, options: options));
+  }
+
+  Future<void> createPoll({
+    required String question,
+    required List<String> options,
+  }) async {
+    final currentUser = _currentUser;
+    if (currentUser == null || currentUser.role != UserRole.admin) {
+      return;
     }
 
+    final normalizedQuestion = question.trim();
+    final normalizedOptions = options
+        .map((option) => option.trim())
+        .where((option) => option.isNotEmpty)
+        .toList();
+    if (normalizedQuestion.isEmpty || normalizedOptions.length < 2) {
+      return;
+    }
+
+    final now = DateTime.now();
+    final tempOptionIds = List<String>.generate(
+      normalizedOptions.length,
+      (index) => 'temp-option-${now.microsecondsSinceEpoch}-$index',
+    );
     final newPoll = Poll(
-      id: 'poll-${DateTime.now().millisecondsSinceEpoch}',
-      question: question,
-      options: options,
-      votes: votes,
+      id: 'poll-${now.microsecondsSinceEpoch}',
+      question: normalizedQuestion,
+      options: normalizedOptions,
+      optionIds: tempOptionIds,
+      votes: {for (final opt in normalizedOptions) opt: 0},
       userVotes: {},
+      isActive: true,
     );
     _polls.insert(0, newPoll);
 
     _activities.insert(
       0,
       AdminActivity(
-        id: 'act-${DateTime.now().millisecondsSinceEpoch + 1}',
-        description: 'Membuat voting: $question',
+        id: 'act-${now.microsecondsSinceEpoch + 1}',
+        description: 'Membuat voting: $normalizedQuestion',
         type: 'poll',
-        createdAt: DateTime.now(),
+        createdAt: now,
         relatedId: newPoll.id,
       ),
     );
 
     notifyListeners();
 
-    if (_currentUser != null) {
-      _runRemote(() async {
-        await _activeBackendService.createPoll(
-          question: question,
-          options: options,
-          currentUser: _currentUser!,
-        );
-        await refreshRemoteData();
-      });
+    if (!SupabaseService.isInitialized) {
+      return;
+    }
+
+    try {
+      await _activeBackendService.createPoll(
+        question: normalizedQuestion,
+        options: normalizedOptions,
+        currentUser: currentUser,
+      );
+      await refreshRemoteData();
+    } catch (error, stackTrace) {
+      debugPrint(
+        '[AppState][poll] createPoll error=${error.runtimeType}: $error',
+      );
+      debugPrint(stackTrace.toString());
+    }
+  }
+
+  Future<void> updatePoll({
+    required String pollId,
+    required String question,
+    required bool isActive,
+    required List<String> options,
+  }) async {
+    final currentUser = _currentUser;
+    if (currentUser == null || currentUser.role != UserRole.admin) {
+      return;
+    }
+
+    final index = _polls.indexWhere((poll) => poll.id == pollId);
+    if (index == -1) return;
+
+    final normalizedQuestion = question.trim();
+    final normalizedOptions = options
+        .map((option) => option.trim())
+        .where((option) => option.isNotEmpty)
+        .toList();
+    if (normalizedQuestion.isEmpty || normalizedOptions.length < 2) {
+      return;
+    }
+
+    final poll = _polls[index];
+    _polls[index] = poll.copyWith(
+      question: normalizedQuestion,
+      options: normalizedOptions,
+      isActive: isActive,
+    );
+    notifyListeners();
+
+    if (!SupabaseService.isInitialized) {
+      return;
+    }
+
+    try {
+      await _activeBackendService.updatePoll(
+        pollId: pollId,
+        question: normalizedQuestion,
+        isActive: isActive,
+        options: normalizedOptions,
+      );
+      await refreshPolls();
+    } catch (error, stackTrace) {
+      debugPrint(
+        '[AppState][poll] updatePoll error=${error.runtimeType}: $error',
+      );
+      debugPrint(stackTrace.toString());
+    }
+  }
+
+  Future<void> deletePoll(String pollId) async {
+    final currentUser = _currentUser;
+    if (currentUser == null || currentUser.role != UserRole.admin) {
+      return;
+    }
+
+    final index = _polls.indexWhere((poll) => poll.id == pollId);
+    if (index == -1) return;
+
+    final removedPoll = _polls.removeAt(index);
+    notifyListeners();
+
+    if (!SupabaseService.isInitialized) {
+      return;
+    }
+
+    try {
+      await _activeBackendService.deletePoll(pollId);
+      await refreshRemoteData();
+    } catch (error, stackTrace) {
+      debugPrint(
+        '[AppState][poll] deletePoll error=${error.runtimeType}: $error',
+      );
+      debugPrint(stackTrace.toString());
+      _polls.insert(index, removedPoll);
+      notifyListeners();
     }
   }
 }

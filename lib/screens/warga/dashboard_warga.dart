@@ -6,6 +6,7 @@ import '../../providers/app_state.dart';
 import '../../theme.dart';
 import 'daftar_pengumuman.dart';
 import 'detail_pengumuman.dart';
+import '../shared/detail_voting_screen.dart';
 
 class DashboardWargaScreen extends StatefulWidget {
   const DashboardWargaScreen({super.key});
@@ -15,7 +16,14 @@ class DashboardWargaScreen extends StatefulWidget {
 }
 
 class _DashboardWargaScreenState extends State<DashboardWargaScreen> {
-  String? _selectedPollOption;
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<AppState>().refreshPolls().catchError((_) {});
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,6 +33,8 @@ class _DashboardWargaScreenState extends State<DashboardWargaScreen> {
     final reportError = state.reportsError;
     final isAnnouncementsLoading = state.announcementsLoading;
     final announcementError = state.announcementsError;
+    final isPollsLoading = state.pollsLoading;
+    final pollsError = state.pollsError;
     final completedReports = state.completedReportsWithPhotos;
     final visibleCompletedReports = completedReports.take(2).toList();
     final currentRtRw = user?.rtRw?.trim() ?? '';
@@ -38,12 +48,11 @@ class _DashboardWargaScreenState extends State<DashboardWargaScreen> {
         .toList();
     final myReports = state.myReports;
     final visibleMyReports = myReports.take(2).toList();
-    final poll = state.polls.isNotEmpty ? state.polls.first : null;
+    final activePolls = state.polls.where((poll) => poll.isActive).toList();
+    final poll = activePolls.isNotEmpty ? activePolls.first : null;
     final userId = user?.id;
-    final hasVoted = poll != null && poll.userVotes.containsKey(user?.id);
-    final selectedPollOption = hasVoted
-        ? poll.userVotes[userId]
-        : _selectedPollOption;
+    final hasVoted =
+        poll != null && userId != null && poll.userVotes.containsKey(userId);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -202,37 +211,36 @@ class _DashboardWargaScreenState extends State<DashboardWargaScreen> {
                   subtitle: 'Berikan suara untuk keputusan bersama warga',
                 ),
                 const SizedBox(height: 14),
-                if (poll == null)
+                if (isPollsLoading && poll == null)
+                  _buildSectionLoadingIndicator(
+                    message: 'Memuat voting...',
+                    height: 180,
+                  )
+                else if (pollsError != null && poll == null)
+                  _buildErrorSection(
+                    title: 'Voting Lingkungan',
+                    subtitle: pollsError,
+                    onRetry: () => state.refreshPolls().catchError((_) {}),
+                    height: 180,
+                  )
+                else if (poll == null)
                   _buildEmptyState(
                     icon: Icons.how_to_vote_rounded,
                     title: 'Tidak ada voting aktif',
-                    subtitle:
-                        'Voting baru akan muncul saat RT membuat polling.',
+                    subtitle: 'Voting aktif akan muncul di sini.',
                   )
                 else
                   _buildPollSummaryCard(
                     context,
                     poll: poll,
                     hasVoted: hasVoted,
-                    onViewTap: () => _showPollSheet(
-                      context,
-                      poll: poll,
-                      hasVoted: hasVoted,
-                      selectedPollOption: selectedPollOption,
-                      onOptionChanged: (value) {
-                        setState(() {
-                          _selectedPollOption = value;
-                        });
-                      },
-                      onSubmit: () {
-                        final option = _selectedPollOption;
-                        if (option == null) return;
-                        state.voteInPoll(poll.id, option);
-                        setState(() {
-                          _selectedPollOption = null;
-                        });
-                      },
-                    ),
+                    onViewTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => DetailVotingScreen(pollId: poll.id),
+                        ),
+                      );
+                    },
                   ),
                 const SizedBox(height: 60),
               ],
@@ -815,250 +823,6 @@ class _DashboardWargaScreenState extends State<DashboardWargaScreen> {
     );
   }
 
-  Widget _buildPollCard(
-    BuildContext context, {
-    required Poll poll,
-    required bool hasVoted,
-    required String? selectedPollOption,
-    required ValueChanged<String> onOptionChanged,
-    required VoidCallback onSubmit,
-  }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: AppTheme.outlineVariantColor.withValues(alpha: 0.6),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.035),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(
-                  Icons.how_to_vote_rounded,
-                  color: AppTheme.primaryColor,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Text(
-                  'Voting Lingkungan',
-                  style: TextStyle(
-                    color: AppTheme.textPrimaryColor,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              if (!hasVoted)
-                _SectionTag(
-                  label: 'Belum memilih',
-                  backgroundColor: AppTheme.surfaceContainerLow,
-                  textColor: AppTheme.textSecondaryColor,
-                ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Text(
-            poll.question,
-            style: const TextStyle(
-              color: AppTheme.textPrimaryColor,
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              height: 1.35,
-            ),
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'Pilih satu opsi yang paling sesuai untuk kondisi lingkungan saat ini.',
-            style: TextStyle(
-              color: AppTheme.textSecondaryColor,
-              fontSize: 12,
-              height: 1.45,
-            ),
-          ),
-          const SizedBox(height: 18),
-          if (!hasVoted) ...[
-            ...poll.options.asMap().entries.map((entry) {
-              final option = entry.value;
-              final isSelected = selectedPollOption == option;
-
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: InkWell(
-                  onTap: () => onOptionChanged(option),
-                  borderRadius: BorderRadius.circular(18),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppTheme.primaryColor.withValues(alpha: 0.06)
-                          : AppTheme.surfaceContainerLow,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(
-                        color: isSelected
-                            ? AppTheme.primaryColor.withValues(alpha: 0.25)
-                            : AppTheme.outlineVariantColor.withValues(
-                                alpha: 0.45,
-                              ),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Radio<String>(
-                          value: option,
-                          groupValue: selectedPollOption,
-                          onChanged: (value) {
-                            if (value != null) onOptionChanged(value);
-                          },
-                          activeColor: AppTheme.primaryColor,
-                          visualDensity: VisualDensity.compact,
-                        ),
-                        Expanded(
-                          child: Text(
-                            option,
-                            style: const TextStyle(
-                              color: AppTheme.textPrimaryColor,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            }),
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
-                onPressed: selectedPollOption == null ? null : onSubmit,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryColor,
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor: AppTheme.primaryColor.withValues(
-                    alpha: 0.35,
-                  ),
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                child: const Text(
-                  'Kirim Vote',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-                ),
-              ),
-            ),
-          ] else ...[
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppTheme.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Hasil voting saat ini',
-                    style: TextStyle(
-                      color: AppTheme.textPrimaryColor,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  ...poll.options.map((option) {
-                    final votes = poll.votes[option] ?? 0;
-                    final totalVotes = poll.totalVotes == 0
-                        ? 1
-                        : poll.totalVotes;
-                    final percent = votes / totalVotes;
-                    final isSelected = selectedPollOption == option;
-
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  option,
-                                  style: TextStyle(
-                                    color: isSelected
-                                        ? AppTheme.primaryColor
-                                        : AppTheme.textPrimaryColor,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                              Text(
-                                '${(percent * 100).toStringAsFixed(0)}%',
-                                style: TextStyle(
-                                  color: isSelected
-                                      ? AppTheme.primaryColor
-                                      : AppTheme.textSecondaryColor,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(999),
-                            child: LinearProgressIndicator(
-                              minHeight: 8,
-                              value: percent,
-                              backgroundColor: Colors.white,
-                              valueColor: const AlwaysStoppedAnimation<Color>(
-                                AppTheme.primaryColor,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }),
-                ],
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
   Widget _buildPollSummaryCard(
     BuildContext context, {
     required Poll poll,
@@ -1115,12 +879,7 @@ class _DashboardWargaScreenState extends State<DashboardWargaScreen> {
                         ),
                       ),
                     ),
-                    if (!hasVoted)
-                      _SectionTag(
-                        label: 'Belum memilih',
-                        backgroundColor: AppTheme.surfaceContainerLow,
-                        textColor: AppTheme.textSecondaryColor,
-                      ),
+                    const _PollStatusBadge(label: 'Aktif'),
                   ],
                 ),
                 const SizedBox(height: 6),
@@ -1136,17 +895,20 @@ class _DashboardWargaScreenState extends State<DashboardWargaScreen> {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  hasVoted
-                      ? 'Anda sudah memberikan suara.'
-                      : 'Lihat detail voting dan berikan suara Anda.',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppTheme.textSecondaryColor,
-                    fontSize: 11,
-                    height: 1.3,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      '${poll.totalVotes} suara',
+                      style: const TextStyle(
+                        color: AppTheme.textSecondaryColor,
+                        fontSize: 11,
+                        height: 1.3,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    if (hasVoted)
+                      const _PollStatusBadge(label: 'Sudah Memilih'),
+                  ],
                 ),
               ],
             ),
@@ -1164,9 +926,12 @@ class _DashboardWargaScreenState extends State<DashboardWargaScreen> {
                   borderRadius: BorderRadius.circular(14),
                 ),
               ),
-              child: const Text(
-                'Lihat',
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+              child: Text(
+                hasVoted ? 'Lihat Hasil' : 'Pilih',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                ),
               ),
             ),
           ),
@@ -1174,50 +939,32 @@ class _DashboardWargaScreenState extends State<DashboardWargaScreen> {
       ),
     );
   }
+}
 
-  void _showPollSheet(
-    BuildContext context, {
-    required Poll poll,
-    required bool hasVoted,
-    required String? selectedPollOption,
-    required ValueChanged<String> onOptionChanged,
-    required VoidCallback onSubmit,
-  }) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      isDismissible: true,
-      enableDrag: true,
-      useSafeArea: true,
-      barrierColor: Colors.black54,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.84,
-          minChildSize: 0.55,
-          maxChildSize: 0.95,
-          builder: (context, scrollController) {
-            return Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-              ),
-              child: SingleChildScrollView(
-                controller: scrollController,
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-                child: _buildPollCard(
-                  context,
-                  poll: poll,
-                  hasVoted: hasVoted,
-                  selectedPollOption: selectedPollOption,
-                  onOptionChanged: onOptionChanged,
-                  onSubmit: onSubmit,
-                ),
-              ),
-            );
-          },
-        );
-      },
+class _PollStatusBadge extends StatelessWidget {
+  final String label;
+
+  const _PollStatusBadge({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final isClosed = label.toLowerCase() == 'ditutup';
+    final color = isClosed ? AppTheme.statusHigh : AppTheme.primaryColor;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
     );
   }
 }

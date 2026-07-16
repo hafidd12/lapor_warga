@@ -164,70 +164,60 @@ class BackendService {
   }
 
   Future<List<Poll>> fetchPolls() async {
-    final pollRows = _rows(
-      await _client
-          .from('polls')
-          .select('id, question, created_at')
-          .eq('is_active', true)
-          .order('created_at', ascending: false),
-    );
-    final optionRows = _rows(
-      await _client
-          .from('poll_options')
-          .select('id, poll_id, option_text, sort_order')
-          .order('sort_order'),
-    );
-    final voteRows = _rows(
-      await _client.from('poll_votes').select('poll_id, option_id, user_id'),
-    );
+    try {
+      final currentRtRw = await _currentUserRtRw();
+      final normalizedRtRw = currentRtRw?.trim() ?? '';
+      if (normalizedRtRw.isEmpty) {
+        return const [];
+      }
 
-    final optionTextById = <String, String>{};
-    final optionsByPoll = <String, List<Map<String, dynamic>>>{};
-    for (final row in optionRows) {
-      final optionId = _stringValue(row['id']);
-      final pollId = _stringValue(row['poll_id']);
-      final optionText = _stringValue(row['option_text']);
-      if (optionId == null || pollId == null || optionText == null) continue;
-      optionTextById[optionId] = optionText;
-      optionsByPoll.putIfAbsent(pollId, () => []).add(row);
-    }
-
-    final votesByPoll = <String, Map<String, int>>{};
-    final userVotesByPoll = <String, Map<String, String>>{};
-    for (final row in voteRows) {
-      final pollId = _stringValue(row['poll_id']);
-      final optionId = _stringValue(row['option_id']);
-      final userId = _stringValue(row['user_id']);
-      final optionText = optionTextById[optionId];
-      if (pollId == null || userId == null || optionText == null) continue;
-      votesByPoll.putIfAbsent(pollId, () => {});
-      votesByPoll[pollId]![optionText] =
-          (votesByPoll[pollId]![optionText] ?? 0) + 1;
-      userVotesByPoll.putIfAbsent(pollId, () => {})[userId] = optionText;
-    }
-
-    return pollRows.map((row) {
-      final pollId = _stringValue(row['id']) ?? '';
-      final optionRows = optionsByPoll[pollId] ?? [];
-      optionRows.sort(
-        (a, b) =>
-            _intValue(a['sort_order']).compareTo(_intValue(b['sort_order'])),
+      final pollRows = _rows(
+        await _client
+            .from('polls')
+            .select(
+              'id, question, created_by_id, created_by_name, rt_rw, is_active, created_at, updated_at',
+            )
+            .eq('rt_rw', normalizedRtRw)
+            .order('created_at', ascending: false),
       );
-      final options = optionRows
-          .map((option) => _stringValue(option['option_text']) ?? '')
-          .where((option) => option.isNotEmpty)
+
+      if (pollRows.isEmpty) {
+        return const [];
+      }
+
+      final pollIds = pollRows
+          .map((row) => _stringValue(row['id']))
+          .whereType<String>()
           .toList();
-      final votes = {for (final option in options) option: 0};
-      votes.addAll(votesByPoll[pollId] ?? {});
 
-      return Poll(
-        id: pollId,
-        question: _stringValue(row['question']) ?? '',
-        options: options,
-        votes: votes,
-        userVotes: userVotesByPoll[pollId] ?? {},
+      final optionRows = pollIds.isEmpty
+          ? const <Map<String, dynamic>>[]
+          : _rows(
+              await _client
+                  .from('poll_options')
+                  .select('*')
+                  .inFilter('poll_id', pollIds)
+                  .order('sort_order', ascending: true),
+            );
+      final voteRows = pollIds.isEmpty
+          ? const <Map<String, dynamic>>[]
+          : _rows(
+              await _client
+                  .from('poll_votes')
+                  .select('poll_id, option_id, user_id')
+                  .inFilter('poll_id', pollIds),
+            );
+
+      return _buildPollsFromRows(
+        pollRows: pollRows,
+        optionRows: optionRows,
+        voteRows: voteRows,
       );
-    }).toList();
+    } catch (e, st) {
+      debugPrint('FETCH POLLS ERROR: $e');
+      debugPrintStack(stackTrace: st);
+      rethrow;
+    }
   }
 
   Future<List<AdminActivity>> fetchActivities() async {
@@ -489,37 +479,195 @@ class BackendService {
     required List<String> options,
     required AppUser currentUser,
   }) async {
+    final normalizedQuestion = question.trim();
+    final normalizedOptions = options
+        .map((option) => option.trim())
+        .where((option) => option.isNotEmpty)
+        .toList();
+    if (normalizedQuestion.isEmpty) {
+      throw const BackendServiceException(
+        'Pertanyaan voting tidak boleh kosong.',
+      );
+    }
+    if (normalizedOptions.length < 2) {
+      throw const BackendServiceException(
+        'Voting harus memiliki minimal 2 pilihan.',
+      );
+    }
+    final rtRw = currentUser.rtRw?.trim() ?? '';
+    if (rtRw.isEmpty) {
+      throw const BackendServiceException(
+        'RT/RW pembuat voting tidak ditemukan.',
+      );
+    }
+
     final pollData = await _client
         .from('polls')
         .insert({
-          'question': question,
-          'created_by': currentUser.id,
+          'question': normalizedQuestion,
+          'created_by_id': currentUser.id,
           'created_by_name': currentUser.name,
+          'rt_rw': rtRw,
+          'is_active': true,
+          'created_at': DateTime.now().toUtc().toIso8601String(),
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
         })
         .select()
         .single();
 
     final pollId = _stringValue(pollData['id']) ?? '';
+    if (pollId.isEmpty) {
+      throw const BackendServiceException('Gagal membuat voting.');
+    }
+
     await _client.from('poll_options').insert([
-      for (var i = 0; i < options.length; i++)
-        {'poll_id': pollId, 'option_text': options[i], 'sort_order': i},
+      for (var i = 0; i < normalizedOptions.length; i++)
+        {
+          'poll_id': pollId,
+          'label': normalizedOptions[i],
+          'sort_order': i,
+          'vote_count': 0,
+        },
     ]);
 
     await createActivity(
-      description: 'Membuat voting: $question',
+      description: 'Membuat voting: $normalizedQuestion',
       type: 'poll',
       relatedTable: 'polls',
       relatedId: pollId,
       currentUser: currentUser,
     );
 
-    return Poll(
-      id: pollId,
-      question: question,
-      options: options,
-      votes: {for (final option in options) option: 0},
-      userVotes: const {},
+    return _fetchPollById(pollId);
+  }
+
+  Future<void> updatePoll({
+    required String pollId,
+    required String question,
+    required bool isActive,
+    required List<String> options,
+  }) async {
+    final normalizedQuestion = question.trim();
+    final normalizedOptions = options
+        .map((option) => option.trim())
+        .where((option) => option.isNotEmpty)
+        .toList();
+    if (normalizedQuestion.isEmpty) {
+      throw const BackendServiceException(
+        'Pertanyaan voting tidak boleh kosong.',
+      );
+    }
+    if (normalizedOptions.length < 2) {
+      throw const BackendServiceException(
+        'Voting harus memiliki minimal 2 pilihan.',
+      );
+    }
+
+    final existingOptionRows = _rows(
+      await _client
+          .from('poll_options')
+          .select('id, label, sort_order, vote_count')
+          .eq('poll_id', pollId)
+          .order('sort_order', ascending: true),
     );
+
+    await _client
+        .from('polls')
+        .update({
+          'question': normalizedQuestion,
+          'is_active': isActive,
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        })
+        .eq('id', pollId);
+
+    final overlapCount =
+        existingOptionRows.length < normalizedOptions.length
+        ? existingOptionRows.length
+        : normalizedOptions.length;
+
+    for (var i = 0; i < overlapCount; i++) {
+      final optionId = _stringValue(existingOptionRows[i]['id']);
+      if (optionId == null || optionId.isEmpty) continue;
+
+      await _client
+          .from('poll_options')
+          .update({
+            'label': normalizedOptions[i],
+            'sort_order': i,
+          })
+          .eq('id', optionId);
+    }
+
+    if (normalizedOptions.length > existingOptionRows.length) {
+      await _client.from('poll_options').insert([
+        for (var i = existingOptionRows.length;
+            i < normalizedOptions.length;
+            i++)
+          {
+            'poll_id': pollId,
+            'label': normalizedOptions[i],
+            'sort_order': i,
+            'vote_count': 0,
+          },
+      ]);
+    } else if (existingOptionRows.length > normalizedOptions.length) {
+      final extraIds = existingOptionRows
+          .skip(normalizedOptions.length)
+          .map((row) => _stringValue(row['id']))
+          .whereType<String>()
+          .toList();
+      if (extraIds.isNotEmpty) {
+        await _client.from('poll_options').delete().inFilter('id', extraIds);
+      }
+    }
+  }
+
+  Future<void> deletePoll(String pollId) async {
+    await _client.from('polls').delete().eq('id', pollId);
+  }
+
+  Future<void> submitVote({
+    required String pollId,
+    required String optionId,
+    required String userId,
+  }) async {
+    if (await hasUserVoted(pollId: pollId, userId: userId)) {
+      return;
+    }
+
+    await _client.from('poll_votes').insert({
+      'poll_id': pollId,
+      'option_id': optionId,
+      'user_id': userId,
+      'created_at': DateTime.now().toUtc().toIso8601String(),
+    });
+  }
+
+  Future<bool> hasUserVoted({
+    required String pollId,
+    required String userId,
+  }) async {
+    final data = await _client
+        .from('poll_votes')
+        .select('poll_id')
+        .eq('poll_id', pollId)
+        .eq('user_id', userId)
+        .maybeSingle();
+    return data != null;
+  }
+
+  Future<String?> fetchUserVote({
+    required String pollId,
+    required String userId,
+  }) async {
+    final data = await _client
+        .from('poll_votes')
+        .select('option_id')
+        .eq('poll_id', pollId)
+        .eq('user_id', userId)
+        .maybeSingle();
+    if (data == null) return null;
+    return _stringValue((data as Map<String, dynamic>)['option_id']);
   }
 
   Future<void> voteInPoll({
@@ -531,14 +679,16 @@ class BackendService {
         .from('poll_options')
         .select('id')
         .eq('poll_id', pollId)
-        .eq('option_text', option)
+        .eq('label', option)
         .single();
 
-    await _client.from('poll_votes').upsert({
-      'poll_id': pollId,
-      'option_id': optionData['id'],
-      'user_id': userId,
-    }, onConflict: 'poll_id,user_id');
+    await submitVote(
+      pollId: pollId,
+      optionId:
+          _stringValue(optionData['id']) ??
+          (throw const BackendServiceException('Opsi voting tidak ditemukan.')),
+      userId: userId,
+    );
   }
 
   Future<void> setWargaVerification({
@@ -731,6 +881,141 @@ class BackendService {
     return (data as List)
         .map((row) => Map<String, dynamic>.from(row as Map))
         .toList();
+  }
+
+  Future<String?> _currentUserRtRw() async {
+    final user = _client.auth.currentUser;
+    if (user == null) return null;
+
+    final data = await _client
+        .from('profiles')
+        .select('rt_rw')
+        .eq('id', user.id)
+        .maybeSingle();
+
+    if (data == null) return null;
+    return _stringValue((data as Map<String, dynamic>)['rt_rw']);
+  }
+
+  List<Poll> _buildPollsFromRows({
+    required List<Map<String, dynamic>> pollRows,
+    required List<Map<String, dynamic>> optionRows,
+    required List<Map<String, dynamic>> voteRows,
+  }) {
+    final optionRowsByPoll = <String, List<Map<String, dynamic>>>{};
+    final optionLabelById = <String, String>{};
+    final voteRowsByPoll = <String, List<Map<String, dynamic>>>{};
+    final userVotesByPoll = <String, Map<String, String>>{};
+
+    for (final row in optionRows) {
+      final pollId = _stringValue(row['poll_id']);
+      final optionId = _stringValue(row['id']);
+      final label = _stringValue(row['label']) ?? _stringValue(row['option_text']);
+      if (pollId == null || optionId == null || label == null) continue;
+
+      optionRowsByPoll.putIfAbsent(pollId, () => []).add(row);
+      optionLabelById[optionId] = label;
+    }
+
+    for (final row in voteRows) {
+      final pollId = _stringValue(row['poll_id']);
+      final optionId = _stringValue(row['option_id']);
+      final userId = _stringValue(row['user_id']);
+      final label = optionLabelById[optionId];
+      if (pollId == null ||
+          optionId == null ||
+          userId == null ||
+          label == null) {
+        continue;
+      }
+      voteRowsByPoll.putIfAbsent(pollId, () => []).add(row);
+      userVotesByPoll.putIfAbsent(pollId, () => {})[userId] = label;
+    }
+
+    final polls = <Poll>[];
+    for (final row in pollRows) {
+      try {
+        final pollId = _stringValue(row['id']) ?? '';
+        if (pollId.isEmpty) continue;
+
+        final optionRowsForPoll =
+            optionRowsByPoll[pollId] ?? const <Map<String, dynamic>>[];
+        final voteRowsForPoll =
+            voteRowsByPoll[pollId] ?? const <Map<String, dynamic>>[];
+        final options = <String>[];
+        final optionIds = <String>[];
+        final votes = <String, int>{};
+
+        for (final optionRow in optionRowsForPoll) {
+          final optionId = _stringValue(optionRow['id']);
+          final label = _stringValue(optionRow['label']) ??
+              _stringValue(optionRow['option_text']);
+          if (optionId == null || label == null) continue;
+
+          options.add(label);
+          optionIds.add(optionId);
+          votes[label] = _intValue(optionRow['vote_count']);
+        }
+
+        debugPrint(
+          '[AppState][poll] poll.id=$pollId question="${_stringValue(row['question']) ?? ''}" options=${optionRowsForPoll.length} voteRows=${voteRowsForPoll.length} votes=$votes',
+        );
+
+        polls.add(
+          Poll(
+            id: pollId,
+            question: _stringValue(row['question']) ?? '',
+            options: options,
+            optionIds: optionIds,
+            votes: votes,
+            userVotes: userVotesByPoll[pollId] ?? {},
+            isActive: row['is_active'] == true,
+          ),
+        );
+      } catch (error, stackTrace) {
+        debugPrint(
+          '[AppState][poll] skip malformed poll row error=${error.runtimeType}: $error',
+        );
+        debugPrint(stackTrace.toString());
+      }
+    }
+
+    return polls;
+  }
+
+  Future<Poll> _fetchPollById(String pollId) async {
+    final pollRows = _rows(
+      await _client
+          .from('polls')
+          .select(
+            'id, question, created_by_id, created_by_name, rt_rw, is_active, created_at, updated_at',
+          )
+          .eq('id', pollId)
+          .limit(1),
+    );
+    if (pollRows.isEmpty) {
+      throw const BackendServiceException('Voting tidak ditemukan.');
+    }
+
+    final optionRows = _rows(
+      await _client
+          .from('poll_options')
+          .select('id, poll_id, label, sort_order, vote_count')
+          .eq('poll_id', pollId)
+          .order('sort_order', ascending: true),
+    );
+    final voteRows = _rows(
+      await _client
+          .from('poll_votes')
+          .select('poll_id, option_id, user_id')
+          .eq('poll_id', pollId),
+    );
+
+    return _buildPollsFromRows(
+      pollRows: pollRows,
+      optionRows: optionRows,
+      voteRows: voteRows,
+    ).first;
   }
 
   Report _reportFromRow(Map<String, dynamic> row, List<String> upvotedBy) {

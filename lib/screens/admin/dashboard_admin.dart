@@ -9,6 +9,7 @@ import 'buat_pengumuman_admin.dart';
 import 'buat_voting_admin.dart';
 import 'daftar_warga_admin.dart';
 import 'detail_laporan_admin.dart';
+import '../shared/detail_voting_screen.dart';
 
 class DashboardAdminScreen extends StatefulWidget {
   const DashboardAdminScreen({super.key});
@@ -47,6 +48,15 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
   void dispose() {
     _scrollController.dispose();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<AppState>().refreshPolls().catchError((_) {});
+    });
   }
 
   String _formatTimeAgo(DateTime dateTime) {
@@ -192,6 +202,46 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
     await state.refreshAnnouncements().catchError((_) {});
   }
 
+  Future<void> _openPollForm(BuildContext context, {Poll? poll}) async {
+    final result = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => BuatVotingAdminScreen(poll: poll)),
+    );
+
+    if (!mounted) return;
+    if (result == true) {
+      await context.read<AppState>().refreshPolls().catchError((_) {});
+    }
+  }
+
+  Future<void> _confirmDeletePoll(BuildContext context, Poll poll) async {
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Hapus Voting?'),
+        content: Text(
+          'Voting "${poll.question}" akan dihapus permanen. Lanjutkan?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Batal'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: FilledButton.styleFrom(backgroundColor: AppTheme.statusHigh),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldDelete != true || !mounted) return;
+
+    final state = context.read<AppState>();
+    await state.deletePoll(poll.id);
+    await state.refreshPolls().catchError((_) {});
+  }
+
   void _openQuickAction(BuildContext context, String action) {
     switch (action) {
       case 'warga':
@@ -224,6 +274,9 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
     final announcements = state.announcements;
     final isAnnouncementsLoading = state.announcementsLoading;
     final announcementError = state.announcementsError;
+    final polls = state.polls;
+    final isPollsLoading = state.pollsLoading;
+    final pollsError = state.pollsError;
 
     final reports = state.adminReports;
     final newCount = reports
@@ -371,6 +424,91 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
                           onPressed: () => _openAnnouncementForm(context),
                           icon: const Icon(Icons.add_rounded),
                           label: const Text('Tambah Pengumuman'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 28),
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: AppTheme.outlineVariantColor.withValues(
+                        alpha: 0.55,
+                      ),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 16,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _SectionHeader(
+                        title: 'Voting RT (${polls.length})',
+                        subtitle:
+                            'Kelola voting aktif maupun yang sudah ditutup',
+                      ),
+                      const SizedBox(height: 16),
+                      if (isPollsLoading && polls.isEmpty)
+                        const _LoadingDashboardState(
+                          title: 'Memuat voting',
+                          subtitle: 'Mengambil data voting dari Supabase.',
+                        )
+                      else if (pollsError != null && polls.isEmpty)
+                        _PollSectionErrorState(
+                          message: pollsError,
+                          onRetry: () {
+                            context.read<AppState>().refreshPolls().catchError(
+                              (_) {},
+                            );
+                          },
+                        )
+                      else if (polls.isEmpty)
+                        const _EmptyDashboardState(
+                          icon: Icons.how_to_vote_rounded,
+                          title: 'Belum ada voting',
+                          subtitle: 'Voting baru akan tampil di sini.',
+                        )
+                      else
+                        Column(
+                          children: [
+                            for (var i = 0; i < polls.length; i++) ...[
+                              _AdminPollCard(
+                                poll: polls[i],
+                                onEditTap: () =>
+                                    _openPollForm(context, poll: polls[i]),
+                                onDeleteTap: () =>
+                                    _confirmDeletePoll(context, polls[i]),
+                                onDetailTap: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => DetailVotingScreen(
+                                        pollId: polls[i].id,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                              if (i != polls.length - 1)
+                                const SizedBox(height: 12),
+                            ],
+                          ],
+                        ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.icon(
+                          onPressed: () => _openPollForm(context),
+                          icon: const Icon(Icons.add_rounded),
+                          label: const Text('Tambah Voting'),
                         ),
                       ),
                     ],
@@ -963,6 +1101,190 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
 
         return filterRow;
       },
+    );
+  }
+}
+
+class _AdminPollCard extends StatelessWidget {
+  const _AdminPollCard({
+    required this.poll,
+    required this.onEditTap,
+    required this.onDeleteTap,
+    required this.onDetailTap,
+  });
+
+  final Poll poll;
+  final VoidCallback onEditTap;
+  final VoidCallback onDeleteTap;
+  final VoidCallback onDetailTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        onTap: onDetailTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: AppTheme.outlineVariantColor.withValues(alpha: 0.6),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryColor.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Icon(
+                      Icons.how_to_vote_rounded,
+                      color: poll.isActive
+                          ? AppTheme.primaryColor
+                          : AppTheme.statusHigh,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                poll.question,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: AppTheme.textPrimaryColor,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  height: 1.35,
+                                ),
+                              ),
+                            ),
+                            _PollStatusBadge(isActive: poll.isActive),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          '${poll.options.length} opsi • ${poll.totalVotes} suara',
+                          style: const TextStyle(
+                            color: AppTheme.textSecondaryColor,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  OutlinedButton(
+                    onPressed: onDetailTap,
+                    child: const Text('Lihat Detail'),
+                  ),
+                  OutlinedButton(
+                    onPressed: onEditTap,
+                    child: const Text('Edit'),
+                  ),
+                  OutlinedButton(
+                    onPressed: onDeleteTap,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppTheme.statusHigh,
+                    ),
+                    child: const Text('Hapus'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PollSectionErrorState extends StatelessWidget {
+  const _PollSectionErrorState({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        children: [
+          const Icon(
+            Icons.error_outline_rounded,
+            color: AppTheme.statusHigh,
+            size: 28,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: AppTheme.textPrimaryColor,
+              fontSize: 13,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextButton(onPressed: onRetry, child: const Text('Coba Lagi')),
+        ],
+      ),
+    );
+  }
+}
+
+class _PollStatusBadge extends StatelessWidget {
+  const _PollStatusBadge({required this.isActive});
+
+  final bool isActive;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isActive ? AppTheme.primaryColor : AppTheme.statusHigh;
+    final label = isActive ? 'Aktif' : 'Ditutup';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
     );
   }
 }
