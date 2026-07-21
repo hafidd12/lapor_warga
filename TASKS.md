@@ -44,50 +44,45 @@
 
 ## Daffa-spec
 
-- [ ] Backend API Development
-  - [x] Auth API
-  - [x] User registration API
-  - [x] Warga verification API
-  - [x] Report API
-  - [ ] Announcement API
-  - [ ] Voting API
-- [ ] System Logic
-  - [ ] Authentication logic
-  - [ ] Role-based access control
-  - [ ] Session management
-  - [ ] Backend validation
-  - [ ] File/photo upload handling
-- [ ] API Integration
-  - [ ] Hubungkan Flutter ke backend
-  - [ ] Ganti mock data dengan data API
-  - [ ] Handle loading, error, dan empty state dari API
+### Backend API Development
+- [x] Auth API
+- [x] User Registration API
+- [x] Warga Verification API
+- [x] Report API
+- [x] Announcement API
+- [x] Voting API
 
-## Mohammadfauzn22-create
+### System Logic
+- [x] Authentication Logic
+- [x] Role-Based Access Control
+- [x] Session Management
+- [x] Backend Validation
+- [x] File/Photo Upload Handling
 
-- [ ] UI Refinement Sesuai Stitch
-  - [ ] Rapikan spacing, warna, typography, radius, dan shadow
-  - [ ] Finalisasi dashboard warga dan dashboard admin
-  - [ ] Finalisasi activity admin dan profil admin
-  - [ ] Tambahkan detail pengumuman warga
-  - [ ] Implementasi logo/brand asset dari desain Stitch
-- [ ] Testing & Bug Fixing
-  - [ ] Jalankan `dart format`
-  - [ ] Jalankan `flutter analyze`
-  - [ ] Jalankan `flutter test`
-  - [ ] Cek manual flow warga
-  - [ ] Cek manual flow admin / RT
-  - [ ] Perbaiki bug navigasi, form, voting, dan upload foto
-- [ ] Deployment Preparation
-  - [ ] Cek konfigurasi app
-  - [ ] Siapkan konfigurasi production API
-  - [ ] Build APK / release artifact
+### API Integration
+- [x] Hubungkan Flutter ke Backend
+- [x] Ganti Mock Data dengan API
+- [x] Handle Loading, Error, dan Empty State
 
-## Shared Tasks (Semua Anggota)
+### UI Refinement
+- [ ] Rapikan spacing, warna, typography, radius, dan shadow
+- [ ] Finalisasi dashboard warga
+- [ ] Finalisasi dashboard RT/Admin
+- [ ] Finalisasi halaman aktivitas
+- [ ] Finalisasi halaman profil
+- [ ] Finalisasi login & register
+- [ ] Tambahkan detail pengumuman warga
+- [ ] Implementasi logo/brand asset
 
-- [ ] Database Design
-  - [ ] Entity Relationship Diagram (ERD)
-  - [ ] Database schema planning
-  - [ ] Table relationships
-  - [ ] Migration setup
-  - [ ] Database integration
-  - [ ] Database testing
+### Testing & Bug Fixing
+- [ ] Jalankan `dart format`
+- [ ] Jalankan `flutter analyze`
+- [ ] Jalankan `flutter test`
+- [ ] Manual testing warga
+- [ ] Manual testing RT/Admin
+- [ ] Perbaiki bug yang ditemukan
+
+### Deployment Preparation
+- [ ] Cek konfigurasi aplikasi
+- [ ] Konfigurasi Production API
+- [ ] Build APK Release

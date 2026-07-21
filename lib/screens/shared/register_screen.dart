@@ -548,18 +548,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     Column(
                       children: [
                         Container(
-                          width: 72,
-                          height: 72,
+                          width: 80,
+                          height: 80,
                           decoration: BoxDecoration(
                             color: AppTheme.primaryContainerColor,
-                            borderRadius: BorderRadius.circular(18),
+                            borderRadius: BorderRadius.circular(22),
                             boxShadow: [
                               BoxShadow(
                                 color: AppTheme.primaryColor.withValues(
                                   alpha: 0.1,
                                 ),
-                                blurRadius: 12,
-                                offset: const Offset(0, 6),
+                                blurRadius: 18,
+                                offset: const Offset(0, 8),
                               ),
                             ],
                           ),
@@ -567,7 +567,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             widget.isWarga
                                 ? Icons.person_add
                                 : Icons.admin_panel_settings,
-                            size: 36,
+                            size: 38,
                             color: AppTheme.primaryFixedDim,
                           ),
                         ),
@@ -577,14 +577,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ? 'Daftar Sebagai Warga'
                               : 'Daftar Sebagai RT/RW',
                           style: theme.textTheme.headlineLarge?.copyWith(
-                            fontSize: 22,
+                            fontSize: 24,
                             color: AppTheme.primaryColor,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w700,
+                            height: 1.1,
                           ),
+                          textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 6),
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
                           child: Text(
                             widget.isWarga
                                 ? 'Lengkapi data diri Anda untuk mendaftar sebagai warga. Akun akan diverifikasi oleh RT.'
@@ -592,7 +594,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               color: AppTheme.secondaryColor,
-                              fontSize: 12,
+                              fontSize: 13,
+                              height: 1.4,
                             ),
                           ),
                         ),
@@ -604,13 +607,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 14,
-                        vertical: 6,
+                        vertical: 7,
                       ),
                       decoration: BoxDecoration(
                         color: widget.isWarga
                             ? AppTheme.primaryFixed.withValues(alpha: 0.3)
                             : AppTheme.tertiaryFixed.withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(999),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -629,7 +632,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 : 'PENDAFTARAN RT/RW',
                             style: const TextStyle(
                               fontSize: 10,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w700,
                               letterSpacing: 0.8,
                               color: AppTheme.primaryColor,
                             ),
@@ -641,23 +644,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                     // Form Card
                     Container(
-                      padding: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.9),
-                        borderRadius: BorderRadius.circular(20),
+                        color: Colors.white.withValues(alpha: 0.92),
+                        borderRadius: BorderRadius.circular(24),
                         border: Border.all(
                           color: AppTheme.outlineVariantColor.withValues(
-                            alpha: 0.4,
+                            alpha: 0.55,
                           ),
                           width: 1,
                         ),
                         boxShadow: [
                           BoxShadow(
                             color: AppTheme.primaryColor.withValues(
-                              alpha: 0.03,
+                              alpha: 0.05,
                             ),
-                            blurRadius: 16,
-                            offset: const Offset(0, 8),
+                            blurRadius: 24,
+                            offset: const Offset(0, 12),
                           ),
                         ],
                       ),
@@ -721,6 +724,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                             // Role-specific fields
                             if (widget.isWarga) ...[
+                              // KTP Number
+                              _buildInputLabel('NOMOR KTP / NIK'),
+                              const SizedBox(height: 4),
+                              _buildTextFormField(
+                                controller: _ktpNumberController,
+                                hintText: '317xxxxxxxxxxxxx',
+                                prefixIcon: Icons.badge_outlined,
+                                keyboardType: TextInputType.number,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Nomor KTP / NIK wajib diisi';
+                                  }
+                                  if (value.trim().length < 10) {
+                                    return 'Nomor KTP / NIK tidak valid';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 14),
+
                               // Kode Registrasi RT
                               _buildInputLabel('KODE REGISTRASI RT'),
                               const SizedBox(height: 4),
@@ -779,7 +802,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                         : AppTheme.statusHigh.withValues(
                                             alpha: 0.08,
                                           ),
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
                                       color: _codeFound
                                           ? AppTheme.statusLow.withValues(
@@ -822,23 +845,86 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ],
                               const SizedBox(height: 14),
 
-                              // KTP Number
-                              _buildInputLabel('NOMOR KTP / NIK'),
-                              const SizedBox(height: 4),
-                              _buildTextFormField(
-                                controller: _ktpNumberController,
-                                hintText: '317xxxxxxxxxxxxx',
-                                prefixIcon: Icons.badge_outlined,
-                                keyboardType: TextInputType.number,
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Nomor KTP / NIK wajib diisi';
-                                  }
-                                  if (value.trim().length < 10) {
-                                    return 'Nomor KTP / NIK tidak valid';
-                                  }
-                                  return null;
-                                },
+                              // RT/RW & Alamat
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    flex: 2,
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        _buildInputLabel('RT/RW'),
+                                        const SizedBox(height: 4),
+                                        TextFormField(
+                                          controller: _rtRwController,
+                                          readOnly: _codeFound,
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: _codeFound
+                                                ? AppTheme.primaryColor
+                                                : AppTheme.textPrimaryColor,
+                                            fontWeight: _codeFound
+                                                ? FontWeight.bold
+                                                : FontWeight.normal,
+                                          ),
+                                          decoration: _buildInputDecoration(
+                                            hintText: _codeFound
+                                                ? ''
+                                                : '005/002',
+                                            prefixIcon:
+                                                Icons.location_on_outlined,
+                                            suffixIcon: _codeFound
+                                                ? const Padding(
+                                                    padding: EdgeInsets.only(
+                                                      right: 8,
+                                                    ),
+                                                    child: Icon(
+                                                      Icons.lock_rounded,
+                                                      size: 16,
+                                                      color:
+                                                          AppTheme.primaryColor,
+                                                    ),
+                                                  )
+                                                : null,
+                                          ),
+                                          validator: (value) {
+                                            if (value == null ||
+                                                value.isEmpty) {
+                                              return 'Wajib diisi';
+                                            }
+                                            return null;
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    flex: 3,
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        _buildInputLabel('ALAMAT'),
+                                        const SizedBox(height: 4),
+                                        _buildTextFormField(
+                                          controller: _addressController,
+                                          hintText: 'Jl. Mawar No. 10',
+                                          prefixIcon: Icons.home_outlined,
+                                          validator: (value) {
+                                            if (value == null ||
+                                                value.isEmpty) {
+                                              return 'Wajib diisi';
+                                            }
+                                            return null;
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
                               const SizedBox(height: 14),
 
@@ -854,7 +940,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     color: AppTheme.primaryFixed.withValues(
                                       alpha: 0.06,
                                     ),
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(16),
                                     border: Border.all(
                                       color: _ktpImage != null
                                           ? AppTheme.primaryColor.withValues(
@@ -873,7 +959,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                             Positioned.fill(
                                               child: _ktpImage!.buildPreview(
                                                 borderRadius:
-                                                    BorderRadius.circular(11),
+                                                    BorderRadius.circular(15),
                                               ),
                                             ),
                                             Positioned(
@@ -963,7 +1049,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                             painter: _DashedBorderPainter(
                                               color:
                                                   AppTheme.outlineVariantColor,
-                                              borderRadius: 12,
+                                              borderRadius: 16,
                                             ),
                                             child: const Center(
                                               child: Column(
@@ -1004,89 +1090,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 ),
                               ),
                               const SizedBox(height: 14),
-
-                              // RT/RW & Alamat
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Expanded(
-                                    flex: 2,
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        _buildInputLabel('RT/RW'),
-                                        const SizedBox(height: 4),
-                                        TextFormField(
-                                          controller: _rtRwController,
-                                          readOnly: _codeFound,
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            color: _codeFound
-                                                ? AppTheme.primaryColor
-                                                : AppTheme.textPrimaryColor,
-                                            fontWeight: _codeFound
-                                                ? FontWeight.bold
-                                                : FontWeight.normal,
-                                          ),
-                                          decoration: _buildInputDecoration(
-                                            hintText: _codeFound
-                                                ? ''
-                                                : '005/002',
-                                            prefixIcon:
-                                                Icons.location_on_outlined,
-                                            suffixIcon: _codeFound
-                                                ? const Padding(
-                                                    padding: EdgeInsets.only(
-                                                      right: 8,
-                                                    ),
-                                                    child: Icon(
-                                                      Icons.lock_rounded,
-                                                      size: 16,
-                                                      color:
-                                                          AppTheme.primaryColor,
-                                                    ),
-                                                  )
-                                                : null,
-                                          ),
-                                          validator: (value) {
-                                            if (value == null ||
-                                                value.isEmpty) {
-                                              return 'Wajib diisi';
-                                            }
-                                            return null;
-                                          },
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    flex: 3,
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        _buildInputLabel('ALAMAT'),
-                                        const SizedBox(height: 4),
-                                        _buildTextFormField(
-                                          controller: _addressController,
-                                          hintText: 'Jl. Mawar No. 10',
-                                          prefixIcon: Icons.home_outlined,
-                                          validator: (value) {
-                                            if (value == null ||
-                                                value.isEmpty) {
-                                              return 'Wajib diisi';
-                                            }
-                                            return null;
-                                          },
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 14),
                             ] else ...[
                               // Jabatan
                               _buildInputLabel('JABATAN'),
@@ -1108,7 +1111,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               _buildInputLabel('KODE REGISTRASI RT'),
                               const SizedBox(height: 4),
                               const Text(
-                                'Masukkan kode registrasi RT untuk memuat RT/RW otomatis dari backend.',
+                                'Masukkan kode registrasi yang telah dibuat oleh admin desa.',
                                 style: TextStyle(
                                   fontSize: 10,
                                   color: AppTheme.secondaryColor,
@@ -1166,7 +1169,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                             fontWeight: FontWeight.w600,
                                           ),
                                           decoration: _buildInputDecoration(
-                                            hintText: 'RT otomatis',
+                                            hintText: '',
                                             prefixIcon: Icons.numbers_outlined,
                                           ),
                                         ),
@@ -1190,7 +1193,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                             fontWeight: FontWeight.w600,
                                           ),
                                           decoration: _buildInputDecoration(
-                                            hintText: 'RW otomatis',
+                                            hintText: '',
                                             prefixIcon: Icons.numbers_outlined,
                                           ),
                                         ),
@@ -1221,17 +1224,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               SizedBox(
                                 width: double.infinity,
                                 child: ElevatedButton.icon(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppTheme.primaryFixed,
-                                    foregroundColor: AppTheme.primaryColor,
-                                    elevation: 0,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 14,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                  ),
+                                  style: _buildSecondaryActionButtonStyle(),
                                   onPressed: _isGeneratingWargaCode
                                       ? null
                                       : () async {
@@ -1422,6 +1415,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   child: Checkbox(
                                     value: _agreeToTerms,
                                     activeColor: AppTheme.primaryColor,
+                                    fillColor:
+                                        MaterialStateProperty.resolveWith((
+                                          states,
+                                        ) {
+                                          if (states.contains(
+                                            MaterialState.disabled,
+                                          )) {
+                                            return AppTheme.outlineVariantColor;
+                                          }
+                                          return states.contains(
+                                                MaterialState.selected,
+                                              )
+                                              ? AppTheme.primaryColor
+                                              : Colors.white;
+                                        }),
+                                    side: const BorderSide(
+                                      color: AppTheme.outlineColor,
+                                      width: 1.2,
+                                    ),
                                     onChanged: (val) {
                                       setState(() {
                                         _agreeToTerms = val ?? false;
@@ -1448,18 +1460,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             SizedBox(
                               width: double.infinity,
                               child: ElevatedButton.icon(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor:
-                                      AppTheme.primaryContainerColor,
-                                  foregroundColor: Colors.white,
-                                  elevation: 0,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 14,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                ),
+                                style: _buildPrimaryActionButtonStyle(),
                                 onPressed: _isLoading ? null : _handleRegister,
                                 icon: _isLoading
                                     ? const SizedBox(
@@ -1479,7 +1480,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     : const Text(
                                         'Daftar Sekarang',
                                         style: TextStyle(
-                                          fontWeight: FontWeight.bold,
+                                          fontWeight: FontWeight.w700,
                                           fontSize: 14,
                                         ),
                                       ),
@@ -1494,7 +1495,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   color: AppTheme.statusMedium.withValues(
                                     alpha: 0.08,
                                   ),
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
                                     color: AppTheme.statusMedium.withValues(
                                       alpha: 0.2,
@@ -1540,19 +1541,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             color: AppTheme.secondaryColor,
                           ),
                         ),
-                        GestureDetector(
-                          onTap: () {
+                        TextButton(
+                          onPressed: () {
                             Navigator.of(context).pushNamedAndRemoveUntil(
                               '/login',
                               (route) => false,
                             );
                           },
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppTheme.primaryColor,
+                            padding: EdgeInsets.zero,
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
                           child: const Text(
                             'Masuk',
                             style: TextStyle(
                               fontSize: 13,
-                              color: AppTheme.primaryContainerColor,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w700,
                               decoration: TextDecoration.underline,
                             ),
                           ),
@@ -1574,9 +1580,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Text(
       label,
       style: const TextStyle(
-        fontSize: 10,
-        fontWeight: FontWeight.bold,
-        letterSpacing: 0.8,
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.7,
         color: AppTheme.secondaryColor,
       ),
     );
@@ -1592,7 +1598,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
-      style: const TextStyle(fontSize: 14, color: AppTheme.textPrimaryColor),
+      style: const TextStyle(fontSize: 15, color: AppTheme.textPrimaryColor),
       decoration: _buildInputDecoration(
         hintText: hintText,
         prefixIcon: prefixIcon,
@@ -1609,32 +1615,129 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return InputDecoration(
       hintText: hintText,
       hintStyle: TextStyle(
-        color: AppTheme.textSecondaryColor.withValues(alpha: 0.5),
+        color: AppTheme.textSecondaryColor.withValues(alpha: 0.6),
       ),
       fillColor: Colors.white,
       filled: true,
       prefixIcon: Icon(prefixIcon, color: AppTheme.outlineColor, size: 20),
+      prefixIconConstraints: const BoxConstraints(minWidth: 48, minHeight: 48),
       suffixIcon: suffixIcon,
-      contentPadding: const EdgeInsets.symmetric(vertical: 12),
+      suffixIconConstraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      errorStyle: const TextStyle(fontSize: 11.5, height: 1.2),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(16),
         borderSide: const BorderSide(
           color: AppTheme.outlineVariantColor,
           width: 1,
         ),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(16),
         borderSide: const BorderSide(color: AppTheme.primaryColor, width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(16),
         borderSide: const BorderSide(color: AppTheme.statusHigh, width: 1),
       ),
       focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(16),
         borderSide: const BorderSide(color: AppTheme.statusHigh, width: 1.5),
       ),
+    );
+  }
+
+  ButtonStyle _buildPrimaryActionButtonStyle() {
+    return ButtonStyle(
+      backgroundColor: MaterialStateProperty.resolveWith((states) {
+        if (states.contains(MaterialState.disabled)) {
+          return AppTheme.surfaceContainerHighest;
+        }
+        if (states.contains(MaterialState.pressed)) {
+          return AppTheme.tertiaryColor;
+        }
+        if (states.contains(MaterialState.hovered)) {
+          return AppTheme.primaryColor.withValues(alpha: 0.92);
+        }
+        return AppTheme.primaryColor;
+      }),
+      foregroundColor: MaterialStateProperty.resolveWith((states) {
+        if (states.contains(MaterialState.disabled)) {
+          return AppTheme.textSecondaryColor.withValues(alpha: 0.65);
+        }
+        return Colors.white;
+      }),
+      overlayColor: MaterialStateProperty.resolveWith((states) {
+        if (states.contains(MaterialState.pressed)) {
+          return Colors.white.withValues(alpha: 0.12);
+        }
+        if (states.contains(MaterialState.hovered)) {
+          return Colors.white.withValues(alpha: 0.06);
+        }
+        return null;
+      }),
+      shadowColor: MaterialStateProperty.all(Colors.transparent),
+      elevation: MaterialStateProperty.all(0),
+      padding: MaterialStateProperty.all(
+        const EdgeInsets.symmetric(vertical: 15, horizontal: 24),
+      ),
+      shape: MaterialStateProperty.all(
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+      textStyle: MaterialStateProperty.all(
+        const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+      ),
+      minimumSize: MaterialStateProperty.all(const Size.fromHeight(52)),
+    );
+  }
+
+  ButtonStyle _buildSecondaryActionButtonStyle() {
+    return ButtonStyle(
+      backgroundColor: MaterialStateProperty.resolveWith((states) {
+        if (states.contains(MaterialState.disabled)) {
+          return AppTheme.surfaceContainerHighest;
+        }
+        if (states.contains(MaterialState.pressed)) {
+          return AppTheme.primaryContainerColor;
+        }
+        if (states.contains(MaterialState.hovered)) {
+          return AppTheme.primaryFixed.withValues(alpha: 0.22);
+        }
+        return Colors.white;
+      }),
+      foregroundColor: MaterialStateProperty.resolveWith((states) {
+        if (states.contains(MaterialState.disabled)) {
+          return AppTheme.textSecondaryColor.withValues(alpha: 0.65);
+        }
+        return AppTheme.primaryColor;
+      }),
+      side: MaterialStateProperty.resolveWith((states) {
+        final color = states.contains(MaterialState.disabled)
+            ? AppTheme.outlineVariantColor
+            : AppTheme.primaryColor;
+        return BorderSide(color: color, width: 1.2);
+      }),
+      overlayColor: MaterialStateProperty.resolveWith((states) {
+        if (states.contains(MaterialState.pressed)) {
+          return AppTheme.primaryColor.withValues(alpha: 0.08);
+        }
+        if (states.contains(MaterialState.hovered)) {
+          return AppTheme.primaryColor.withValues(alpha: 0.05);
+        }
+        return null;
+      }),
+      shadowColor: MaterialStateProperty.all(Colors.transparent),
+      elevation: MaterialStateProperty.all(0),
+      padding: MaterialStateProperty.all(
+        const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+      ),
+      shape: MaterialStateProperty.all(
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+      textStyle: MaterialStateProperty.all(
+        const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+      ),
+      minimumSize: MaterialStateProperty.all(const Size.fromHeight(48)),
     );
   }
 
@@ -1671,7 +1774,7 @@ class _DashedBorderPainter extends CustomPainter {
   final double dashSpace = 4.0;
   final double strokeWidth = 1.5;
 
-  _DashedBorderPainter({required this.color, this.borderRadius = 12});
+  _DashedBorderPainter({required this.color, this.borderRadius = 16});
 
   @override
   void paint(Canvas canvas, Size size) {

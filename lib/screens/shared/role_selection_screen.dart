@@ -100,25 +100,32 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
                   children: [
                     // Header
                     Container(
-                      width: 72,
-                      height: 72,
+                      width: 84,
+                      height: 84,
                       decoration: BoxDecoration(
-                        color: AppTheme.primaryContainerColor,
-                        borderRadius: BorderRadius.circular(18),
+                        color: AppTheme.primaryContainerColor.withValues(
+                          alpha: 0.95,
+                        ),
+                        borderRadius: BorderRadius.circular(22),
+                        border: Border.all(
+                          color: AppTheme.primaryFixedDim.withValues(
+                            alpha: 0.3,
+                          ),
+                        ),
                         boxShadow: [
                           BoxShadow(
                             color: AppTheme.primaryColor.withValues(
-                              alpha: 0.12,
+                              alpha: 0.16,
                             ),
-                            blurRadius: 16,
+                            blurRadius: 22,
                             offset: const Offset(0, 8),
                           ),
                         ],
                       ),
                       child: const Icon(
                         Icons.eco,
-                        size: 40,
-                        color: AppTheme.primaryFixedDim,
+                        size: 48,
+                        color: AppTheme.primaryColor,
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -210,9 +217,10 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
                             'Masuk',
                             style: TextStyle(
                               fontSize: 13,
-                              color: AppTheme.primaryContainerColor,
-                              fontWeight: FontWeight.bold,
+                              color: AppTheme.primaryColor,
+                              fontWeight: FontWeight.w700,
                               decoration: TextDecoration.underline,
+                              decorationColor: AppTheme.primaryColor,
                             ),
                           ),
                         ),
@@ -281,15 +289,14 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
                   height: 52,
                   decoration: BoxDecoration(
                     color: AppTheme.primaryContainerColor.withValues(
-                      alpha: 0.12,
+                      alpha: 0.28,
                     ),
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: AppTheme.primaryColor.withValues(alpha: 0.12),
+                    ),
                   ),
-                  child: Icon(
-                    icon,
-                    size: 28,
-                    color: AppTheme.primaryContainerColor,
-                  ),
+                  child: Icon(icon, size: 30, color: AppTheme.primaryColor),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -319,7 +326,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
                 Icon(
                   Icons.arrow_forward_ios,
                   size: 16,
-                  color: AppTheme.primaryColor.withValues(alpha: 0.5),
+                  color: AppTheme.primaryColor.withValues(alpha: 0.78),
                 ),
               ],
             ),
@@ -341,7 +348,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
                     const Icon(
                       Icons.check_circle,
                       size: 16,
-                      color: AppTheme.tertiaryContainerColor,
+                      color: AppTheme.primaryColor,
                     ),
                     const SizedBox(width: 8),
                     Expanded(
