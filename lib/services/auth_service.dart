@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -35,9 +37,11 @@ class AuthService {
     required String email,
     required String password,
   }) async {
+    final normalizedEmail = _normalizeEmail(email);
+
     try {
       final response = await _client.auth.signInWithPassword(
-        email: _normalizeEmail(email),
+        email: normalizedEmail,
         password: password,
       );
 
@@ -47,6 +51,30 @@ class AuthService {
       }
 
       return getProfileByUserId(user.id);
+    } on AuthException catch (error) {
+      throw await _mapLoginAuthException(
+        error,
+        normalizedEmail: normalizedEmail,
+      );
+    } on TimeoutException {
+      throw const AuthServiceException('Gagal terhubung ke server.');
+    } catch (error) {
+      final mappedMessage = _mapNetworkErrorMessage(error.toString());
+      if (mappedMessage != null) {
+        throw AuthServiceException(mappedMessage);
+      }
+      rethrow;
+    }
+  }
+
+  Future<void> resetPasswordForEmail(String email) async {
+    final normalizedEmail = _normalizeEmail(email);
+
+    try {
+      await _client.auth.resetPasswordForEmail(
+        normalizedEmail,
+        redirectTo: 'com.ti23a4.laporwarga://reset-password',
+      );
     } on AuthException catch (error) {
       throw AuthServiceException(error.message);
     }
@@ -458,6 +486,112 @@ class AuthService {
     }
 
     return AppUser.fromProfileRow(Map<String, dynamic>.from(data));
+  }
+
+  Future<AuthServiceException> _mapLoginAuthException(
+    AuthException error, {
+    required String normalizedEmail,
+  }) async {
+    final rawMessage = error.message.trim();
+    final normalizedMessage = rawMessage.toLowerCase();
+
+    if (_isVerificationRequiredMessage(normalizedMessage)) {
+      return const AuthServiceException(
+        'Akun Anda belum diverifikasi. Silakan cek email verifikasi Anda.',
+      );
+    }
+
+    if (_isNetworkErrorMessage(normalizedMessage)) {
+      return const AuthServiceException('Gagal terhubung ke server.');
+    }
+
+    if (_isInvalidCredentialsMessage(normalizedMessage)) {
+      final emailExists = await _doesProfileEmailExist(normalizedEmail);
+
+      if (emailExists == false) {
+        return const AuthServiceException('Email belum terdaftar.');
+      }
+
+      return const AuthServiceException('Password yang Anda masukkan salah.');
+    }
+
+    return AuthServiceException(
+      rawMessage.isEmpty ? error.toString() : rawMessage,
+    );
+  }
+
+  Future<bool?> _doesProfileEmailExist(String normalizedEmail) async {
+    try {
+      final data = await _client
+          .from('profiles')
+          .select('id')
+          .eq('email', normalizedEmail)
+          .maybeSingle();
+      return data != null;
+    } on PostgrestException catch (error) {
+      if (_isPermissionOrRlsMessage(error.message) ||
+          _isNetworkErrorMessage(error.message)) {
+        return null;
+      }
+      rethrow;
+    } catch (error) {
+      if (_isNetworkErrorMessage(error.toString())) {
+        return null;
+      }
+      rethrow;
+    }
+  }
+
+  bool _isInvalidCredentialsMessage(String normalizedMessage) {
+    return normalizedMessage.contains('invalid login credentials') ||
+        normalizedMessage.contains('invalid credentials') ||
+        normalizedMessage.contains('authentication failed') ||
+        normalizedMessage.contains('login failed');
+  }
+
+  bool _isVerificationRequiredMessage(String normalizedMessage) {
+    return normalizedMessage.contains('email not confirmed') ||
+        normalizedMessage.contains('email confirmation') ||
+        normalizedMessage.contains('email is not confirmed') ||
+        normalizedMessage.contains('confirm your email') ||
+        normalizedMessage.contains('not verified');
+  }
+
+  bool _isNetworkErrorMessage(String rawMessage) {
+    final normalized = rawMessage.toLowerCase();
+
+    if (normalized.contains('socketexception') ||
+        normalized.contains('timeoutexception') ||
+        normalized.contains('timed out') ||
+        normalized.contains('network') ||
+        normalized.contains('failed host lookup') ||
+        normalized.contains('connection refused') ||
+        normalized.contains('connection reset') ||
+        normalized.contains('xmlhttprequest') ||
+        normalized.contains('clientexception') ||
+        normalized.contains('fetch error') ||
+        normalized.contains('unable to resolve host') ||
+        normalized.contains('gaierror') ||
+        normalized.contains('temporary failure in name resolution')) {
+      return true;
+    }
+
+    return false;
+  }
+
+  bool _isPermissionOrRlsMessage(String rawMessage) {
+    final normalized = rawMessage.toLowerCase();
+    return normalized.contains('row-level security') ||
+        normalized.contains('permission denied') ||
+        normalized.contains('not authorized') ||
+        normalized.contains('403') ||
+        normalized.contains('401');
+  }
+
+  String? _mapNetworkErrorMessage(String rawMessage) {
+    return _isNetworkErrorMessage(rawMessage)
+        ? 'Gagal terhubung ke server.'
+        : null;
   }
 
   String _extractFileExtension(String filePath) {

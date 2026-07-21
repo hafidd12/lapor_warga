@@ -45,6 +45,7 @@
 ## Daffa-spec
 
 ### Backend API Development
+
 - [x] Auth API
 - [x] User Registration API
 - [x] Warga Verification API
@@ -53,6 +54,7 @@
 - [x] Voting API
 
 ### System Logic
+
 - [x] Authentication Logic
 - [x] Role-Based Access Control
 - [x] Session Management
@@ -60,12 +62,14 @@
 - [x] File/Photo Upload Handling
 
 ### API Integration
+
 - [x] Hubungkan Flutter ke Backend
 - [x] Ganti Mock Data dengan API
 - [x] Handle Loading, Error, dan Empty State
 
 ### UI Refinement
-- [ ] Rapikan spacing, warna, typography, radius, dan shadow
+
+- [x] Rapikan spacing, warna, typography, radius, dan shadow
 - [ ] Finalisasi dashboard warga
 - [ ] Finalisasi dashboard RT/Admin
 - [ ] Finalisasi halaman aktivitas
@@ -75,6 +79,7 @@
 - [ ] Implementasi logo/brand asset
 
 ### Testing & Bug Fixing
+
 - [ ] Jalankan `dart format`
 - [ ] Jalankan `flutter analyze`
 - [ ] Jalankan `flutter test`
@@ -83,6 +88,7 @@
 - [ ] Perbaiki bug yang ditemukan
 
 ### Deployment Preparation
+
 - [ ] Cek konfigurasi aplikasi
 - [ ] Konfigurasi Production API
 - [ ] Build APK Release

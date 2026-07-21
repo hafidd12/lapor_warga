@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:in_app_update/in_app_update.dart';
+import 'services/deep_link_service.dart';
 import 'services/supabase_service.dart';
 import 'theme.dart';
 import 'models/models.dart';
@@ -23,6 +24,8 @@ import 'screens/admin/profil_admin.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SupabaseService.initialize();
+  debugPrint('DEBUG: Supabase initialized');
+  await DeepLinkService.instance.start();
 
   runApp(
     ChangeNotifierProvider(
@@ -41,54 +44,63 @@ class LaporWargaApp extends StatelessWidget {
       title: 'Lapor Warga',
       theme: AppTheme.lightTheme,
       debugShowCheckedModeBanner: false,
-      home: const AppStartupGate(child: AppRouter()),
+      initialRoute: '/',
+      onGenerateRoute: _generateRoute,
+      onUnknownRoute: _generateRoute,
     );
   }
 }
 
-class AppRouter extends StatelessWidget {
-  const AppRouter({super.key});
+Route<dynamic> _generateRoute(RouteSettings settings) {
+  final normalizedName = _normalizeRouteName(settings.name);
+  final normalizedSettings = RouteSettings(
+    name: normalizedName,
+    arguments: settings.arguments,
+  );
 
-  @override
-  Widget build(BuildContext context) {
-    return Navigator(
-      initialRoute: '/',
-      onGenerateRoute: (settings) {
-        switch (settings.name) {
-          case '/':
-            return MaterialPageRoute(
-              builder: (context) => const LoadingScreen(),
-              settings: settings,
-            );
-          case '/login':
-            return MaterialPageRoute(
-              builder: (context) => const LoginScreen(),
-              settings: settings,
-            );
-          case '/home':
-            return MaterialPageRoute(
-              builder: (context) => const HomeScreenWrapper(),
-              settings: settings,
-            );
-          case '/buat-laporan':
-            return MaterialPageRoute(
-              builder: (context) => const HalamanReportScreen(),
-              settings: settings,
-            );
-          case '/waiting-verification':
-            return MaterialPageRoute(
-              builder: (context) => const WaitingVerificationScreen(),
-              settings: settings,
-            );
-          default:
-            return MaterialPageRoute(
-              builder: (context) => const LoadingScreen(),
-              settings: settings,
-            );
-        }
-      },
-    );
+  switch (normalizedName) {
+    case '/':
+      return MaterialPageRoute(
+        builder: (context) => const AppStartupGate(child: LoadingScreen()),
+        settings: normalizedSettings,
+      );
+    case '/login':
+      return MaterialPageRoute(
+        builder: (context) => const LoginScreen(),
+        settings: normalizedSettings,
+      );
+    case '/home':
+      return MaterialPageRoute(
+        builder: (context) => const HomeScreenWrapper(),
+        settings: normalizedSettings,
+      );
+    case '/buat-laporan':
+      return MaterialPageRoute(
+        builder: (context) => const HalamanReportScreen(),
+        settings: normalizedSettings,
+      );
+    case '/waiting-verification':
+      return MaterialPageRoute(
+        builder: (context) => const WaitingVerificationScreen(),
+        settings: normalizedSettings,
+      );
+    default:
+      return MaterialPageRoute(
+        builder: (context) => const AppStartupGate(child: LoadingScreen()),
+        settings: normalizedSettings,
+      );
   }
+}
+
+String _normalizeRouteName(String? routeName) {
+  final value = routeName?.trim();
+  if (value == null || value.isEmpty) return '/';
+
+  final uri = Uri.tryParse(value);
+  if (uri == null) return value;
+
+  if (uri.path.isEmpty) return '/';
+  return uri.path;
 }
 
 class AppStartupGate extends StatefulWidget {

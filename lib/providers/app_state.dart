@@ -567,6 +567,23 @@ class AppState with ChangeNotifier {
     debugPrint('[AppState][registration_codes] $message');
   }
 
+  bool _isNetworkErrorMessage(String rawMessage) {
+    final normalized = rawMessage.toLowerCase();
+    return normalized.contains('socketexception') ||
+        normalized.contains('timeoutexception') ||
+        normalized.contains('timed out') ||
+        normalized.contains('network') ||
+        normalized.contains('failed host lookup') ||
+        normalized.contains('connection refused') ||
+        normalized.contains('connection reset') ||
+        normalized.contains('xmlhttprequest') ||
+        normalized.contains('clientexception') ||
+        normalized.contains('fetch error') ||
+        normalized.contains('unable to resolve host') ||
+        normalized.contains('gaierror') ||
+        normalized.contains('temporary failure in name resolution');
+  }
+
   Future<Map<String, dynamic>> loginWithSupabase(
     String email,
     String password,
@@ -606,8 +623,38 @@ class AppState with ChangeNotifier {
       };
     } on AuthServiceException catch (error) {
       return {'success': false, 'message': error.message};
-    } catch (_) {
+    } catch (error) {
+      if (_isNetworkErrorMessage(error.toString())) {
+        return {'success': false, 'message': 'Gagal terhubung ke server.'};
+      }
       return {'success': false, 'message': 'Login gagal. Silakan coba lagi.'};
+    }
+  }
+
+  Future<Map<String, dynamic>> sendPasswordResetLink(String email) async {
+    final normalizedEmail = email.trim();
+
+    if (normalizedEmail.isEmpty) {
+      return {'success': false, 'message': 'Email wajib diisi'};
+    }
+
+    if (!SupabaseService.isInitialized) {
+      return {'success': false, 'message': 'Konfigurasi Supabase belum aktif'};
+    }
+
+    try {
+      await _activeAuthService.resetPasswordForEmail(normalizedEmail);
+      return {
+        'success': true,
+        'message': 'Link reset password telah dikirim ke email Anda.',
+      };
+    } on AuthServiceException catch (error) {
+      return {'success': false, 'message': error.message};
+    } catch (_) {
+      return {
+        'success': false,
+        'message': 'Gagal mengirim link reset password. Silakan coba lagi.',
+      };
     }
   }
 

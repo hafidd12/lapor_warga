@@ -1,12 +1,15 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb, TargetPlatform;
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, kIsWeb, TargetPlatform;
 import 'package:in_app_update/in_app_update.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../models/models.dart';
 import '../../providers/app_state.dart';
 import '../../theme.dart';
 import 'login_screen.dart';
+import 'reset_password_screen.dart';
 
 class LoadingScreen extends StatefulWidget {
   const LoadingScreen({super.key});
@@ -18,12 +21,77 @@ class LoadingScreen extends StatefulWidget {
 class LoadingScreenState extends State<LoadingScreen> {
   Timer? _timer;
   StreamSubscription<InstallStatus>? _installUpdateSubscription;
+  StreamSubscription<AuthState>? _authStateSubscription;
+  bool _passwordRecoveryDetected = false;
+  bool _recoverySnackbarShown = false;
+  bool _resetPasswordNavigated = false;
 
   @override
   void initState() {
     super.initState();
+    debugPrint('DEBUG: LoadingScreen initState');
+    _listenForAuthStateChanges();
     // Simulate progress load
     _startProgressSimulation();
+  }
+
+  void _listenForAuthStateChanges() {
+    debugPrint('DEBUG: Auth listener attached');
+    _authStateSubscription = Supabase.instance.client.auth.onAuthStateChange.listen(
+      (data) {
+        debugPrint('DEBUG: Auth event received: ${data.event.name}');
+        if (data.event != AuthChangeEvent.passwordRecovery) {
+          return;
+        }
+
+        debugPrint(
+          '[LoadingScreen] Password Recovery Terdeteksi: session=${data.session?.user.id ?? "null"}',
+        );
+
+        if (_passwordRecoveryDetected) return;
+
+        setState(() {
+          _passwordRecoveryDetected = true;
+        });
+
+        _showRecoveryDetectedNotice();
+        _navigateToResetPassword();
+      },
+      onError: (error, stackTrace) {
+        debugPrint('[LoadingScreen] onAuthStateChange error: $error');
+        debugPrint(stackTrace.toString());
+      },
+    );
+  }
+
+  void _showRecoveryDetectedNotice() {
+    if (_recoverySnackbarShown) return;
+    _recoverySnackbarShown = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Password Recovery Terdeteksi'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    });
+  }
+
+  void _navigateToResetPassword() {
+    if (_resetPasswordNavigated) return;
+    _resetPasswordNavigated = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const ResetPasswordScreen()),
+      );
+    });
   }
 
   void _startProgressSimulation() {
@@ -45,6 +113,13 @@ class LoadingScreenState extends State<LoadingScreen> {
   }
 
   Future<void> _runStartupFlow() async {
+    if (_passwordRecoveryDetected) {
+      debugPrint(
+        '[LoadingScreen] Startup flow dibatalkan karena password recovery sedang aktif.',
+      );
+      return;
+    }
+
     try {
       final updateHandled = await _checkAndHandleAppUpdate();
       if (!mounted || updateHandled) return;
@@ -183,6 +258,13 @@ class LoadingScreenState extends State<LoadingScreen> {
   Future<void> _navigateAfterSessionCheck() async {
     if (!mounted) return;
 
+    if (_passwordRecoveryDetected) {
+      debugPrint(
+        '[LoadingScreen] Navigasi normal dilewati karena password recovery terdeteksi.',
+      );
+      return;
+    }
+
     AppState state;
     try {
       state = Provider.of<AppState>(context, listen: false);
@@ -192,9 +274,18 @@ class LoadingScreenState extends State<LoadingScreen> {
     }
 
     try {
+      debugPrint('DEBUG: restoreSession start');
       final hasSession = await state.restoreSession();
+      debugPrint('DEBUG: restoreSession done, session exists: $hasSession');
 
       if (!mounted) return;
+
+      if (_passwordRecoveryDetected) {
+        debugPrint(
+          '[LoadingScreen] Navigasi setelah restoreSession dilewati karena password recovery terdeteksi.',
+        );
+        return;
+      }
 
       if (!hasSession) {
         _navigateToLogin();
@@ -208,6 +299,7 @@ class LoadingScreenState extends State<LoadingScreen> {
         Navigator.of(context).pushReplacementNamed('/waiting-verification');
       } else {
         if (!mounted) return;
+        debugPrint('DEBUG: Navigate Home');
         Navigator.of(context).pushReplacementNamed('/home');
       }
     } catch (_) {
@@ -219,6 +311,7 @@ class LoadingScreenState extends State<LoadingScreen> {
   void _navigateToLogin() {
     if (!mounted) return;
 
+    debugPrint('DEBUG: Navigate Login');
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) =>
@@ -235,6 +328,7 @@ class LoadingScreenState extends State<LoadingScreen> {
   void dispose() {
     _timer?.cancel();
     _installUpdateSubscription?.cancel();
+    _authStateSubscription?.cancel();
     super.dispose();
   }
 
