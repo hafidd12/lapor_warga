@@ -72,9 +72,9 @@
 - [x] Rapikan spacing, warna, typography, radius, dan shadow
 - [ ] Finalisasi dashboard warga
 - [ ] Finalisasi dashboard RT/Admin
-- [ ] Finalisasi halaman aktivitas
-- [ ] Finalisasi halaman profil
-- [ ] Finalisasi login & register
+- [x] Finalisasi halaman aktivitas
+- [x] Finalisasi halaman profil
+- [x] Finalisasi login & register
 - [ ] Tambahkan detail pengumuman warga
 - [ ] Implementasi logo/brand asset
 

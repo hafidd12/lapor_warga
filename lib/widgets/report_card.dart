@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../models/models.dart';
 import '../providers/app_state.dart';
 import '../theme.dart';
-import 'status_badge.dart';
 
 class ReportCard extends StatelessWidget {
   final Report report;
@@ -16,12 +16,28 @@ class ReportCard extends StatelessWidget {
       report.completionPhotoUrl != null &&
       report.completionPhotoUrl!.trim().isNotEmpty;
 
-  String _formatTimeAgo(DateTime dateTime) {
-    final diff = DateTime.now().difference(dateTime);
-    if (diff.inDays > 0) return '${diff.inDays} hari yang lalu';
-    if (diff.inHours > 0) return '${diff.inHours} jam yang lalu';
-    if (diff.inMinutes > 0) return '${diff.inMinutes} menit yang lalu';
-    return 'Baru saja';
+  String _formatDate(DateTime dateTime) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Agu',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des',
+    ];
+    return '${dateTime.day} ${months[dateTime.month - 1]} ${dateTime.year}';
+  }
+
+  String _formatDateTime(DateTime dateTime) {
+    final hour = dateTime.hour.toString().padLeft(2, '0');
+    final minute = dateTime.minute.toString().padLeft(2, '0');
+    return '${_formatDate(dateTime)}, $hour:$minute WIB';
   }
 
   IconData _getCategoryIcon(String category) {
@@ -45,271 +61,270 @@ class ReportCard extends StatelessWidget {
     final isUpvoted = report.upvotedByUserIds.contains(userId);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(15),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: AppTheme.outlineVariantColor.withValues(alpha: 0.35),
+          color: AppTheme.outlineVariantColor.withValues(alpha: 0.4),
         ),
         boxShadow: [
           BoxShadow(
             color: AppTheme.primaryColor.withValues(alpha: 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(15),
+        borderRadius: BorderRadius.circular(18),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(15),
+          borderRadius: BorderRadius.circular(18),
           child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: _hasCompletionPhoto
-                ? _buildResolvedLayout(context, state, isUpvoted)
-                : _buildCompactLayout(context, state, isUpvoted),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCompactLayout(
-    BuildContext context,
-    AppState state,
-    bool isUpvoted,
-  ) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _categoryIconBox(52),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Text(
-                      report.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: AppTheme.primaryColor,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                        height: 1.18,
-                        letterSpacing: -0.05,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  StatusBadge(status: report.status),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Diajukan ${_formatTimeAgo(report.createdAt)}',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: AppTheme.outlineColor,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                report.locationLabel ?? 'Lokasi belum ditentukan',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: AppTheme.textSecondaryColor,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  height: 1.25,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  _metadataChip(Icons.category_outlined, report.category),
-                  const Spacer(),
-                  _votePill(state, isUpvoted),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildResolvedLayout(
-    BuildContext context,
-    AppState state,
-    bool isUpvoted,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Text(
-                report.title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: AppTheme.primaryColor,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                  height: 1.18,
-                  letterSpacing: -0.05,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            StatusBadge(status: report.status),
-          ],
-        ),
-        const SizedBox(height: 5),
-        Text(
-          'Diajukan ${_formatTimeAgo(report.createdAt)}',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: AppTheme.outlineColor,
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 3),
-        Text(
-          report.locationLabel ?? 'Lokasi belum ditentukan',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: AppTheme.textSecondaryColor,
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            height: 1.25,
-          ),
-        ),
-        const SizedBox(height: 10),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: SizedBox(
-            height: 118,
-            width: double.infinity,
-            child: Stack(
-              fit: StackFit.expand,
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Image.network(
-                  report.completionPhotoUrl!,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      color: AppTheme.surfaceContainerHigh,
-                      child: const Center(
-                        child: Icon(
-                          Icons.photo_outlined,
-                          color: AppTheme.outlineColor,
-                          size: 34,
-                        ),
+                _statusBadge(context, report.status),
+                const SizedBox(height: 12),
+                Text(
+                  report.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: AppTheme.textPrimaryColor,
+                        fontWeight: FontWeight.w700,
+                        height: 1.2,
+                        letterSpacing: -0.15,
                       ),
-                    );
-                  },
                 ),
-                Positioned(
-                  left: 10,
-                  bottom: 10,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.58),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.verified_outlined,
-                          color: Colors.white,
-                          size: 13,
-                        ),
-                        SizedBox(width: 4),
-                        Text(
-                          'Bukti selesai dari RT',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
+                const SizedBox(height: 10),
+                _infoRow(
+                  context,
+                  Icons.location_on_outlined,
+                  report.locationLabel ?? 'Lokasi belum ditentukan',
+                ),
+                const SizedBox(height: 6),
+                _infoRow(
+                  context,
+                  Icons.schedule_outlined,
+                  _formatDateTime(report.createdAt),
+                ),
+                if (report.reportPhotoUrl != null &&
+                    report.reportPhotoUrl!.trim().isNotEmpty) ...[
+                  const SizedBox(height: 14),
+                  _sectionHeader(context, Icons.photo_library_outlined, 'Foto Laporan'),
+                  const SizedBox(height: 10),
+                  _photoFrame(
+                    context,
+                    imageUrl: report.reportPhotoUrl!,
+                    overlayLabel: 'Foto laporan',
+                    height: 180,
                   ),
+                ],
+                if (_hasCompletionPhoto) ...[
+                  const SizedBox(height: 14),
+                  _sectionHeader(
+                    context,
+                    Icons.verified_outlined,
+                    'Bukti Penyelesaian RT',
+                  ),
+                  const SizedBox(height: 10),
+                  _photoFrame(
+                    context,
+                    imageUrl: report.completionPhotoUrl!,
+                    overlayLabel: 'Bukti selesai RT',
+                    height: 180,
+                    accentColor: AppTheme.statusLow,
+                  ),
+                ],
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    _categoryChip(context, report.category, _getCategoryIcon(report.category)),
+                    const Spacer(),
+                    _votePill(state, isUpvoted),
+                  ],
                 ),
               ],
             ),
           ),
         ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            _metadataChip(Icons.category_outlined, report.category),
-            const Spacer(),
-            _votePill(state, isUpvoted),
-          ],
+      ),
+    );
+  }
+
+  Widget _statusBadge(BuildContext context, ReportStatus status) {
+    Color baseColor;
+    String text;
+
+    switch (status) {
+      case ReportStatus.submitted:
+        baseColor = AppTheme.statusMedium;
+        text = 'Diajukan';
+        break;
+      case ReportStatus.processed:
+        baseColor = const Color(0xFF005BC1);
+        text = 'Diproses';
+        break;
+      case ReportStatus.resolved:
+        baseColor = AppTheme.statusLow;
+        text = 'Selesai';
+        break;
+    }
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: baseColor.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: baseColor.withValues(alpha: 0.16)),
+        ),
+        child: Text(
+          text,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: baseColor,
+                fontWeight: FontWeight.w700,
+                fontSize: 11,
+                letterSpacing: 0.1,
+              ),
+        ),
+      ),
+    );
+  }
+
+  Widget _sectionHeader(BuildContext context, IconData icon, String label) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: AppTheme.primaryColor),
+        const SizedBox(width: 8),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                color: AppTheme.textPrimaryColor,
+                fontWeight: FontWeight.w700,
+              ),
         ),
       ],
     );
   }
 
-  Widget _metadataChip(IconData icon, String label) {
+  Widget _infoRow(BuildContext context, IconData icon, String text) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 16, color: AppTheme.textSecondaryColor),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppTheme.textSecondaryColor,
+                  fontWeight: FontWeight.w500,
+                  height: 1.35,
+                ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _photoFrame(
+    BuildContext context, {
+    required String imageUrl,
+    required String overlayLabel,
+    required double height,
+    Color? accentColor,
+  }) {
+    final overlayColor = accentColor ?? AppTheme.primaryColor;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: SizedBox(
+        height: height,
+        width: double.infinity,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.network(
+              imageUrl,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  color: AppTheme.surfaceContainerHigh,
+                  child: const Center(
+                    child: Icon(
+                      Icons.photo_outlined,
+                      color: AppTheme.outlineColor,
+                      size: 34,
+                    ),
+                  ),
+                );
+              },
+            ),
+            Positioned(
+              left: 12,
+              bottom: 12,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.58),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.image_outlined,
+                      color: overlayColor == AppTheme.statusLow
+                          ? Colors.white
+                          : Colors.white,
+                      size: 14,
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      overlayLabel,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _categoryChip(BuildContext context, String category, IconData icon) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: AppTheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(100),
+        borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 12, color: AppTheme.primaryColor),
-          const SizedBox(width: 4),
+          const SizedBox(width: 5),
           Text(
-            label,
-            style: const TextStyle(
-              color: AppTheme.textSecondaryColor,
-              fontSize: 9,
-              fontWeight: FontWeight.bold,
-            ),
+            category,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: AppTheme.textSecondaryColor,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 10,
+                ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _categoryIconBox(double size) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: AppTheme.secondaryContainerColor,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Icon(
-        _getCategoryIcon(report.category),
-        color: AppTheme.primaryColor,
-        size: size * 0.48,
       ),
     );
   }
@@ -317,12 +332,12 @@ class ReportCard extends StatelessWidget {
   Widget _votePill(AppState state, bool isUpvoted) {
     return Material(
       color: isUpvoted ? AppTheme.primaryFixed : AppTheme.surfaceContainerLow,
-      borderRadius: BorderRadius.circular(100),
+      borderRadius: BorderRadius.circular(999),
       child: InkWell(
         onTap: () => state.upvoteReport(report.id),
-        borderRadius: BorderRadius.circular(100),
+        borderRadius: BorderRadius.circular(999),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -333,14 +348,14 @@ class ReportCard extends StatelessWidget {
                     ? AppTheme.primaryColor
                     : AppTheme.outlineColor,
               ),
-              const SizedBox(width: 3),
+              const SizedBox(width: 4),
               Text(
                 '${report.votesCount}',
                 style: TextStyle(
                   color: isUpvoted
                       ? AppTheme.primaryColor
                       : AppTheme.textPrimaryColor,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w700,
                   fontSize: 10,
                 ),
               ),
