@@ -213,7 +213,9 @@ class _HomeScreenWrapperState extends State<HomeScreenWrapper> {
 
   List<Widget> get _citizenScreens {
     return [
-      const DashboardWargaScreen(),
+      DashboardWargaScreen(
+        onGoToAktivitas: () => setState(() => _currentCitizenIndex = 2),
+      ),
       HalamanReportScreen(
         showBackButton: false,
         onBackPressed: () => setState(() => _currentCitizenIndex = 0),
@@ -326,19 +328,6 @@ class _HomeScreenWrapperState extends State<HomeScreenWrapper> {
             ),
           ),
         ),
-        floatingActionButton: _currentCitizenIndex == 0
-            ? FloatingActionButton(
-                onPressed: () {
-                  Navigator.of(context).pushNamed('/buat-laporan');
-                },
-                backgroundColor: AppTheme.primaryColor,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Icon(Icons.add_rounded, size: 30),
-              )
-            : null,
       );
     } else {
       // Admin View with 4 tabs

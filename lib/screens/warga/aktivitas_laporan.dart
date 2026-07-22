@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
@@ -84,7 +84,7 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
   void _showReportDetail(BuildContext context, Report report) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => _ReportDetailScreen(report: report),
+        builder: (context) => DetailLaporanScreen(report: report),
       ),
     );
   }
@@ -228,19 +228,19 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
             Text(
               'Riwayat Laporan',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: AppTheme.primaryColor,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 22,
-                    letterSpacing: -0.2,
-                  ),
+                color: AppTheme.primaryColor,
+                fontWeight: FontWeight.w700,
+                fontSize: 22,
+                letterSpacing: -0.2,
+              ),
             ),
             const SizedBox(height: 2),
             Text(
               'Pantau status laporan Anda.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppTheme.textSecondaryColor,
-                    fontWeight: FontWeight.w500,
-                  ),
+                color: AppTheme.textSecondaryColor,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ],
         ),
@@ -409,27 +409,27 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
                 Text(
                   '$totalReports Laporan',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: AppTheme.textPrimaryColor,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 16,
-                        letterSpacing: -0.15,
-                      ),
+                    color: AppTheme.textPrimaryColor,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                    letterSpacing: -0.15,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '$processedReports Diproses • $resolvedReports Selesai',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppTheme.textSecondaryColor,
-                        fontWeight: FontWeight.w500,
-                      ),
+                    color: AppTheme.textSecondaryColor,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Bukti foto RT: $completedWithPhoto',
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: AppTheme.secondaryColor,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    color: AppTheme.secondaryColor,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),
@@ -463,18 +463,16 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
       decoration: BoxDecoration(
         color: baseColor.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: baseColor.withValues(alpha: 0.16),
-        ),
+        border: Border.all(color: baseColor.withValues(alpha: 0.16)),
       ),
       child: Text(
         text,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: baseColor,
-              fontWeight: FontWeight.w700,
-              fontSize: 11,
-              letterSpacing: 0.1,
-            ),
+          color: baseColor,
+          fontWeight: FontWeight.w700,
+          fontSize: 11,
+          letterSpacing: 0.1,
+        ),
       ),
     );
   }
@@ -487,9 +485,9 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
         Text(
           label,
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                color: AppTheme.textPrimaryColor,
-                fontWeight: FontWeight.w700,
-              ),
+            color: AppTheme.textPrimaryColor,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ],
     );
@@ -526,11 +524,7 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        Icons.zoom_in,
-                        color: Colors.white,
-                        size: 16,
-                      ),
+                      Icon(Icons.zoom_in, color: Colors.white, size: 16),
                       SizedBox(width: 6),
                       Text(
                         'Perbesar',
@@ -561,10 +555,10 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
       child: Text(
         category,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: AppTheme.textSecondaryColor,
-              fontWeight: FontWeight.w700,
-              fontSize: 10,
-            ),
+          color: AppTheme.textSecondaryColor,
+          fontWeight: FontWeight.w700,
+          fontSize: 10,
+        ),
       ),
     );
   }
@@ -579,10 +573,10 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
           child: Text(
             text,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppTheme.textSecondaryColor,
-                  fontWeight: FontWeight.w500,
-                  height: 1.35,
-                ),
+              color: AppTheme.textSecondaryColor,
+              fontWeight: FontWeight.w500,
+              height: 1.35,
+            ),
           ),
         ),
       ],
@@ -727,17 +721,17 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
           Text(
             'Belum ada laporan',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppTheme.textPrimaryColor,
-                  fontWeight: FontWeight.w700,
-                ),
+              color: AppTheme.textPrimaryColor,
+              fontWeight: FontWeight.w700,
+            ),
           ),
           const SizedBox(height: 6),
           Text(
             'Laporan yang Anda kirim akan muncul di sini.',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppTheme.textSecondaryColor,
-                  height: 1.45,
+              color: AppTheme.textSecondaryColor,
+              height: 1.45,
             ),
           ),
         ],
@@ -746,10 +740,10 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
   }
 }
 
-class _ReportDetailScreen extends StatelessWidget {
+class DetailLaporanScreen extends StatelessWidget {
   final Report report;
 
-  const _ReportDetailScreen({required this.report});
+  const DetailLaporanScreen({super.key, required this.report});
 
   String _formatDate(DateTime dateTime) {
     const months = [
@@ -788,11 +782,11 @@ class _ReportDetailScreen extends StatelessWidget {
         title: Text(
           'Detail Laporan',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: AppTheme.primaryColor,
-                fontWeight: FontWeight.w700,
-                fontSize: 22,
-                letterSpacing: -0.2,
-              ),
+            color: AppTheme.primaryColor,
+            fontWeight: FontWeight.w700,
+            fontSize: 22,
+            letterSpacing: -0.2,
+          ),
         ),
         backgroundColor: Colors.white,
         elevation: 0.5,
@@ -830,7 +824,8 @@ class _ReportDetailScreen extends StatelessWidget {
                 imageUrl: report.completionPhotoUrl!,
                 height: 250,
                 previewUrl: report.completionPhotoUrl!,
-                footer: 'Diselesaikan oleh ${report.completedBy ?? 'RT'}'
+                footer:
+                    'Diselesaikan oleh ${report.completedBy ?? 'RT'}'
                     '${report.completedAt == null ? '' : ' pada ${_formatDate(report.completedAt!)}'}',
               ),
             ],
@@ -860,12 +855,12 @@ class _ReportDetailScreen extends StatelessWidget {
         Text(
           report.title,
           style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                fontSize: 26,
-                color: AppTheme.primaryColor,
-                fontWeight: FontWeight.w700,
-                height: 1.15,
-                letterSpacing: -0.2,
-              ),
+            fontSize: 26,
+            color: AppTheme.primaryColor,
+            fontWeight: FontWeight.w700,
+            height: 1.15,
+            letterSpacing: -0.2,
+          ),
         ),
         const SizedBox(height: 10),
         _buildCategoryChip(context),
@@ -892,10 +887,10 @@ class _ReportDetailScreen extends StatelessWidget {
           Text(
             report.category,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: AppTheme.textSecondaryColor,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 10,
-                ),
+              color: AppTheme.textSecondaryColor,
+              fontWeight: FontWeight.w700,
+              fontSize: 10,
+            ),
           ),
         ],
       ),
@@ -948,17 +943,17 @@ class _ReportDetailScreen extends StatelessWidget {
           Text(
             'Deskripsi',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppTheme.textPrimaryColor,
-                  fontWeight: FontWeight.w700,
-                ),
+              color: AppTheme.textPrimaryColor,
+              fontWeight: FontWeight.w700,
+            ),
           ),
           const SizedBox(height: 10),
           Text(
             report.description,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: AppTheme.textPrimaryColor,
-                  height: 1.6,
-                ),
+              color: AppTheme.textPrimaryColor,
+              height: 1.6,
+            ),
           ),
         ],
       ),
@@ -986,9 +981,9 @@ class _ReportDetailScreen extends StatelessWidget {
               Text(
                 title,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: AppTheme.textPrimaryColor,
-                      fontWeight: FontWeight.w700,
-                    ),
+                  color: AppTheme.textPrimaryColor,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ],
           ),
@@ -1019,11 +1014,7 @@ class _ReportDetailScreen extends StatelessWidget {
                         child: const Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
-                              Icons.zoom_in,
-                              color: Colors.white,
-                              size: 16,
-                            ),
+                            Icon(Icons.zoom_in, color: Colors.white, size: 16),
                             SizedBox(width: 6),
                             Text(
                               'Perbesar',
@@ -1047,10 +1038,10 @@ class _ReportDetailScreen extends StatelessWidget {
             Text(
               footer,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppTheme.textSecondaryColor,
-                    fontWeight: FontWeight.w600,
-                    height: 1.45,
-                  ),
+                color: AppTheme.textSecondaryColor,
+                fontWeight: FontWeight.w600,
+                height: 1.45,
+              ),
             ),
           ],
         ],
@@ -1067,9 +1058,9 @@ class _ReportDetailScreen extends StatelessWidget {
           Text(
             'Status Pengerjaan',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppTheme.textPrimaryColor,
-                  fontWeight: FontWeight.w700,
-                ),
+              color: AppTheme.textPrimaryColor,
+              fontWeight: FontWeight.w700,
+            ),
           ),
           const SizedBox(height: 14),
           _buildProgressTracker(context, report.status),
@@ -1118,9 +1109,9 @@ class _ReportDetailScreen extends StatelessWidget {
               Text(
                 'Status Saat Ini',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: AppTheme.textPrimaryColor,
-                      fontWeight: FontWeight.w700,
-                    ),
+                  color: AppTheme.textPrimaryColor,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ],
           ),
@@ -1128,9 +1119,9 @@ class _ReportDetailScreen extends StatelessWidget {
           Text(
             'Laporan telah selesai ditangani oleh Ketua RT. Terima kasih atas partisipasi Anda dalam menjaga lingkungan.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppTheme.textSecondaryColor,
-                  height: 1.55,
-                ),
+              color: AppTheme.textSecondaryColor,
+              height: 1.55,
+            ),
           ),
         ],
       ),
@@ -1185,19 +1176,19 @@ class _ReportDetailScreen extends StatelessWidget {
               Text(
                 label,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: AppTheme.textSecondaryColor,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.1,
-                    ),
+                  color: AppTheme.textSecondaryColor,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.1,
+                ),
               ),
               const SizedBox(height: 3),
               Text(
                 value,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppTheme.textPrimaryColor,
-                      fontWeight: FontWeight.w600,
-                      height: 1.35,
-                    ),
+                  color: AppTheme.textPrimaryColor,
+                  fontWeight: FontWeight.w600,
+                  height: 1.35,
+                ),
               ),
             ],
           ),
@@ -1342,6 +1333,3 @@ class _ReportDetailScreen extends StatelessWidget {
     );
   }
 }
-
-
-

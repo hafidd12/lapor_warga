@@ -70,7 +70,7 @@
 ### UI Refinement
 
 - [x] Rapikan spacing, warna, typography, radius, dan shadow
-- [ ] Finalisasi dashboard warga
+- [x] Finalisasi dashboard warga
 - [ ] Finalisasi dashboard RT/Admin
 - [x] Finalisasi halaman aktivitas
 - [x] Finalisasi halaman profil
