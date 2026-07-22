@@ -1,29 +1,27 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
+
 import '../../providers/app_state.dart';
 import '../../theme.dart';
 import '../../widgets/custom_image.dart';
 
 class ProfilWargaScreen extends StatefulWidget {
-  const ProfilWargaScreen({super.key});
+  const ProfilWargaScreen({super.key, required this.onGoToAktivitas});
+
+  final VoidCallback onGoToAktivitas;
 
   @override
   State<ProfilWargaScreen> createState() => _ProfilWargaScreenState();
 }
 
 class _ProfilWargaScreenState extends State<ProfilWargaScreen> {
-  bool _showPasswordForm = false;
-  final _newPasswordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
-
   String _editingField = '';
   final _editController = TextEditingController();
 
   @override
   void dispose() {
-    _newPasswordController.dispose();
-    _confirmPasswordController.dispose();
     _editController.dispose();
     super.dispose();
   }
@@ -31,17 +29,146 @@ class _ProfilWargaScreenState extends State<ProfilWargaScreen> {
   Future<void> _pickImage(ImageSource source) async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: source);
-    if (pickedFile != null) {
-      if (mounted) {
-        final state = Provider.of<AppState>(context, listen: false);
-        state.updateCurrentUser(avatarUrl: pickedFile.path);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Foto profil berhasil diperbarui'),
-            backgroundColor: AppTheme.statusLow,
+    if (pickedFile == null || !mounted) return;
+
+    final croppedFile = await _cropAvatarImage(pickedFile);
+    if (croppedFile == null || !mounted) return;
+
+    final state = Provider.of<AppState>(context, listen: false);
+    try {
+      final imageBytes = await croppedFile.readAsBytes();
+      await state.saveCurrentUserProfile(
+        avatarBytes: imageBytes,
+        avatarSourceName: pickedFile.name,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Foto profil berhasil diperbarui'),
+          backgroundColor: AppTheme.statusLow,
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal memperbarui foto profil: $error'),
+          backgroundColor: AppTheme.statusHigh,
+        ),
+      );
+    }
+  }
+
+  Future<CroppedFile?> _cropAvatarImage(XFile pickedFile) async {
+    try {
+      return await ImageCropper().cropImage(
+        sourcePath: pickedFile.path,
+        aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+        uiSettings: [
+          AndroidUiSettings(
+            toolbarTitle: 'Crop Foto',
+            toolbarColor: AppTheme.primaryColor,
+            toolbarWidgetColor: Colors.white,
+            initAspectRatio: CropAspectRatioPreset.square,
+            lockAspectRatio: true,
+          ),
+          IOSUiSettings(
+            title: 'Crop Foto',
+            aspectRatioLockEnabled: true,
+            minimumAspectRatio: 1.0,
+          ),
+        ],
+      );
+    } catch (error) {
+      if (!mounted) return null;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal memotong foto: $error'),
+          backgroundColor: AppTheme.statusHigh,
+        ),
+      );
+      return null;
+    }
+  }
+
+  Future<void> _showAvatarPreview(String avatarUrl) async {
+    await showDialog<void>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.9),
+      builder: (context) {
+        final hasAvatar = avatarUrl.trim().isNotEmpty;
+        final imageProvider = hasAvatar
+            ? CustomImageProvider.get(avatarUrl)
+            : null;
+
+        return Dialog.fullscreen(
+          backgroundColor: Colors.black,
+          child: SafeArea(
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: Center(
+                    child: hasAvatar
+                        ? InteractiveViewer(
+                            minScale: 1,
+                            maxScale: 4,
+                            child: Image(
+                              image: imageProvider!,
+                              fit: BoxFit.contain,
+                            ),
+                          )
+                        : const Icon(
+                            Icons.person,
+                            size: 120,
+                            color: Colors.white70,
+                          ),
+                  ),
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: IconButton.filled(
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.white.withValues(alpha: 0.12),
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close),
+                  ),
+                ),
+              ],
+            ),
           ),
         );
-      }
+      },
+    );
+  }
+
+  Future<void> _confirmLogout(AppState state) async {
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Konfirmasi Logout'),
+          content: const Text('Apakah Anda yakin ingin logout dari aplikasi?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Batal'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Logout'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldLogout == true && mounted) {
+      state.logout();
+      Navigator.of(context).pushReplacementNamed('/login');
     }
   }
 
@@ -53,16 +180,19 @@ class _ProfilWargaScreenState extends State<ProfilWargaScreen> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text(
-          'Lapor Warga',
-          style: TextStyle(
-            color: AppTheme.primaryColor,
-            fontWeight: FontWeight.bold,
-          ),
+        title: Text(
+          'Profil',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: AppTheme.primaryColor,
+                fontWeight: FontWeight.w700,
+                fontSize: 22,
+                letterSpacing: -0.2,
+              ),
         ),
         backgroundColor: Colors.white,
         elevation: 0.5,
         scrolledUnderElevation: 1,
+        automaticallyImplyLeading: false,
         actions: [
           IconButton(
             icon: const Icon(
@@ -78,23 +208,14 @@ class _ProfilWargaScreenState extends State<ProfilWargaScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
         child: Column(
           children: [
-            // Profile Header Section
             _buildProfileHeader(user),
             const SizedBox(height: 16),
-
-            // Quick Link: Riwayat Laporan
-            _buildQuickLinkCard(context, state),
+            _buildQuickLinkCard(context, widget.onGoToAktivitas),
             const SizedBox(height: 16),
-
-            // Data Diri Section
             _buildDataDiriSection(user),
             const SizedBox(height: 16),
-
-            // Security Info Card
             _buildSecurityInfoCard(),
             const SizedBox(height: 24),
-
-            // Logout Button
             _buildLogoutButton(context, state),
             const SizedBox(height: 80),
           ],
@@ -104,9 +225,13 @@ class _ProfilWargaScreenState extends State<ProfilWargaScreen> {
   }
 
   Widget _buildProfileHeader(dynamic user) {
+    final avatarUrl = user?.avatarUrl?.trim() ?? '';
+    final userName = user?.name?.trim().isNotEmpty == true
+        ? user!.name.trim()
+        : 'Nama Pengguna';
+
     return Column(
       children: [
-        // Avatar with camera icon
         Stack(
           children: [
             Container(
@@ -126,19 +251,22 @@ class _ProfilWargaScreenState extends State<ProfilWargaScreen> {
                   ),
                 ],
               ),
-              child: CircleAvatar(
-                radius: 56,
-                backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
-                backgroundImage: user?.avatarUrl != null
-                    ? CustomImageProvider.get(user!.avatarUrl)
-                    : null,
-                child: user?.avatarUrl == null
-                    ? const Icon(
-                        Icons.person,
-                        size: 50,
-                        color: AppTheme.primaryColor,
-                      )
-                    : null,
+              child: GestureDetector(
+                onTap: () => _showAvatarPreview(avatarUrl),
+                child: CircleAvatar(
+                  radius: 56,
+                  backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
+                  backgroundImage: avatarUrl.isNotEmpty
+                      ? CustomImageProvider.get(avatarUrl)
+                      : null,
+                  child: avatarUrl.isEmpty
+                      ? const Icon(
+                          Icons.person,
+                          size: 50,
+                          color: AppTheme.primaryColor,
+                        )
+                      : null,
+                ),
               ),
             ),
             Positioned(
@@ -198,7 +326,16 @@ class _ProfilWargaScreenState extends State<ProfilWargaScreen> {
           ],
         ),
         const SizedBox(height: 16),
-        // Verification Badge
+        Text(
+          userName,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: AppTheme.textPrimaryColor,
+          ),
+        ),
+        const SizedBox(height: 6),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
           decoration: BoxDecoration(
@@ -227,17 +364,13 @@ class _ProfilWargaScreenState extends State<ProfilWargaScreen> {
     );
   }
 
-  Widget _buildQuickLinkCard(BuildContext context, AppState state) {
-    final myReportsCount = state.myReports.length;
-
+  Widget _buildQuickLinkCard(
+    BuildContext context,
+    VoidCallback onGoToAktivitas,
+  ) {
     return GestureDetector(
       onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Anda memiliki $myReportsCount laporan.'),
-            backgroundColor: AppTheme.primaryColor,
-          ),
-        );
+        onGoToAktivitas();
       },
       child: Container(
         width: double.infinity,
@@ -319,7 +452,6 @@ class _ProfilWargaScreenState extends State<ProfilWargaScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Section header
           Row(
             children: [
               const Icon(
@@ -339,54 +471,45 @@ class _ProfilWargaScreenState extends State<ProfilWargaScreen> {
             ],
           ),
           const SizedBox(height: 16),
-
-          // Name
           _buildEditableRow(
             label: 'NAMA LENGKAP',
             value: user?.name ?? 'Nama Pengguna',
             icon: Icons.person_outline,
             fieldKey: 'name',
-            onSave: (newValue) {
-              Provider.of<AppState>(
+            onSave: (newValue) async {
+              await Provider.of<AppState>(
                 context,
                 listen: false,
-              ).updateCurrentUser(name: newValue);
+              ).saveCurrentUserProfile(name: newValue);
             },
           ),
           _buildDivider(),
-
-          // No. Rumah / Blok
           _buildEditableRow(
             label: 'NO. RUMAH / BLOK',
             value: user?.address ?? 'Belum diisi',
             icon: Icons.home_outlined,
             fieldKey: 'address',
-            onSave: (newValue) {
-              Provider.of<AppState>(
+            onSave: (newValue) async {
+              await Provider.of<AppState>(
                 context,
                 listen: false,
-              ).updateCurrentUser(address: newValue);
+              ).saveCurrentUserProfile(address: newValue);
             },
           ),
           _buildDivider(),
-
-          // WhatsApp
           _buildEditableRow(
             label: 'NOMOR WHATSAPP',
             value: user?.phone ?? 'Belum diisi',
             icon: Icons.phone_outlined,
             fieldKey: 'phone',
-            onSave: (newValue) {
-              Provider.of<AppState>(
+            onSave: (newValue) async {
+              await Provider.of<AppState>(
                 context,
                 listen: false,
-              ).updateCurrentUser(phone: newValue);
+              ).saveCurrentUserProfile(phone: newValue);
             },
           ),
           _buildDivider(),
-
-          // Password
-          _buildPasswordSection(),
         ],
       ),
     );
@@ -397,7 +520,7 @@ class _ProfilWargaScreenState extends State<ProfilWargaScreen> {
     required String value,
     required IconData icon,
     required String fieldKey,
-    required void Function(String) onSave,
+    required Future<void> Function(String) onSave,
   }) {
     final isEditing = _editingField == fieldKey;
 
@@ -412,7 +535,6 @@ class _ProfilWargaScreenState extends State<ProfilWargaScreen> {
               setState(() {
                 _editingField = fieldKey;
                 _editController.text = value == 'Belum diisi' ? '' : value;
-                _showPasswordForm = false; // close password form if open
               });
             }
           },
@@ -527,16 +649,38 @@ class _ProfilWargaScreenState extends State<ProfilWargaScreen> {
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
-                        onPressed: () {
-                          if (_editController.text.trim().isNotEmpty) {
-                            onSave(_editController.text.trim());
+                        onPressed: () async {
+                          final newValue = _editController.text.trim();
+                          if (newValue.isEmpty) {
+                            setState(() {
+                              _editingField = '';
+                              _editController.clear();
+                            });
+                            return;
+                          }
+
+                          try {
+                            await onSave(newValue);
+                            if (!mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text('$label berhasil diperbarui.'),
                                 backgroundColor: AppTheme.statusLow,
                               ),
                             );
+                          } catch (error) {
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Gagal memperbarui $label: $error',
+                                ),
+                                backgroundColor: AppTheme.statusHigh,
+                              ),
+                            );
                           }
+
+                          if (!mounted) return;
                           setState(() {
                             _editingField = '';
                             _editController.clear();
@@ -595,265 +739,6 @@ class _ProfilWargaScreenState extends State<ProfilWargaScreen> {
     );
   }
 
-  Widget _buildPasswordSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        InkWell(
-          onTap: () {
-            setState(() {
-              _showPasswordForm = !_showPasswordForm;
-              _editingField = ''; // close other forms if open
-            });
-          },
-          borderRadius: BorderRadius.circular(8),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'KATA SANDI',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.secondaryColor,
-                    letterSpacing: 0.8,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.lock_outline,
-                      size: 22,
-                      color: AppTheme.outlineColor,
-                    ),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Text(
-                        '•••••••••',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
-                          color: AppTheme.textPrimaryColor,
-                        ),
-                      ),
-                    ),
-                    Icon(
-                      _showPasswordForm ? Icons.expand_less : Icons.edit,
-                      size: 16,
-                      color: AppTheme.outlineColor,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-        // Expandable password form
-        AnimatedCrossFade(
-          firstChild: const SizedBox.shrink(),
-          secondChild: Container(
-            margin: const EdgeInsets.only(top: 8),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceContainerLow.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: AppTheme.outlineVariantColor.withValues(alpha: 0.2),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'MASUKKAN SANDI BARU',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.secondaryColor,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                TextField(
-                  controller: _newPasswordController,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    hintText: '••••••••',
-                    filled: true,
-                    fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 12,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(
-                        color: AppTheme.outlineVariantColor,
-                      ),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(
-                        color: AppTheme.outlineVariantColor,
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(
-                        color: AppTheme.primaryColor,
-                        width: 1.5,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'ULANGI SANDI BARU',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.secondaryColor,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                TextField(
-                  controller: _confirmPasswordController,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    hintText: '••••••••',
-                    filled: true,
-                    fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 12,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(
-                        color: AppTheme.outlineVariantColor,
-                      ),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(
-                        color: AppTheme.outlineVariantColor,
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(
-                        color: AppTheme.primaryColor,
-                        width: 1.5,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.primaryColor,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        onPressed: () {
-                          if (_newPasswordController.text !=
-                              _confirmPasswordController.text) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Sandi baru dan ulangi sandi tidak cocok.',
-                                ),
-                                backgroundColor: AppTheme.statusHigh,
-                              ),
-                            );
-                            return;
-                          }
-                          if (_newPasswordController.text.isNotEmpty) {
-                            Provider.of<AppState>(
-                              context,
-                              listen: false,
-                            ).updateCurrentUser(
-                              password: _newPasswordController.text,
-                            );
-                          }
-
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Kata sandi berhasil diperbarui.'),
-                              backgroundColor: AppTheme.statusLow,
-                            ),
-                          );
-                          setState(() {
-                            _showPasswordForm = false;
-                            _newPasswordController.clear();
-                            _confirmPasswordController.clear();
-                          });
-                        },
-                        child: const Text(
-                          'Simpan Sandi',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppTheme.secondaryColor,
-                          side: BorderSide(
-                            color: AppTheme.outlineVariantColor.withValues(
-                              alpha: 0.5,
-                            ),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _showPasswordForm = false;
-                            _newPasswordController.clear();
-                            _confirmPasswordController.clear();
-                          });
-                        },
-                        child: const Text(
-                          'Batal',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          crossFadeState: _showPasswordForm
-              ? CrossFadeState.showSecond
-              : CrossFadeState.showFirst,
-          duration: const Duration(milliseconds: 250),
-        ),
-      ],
-    );
-  }
-
   Widget _buildSecurityInfoCard() {
     return Container(
       width: double.infinity,
@@ -886,7 +771,7 @@ class _ProfilWargaScreenState extends State<ProfilWargaScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Informasi Keamanan Akun',
+                  'Informasi Akun',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
@@ -895,7 +780,7 @@ class _ProfilWargaScreenState extends State<ProfilWargaScreen> {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  'Data Anda diverifikasi oleh Ketua RT untuk memastikan integritas laporan warga. Perubahan data sensitif mungkin memerlukan verifikasi ulang.',
+                  'Akun Anda telah diverifikasi oleh Ketua RT dan siap digunakan untuk mengirim serta memantau laporan.',
                   style: TextStyle(
                     fontSize: 12,
                     color: AppTheme.textSecondaryColor,
@@ -925,13 +810,10 @@ class _ProfilWargaScreenState extends State<ProfilWargaScreen> {
             borderRadius: BorderRadius.circular(16),
           ),
         ),
-        onPressed: () {
-          state.logout();
-          Navigator.of(context).pushReplacementNamed('/login');
-        },
+        onPressed: () => _confirmLogout(state),
         icon: const Icon(Icons.logout, size: 20),
         label: const Text(
-          'Keluar dari Aplikasi',
+          'Logout',
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
         ),
       ),

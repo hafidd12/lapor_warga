@@ -21,6 +21,7 @@ class AuthService {
 
   final SupabaseClient _client;
   static const String _ktpBucket = 'ktp-images';
+  static const String _avatarBucket = 'avatars';
   static const String _emailRateLimitMessage =
       'Terlalu banyak percobaan registrasi. Silakan tunggu beberapa saat lalu coba lagi.';
   static const String _emailAlreadyRegisteredMessage =
@@ -157,6 +158,126 @@ class AuthService {
         );
 
     return storagePath;
+  }
+
+  Future<String> uploadAvatarImage({
+    required Uint8List imageBytes,
+    required String sourceName,
+    required String userId,
+    String? previousAvatarUrl,
+  }) async {
+    if (imageBytes.isEmpty) {
+      throw const AuthServiceException('Foto profil tidak valid.');
+    }
+
+    await _deletePreviousAvatarIfNeeded(previousAvatarUrl);
+
+    final extension = _extractFileExtension(sourceName);
+    final storagePath =
+        'users/$userId/avatar_${DateTime.now().millisecondsSinceEpoch}$extension';
+
+    await _client.storage
+        .from(_avatarBucket)
+        .uploadBinary(
+          storagePath,
+          imageBytes,
+          fileOptions: const FileOptions(upsert: true),
+        );
+
+    return _client.storage.from(_avatarBucket).getPublicUrl(storagePath);
+  }
+
+  Future<void> _deletePreviousAvatarIfNeeded(String? avatarUrl) async {
+    final storagePath = _extractAvatarStoragePath(avatarUrl);
+    if (storagePath == null) return;
+
+    try {
+      await _client.storage.from(_avatarBucket).remove([storagePath]);
+    } catch (error, stackTrace) {
+      debugPrint(
+        '[AuthService][avatar] failed to delete previous avatar path=$storagePath error=$error',
+      );
+      debugPrint(stackTrace.toString());
+    }
+  }
+
+  String? _extractAvatarStoragePath(String? avatarUrl) {
+    final rawUrl = avatarUrl?.trim() ?? '';
+    if (rawUrl.isEmpty) return null;
+
+    if (!rawUrl.contains('://') && !rawUrl.startsWith('data:')) {
+      final normalizedPath = rawUrl.replaceAll(RegExp(r'^/+'), '');
+      if (normalizedPath.startsWith('avatars/')) {
+        return normalizedPath.substring('avatars/'.length);
+      }
+      if (normalizedPath.startsWith('users/')) {
+        return normalizedPath;
+      }
+    }
+
+    final uri = Uri.tryParse(rawUrl);
+    if (uri == null) return null;
+
+    final pathSegments = uri.pathSegments;
+    final bucketIndex = pathSegments.indexOf(_avatarBucket);
+    if (bucketIndex == -1 || bucketIndex >= pathSegments.length - 1) {
+      return null;
+    }
+
+    return Uri.decodeFull(pathSegments.sublist(bucketIndex + 1).join('/'));
+  }
+
+  Future<AppUser> updateProfile({
+    required AppUser currentUser,
+    String? name,
+    String? phone,
+    String? address,
+    Uint8List? avatarImageBytes,
+    String? avatarImageName,
+  }) async {
+    final normalizedName = (name ?? currentUser.name).trim();
+    final normalizedPhone = (phone ?? currentUser.phone ?? '').trim();
+    final normalizedAddress = (address ?? currentUser.address ?? '').trim();
+
+    var avatarUrl = currentUser.avatarUrl;
+    if (avatarImageBytes != null) {
+      avatarUrl = await uploadAvatarImage(
+        imageBytes: avatarImageBytes,
+        sourceName: avatarImageName ?? 'avatar.jpg',
+        userId: currentUser.id,
+        previousAvatarUrl: currentUser.avatarUrl,
+      );
+    }
+
+    final nowIso = DateTime.now().toUtc().toIso8601String();
+    final payload = <String, dynamic>{
+      'id': currentUser.id,
+      'name': normalizedName,
+      'email': currentUser.email,
+      'role': currentUser.role.name,
+      'avatar_url': avatarUrl,
+      'verification_status': currentUser.verificationStatus.name,
+      'ktp_number': currentUser.ktpNumber,
+      'registration_code': currentUser.registrationCode,
+      'ktp_image_path': currentUser.ktpImagePath,
+      'phone': normalizedPhone.isEmpty ? null : normalizedPhone,
+      'rt_rw': currentUser.rtRw,
+      'address': normalizedAddress.isEmpty ? null : normalizedAddress,
+      'jabatan': currentUser.jabatan,
+      'registered_at': currentUser.registeredAt?.toUtc().toIso8601String(),
+      'updated_at': nowIso,
+    };
+
+    final profileData = await _client
+        .from('profiles')
+        .update(payload)
+        .eq('id', currentUser.id)
+        .select(
+          'id, name, email, role, avatar_url, verification_status, ktp_number, registration_code, ktp_image_path, phone, rt_rw, address, jabatan, registered_at, created_at, updated_at',
+        )
+        .single();
+
+    return AppUser.fromProfileRow(Map<String, dynamic>.from(profileData));
   }
 
   Future<AppUser> registerWargaWithSupabase({

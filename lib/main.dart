@@ -219,7 +219,9 @@ class _HomeScreenWrapperState extends State<HomeScreenWrapper> {
         onBackPressed: () => setState(() => _currentCitizenIndex = 0),
       ),
       const AktivitasLaporanScreen(),
-      const ProfilWargaScreen(),
+      ProfilWargaScreen(
+        onGoToAktivitas: () => setState(() => _currentCitizenIndex = 2),
+      ),
     ];
   }
 

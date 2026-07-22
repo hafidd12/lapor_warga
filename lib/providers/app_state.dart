@@ -1079,6 +1079,57 @@ class AppState with ChangeNotifier {
     notifyListeners();
   }
 
+  Future<AppUser?> saveCurrentUserProfile({
+    String? name,
+    String? address,
+    String? phone,
+    Uint8List? avatarBytes,
+    String? avatarSourceName,
+  }) async {
+    final currentUser = _currentUser;
+    if (currentUser == null) return null;
+
+    if (!SupabaseService.isInitialized) {
+      final updatedUser = currentUser.copyWith(
+        name: name,
+        address: address,
+        phone: phone,
+      );
+      _currentUser = updatedUser;
+      final index = _registeredUsers.indexWhere((u) => u.id == updatedUser.id);
+      if (index != -1) {
+        _registeredUsers[index] = updatedUser;
+      }
+      notifyListeners();
+      return updatedUser;
+    }
+
+    try {
+      final updatedUser = await _activeAuthService.updateProfile(
+        currentUser: currentUser,
+        name: name,
+        phone: phone,
+        address: address,
+        avatarImageBytes: avatarBytes,
+        avatarImageName: avatarSourceName,
+      );
+
+      _currentUser = updatedUser;
+      final index = _registeredUsers.indexWhere((u) => u.id == updatedUser.id);
+      if (index != -1) {
+        _registeredUsers[index] = updatedUser;
+      }
+      notifyListeners();
+      return updatedUser;
+    } catch (error, stackTrace) {
+      debugPrint(
+        '[AppState][profile] saveCurrentUserProfile error=${error.runtimeType}: $error',
+      );
+      debugPrint(stackTrace.toString());
+      rethrow;
+    }
+  }
+
   // ============================================
   // Registration Code Management
   // ============================================
