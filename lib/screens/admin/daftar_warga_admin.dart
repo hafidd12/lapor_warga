@@ -101,33 +101,45 @@ class _DaftarWargaAdminScreenState extends State<DaftarWargaAdminScreen>
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text(
-          'Verifikasi Warga',
-          style: TextStyle(
-            color: AppTheme.primaryColor,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-        ),
+        automaticallyImplyLeading: false,
+        titleSpacing: 16,
+        toolbarHeight: 78,
         backgroundColor: Colors.white,
-        elevation: 0.5,
-        scrolledUnderElevation: 1,
-        iconTheme: const IconThemeData(color: AppTheme.textPrimaryColor),
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: AppTheme.primaryColor,
-          unselectedLabelColor: AppTheme.textSecondaryColor,
-          indicatorColor: AppTheme.primaryColor,
-          indicatorWeight: 3,
-          labelStyle: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 13,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        shadowColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        title: const _AdminHeaderTitle(
+          title: 'Verifikasi Warga',
+          subtitle: 'Kelola verifikasi akun warga',
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(48),
+          child: Container(
+            color: Colors.white,
+            alignment: Alignment.centerLeft,
+            child: TabBar(
+              controller: _tabController,
+              isScrollable: false,
+              labelPadding: const EdgeInsets.symmetric(horizontal: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              labelColor: AppTheme.primaryColor,
+              unselectedLabelColor: AppTheme.textSecondaryColor,
+              indicatorColor: AppTheme.primaryColor,
+              indicatorWeight: 3,
+              indicatorSize: TabBarIndicatorSize.label,
+              dividerColor: Colors.transparent,
+              labelStyle: const TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+              ),
+              tabs: [
+                Tab(text: 'Pending (${pending.length})'),
+                Tab(text: 'Disetujui (${verified.length})'),
+                Tab(text: 'Ditolak (${rejected.length})'),
+              ],
+            ),
           ),
-          tabs: [
-            Tab(text: 'Pending (${pending.length})'),
-            Tab(text: 'Disetujui (${verified.length})'),
-            Tab(text: 'Ditolak (${rejected.length})'),
-          ],
         ),
       ),
       body: RefreshIndicator(
@@ -136,65 +148,73 @@ class _DaftarWargaAdminScreenState extends State<DaftarWargaAdminScreen>
           children: [
             Container(
               color: Colors.white,
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
               child: Column(
                 children: [
-                  TextField(
-                    controller: _searchController,
-                    onChanged: (value) => setState(() => _searchQuery = value),
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: AppTheme.textPrimaryColor,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: 'Cari nama, email, KTP, atau RT/RW',
-                      hintStyle: TextStyle(
-                        color: AppTheme.textSecondaryColor.withOpacity(0.55),
-                      ),
-                      fillColor: AppTheme.surfaceContainerLow,
-                      filled: true,
-                      prefixIcon: const Icon(
-                        Icons.search,
-                        color: AppTheme.outlineColor,
-                        size: 20,
-                      ),
-                      suffixIcon: _searchQuery.isEmpty
-                          ? null
-                          : IconButton(
-                              onPressed: () {
-                                _searchController.clear();
-                                setState(() => _searchQuery = '');
-                              },
-                              icon: const Icon(Icons.clear, size: 18),
-                            ),
-                      contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppTheme.surfaceContainerLow,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: AppTheme.outlineVariantColor.withValues(
+                          alpha: 0.55,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      _SummaryChip(
-                        label: 'Pending',
-                        value: pending.length.toString(),
-                        color: AppTheme.statusMedium,
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: (value) =>
+                          setState(() => _searchQuery = value),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: AppTheme.textPrimaryColor,
                       ),
-                      const SizedBox(width: 10),
-                      _SummaryChip(
-                        label: 'Disetujui',
-                        value: verified.length.toString(),
-                        color: AppTheme.primaryColor,
+                      decoration: InputDecoration(
+                        hintText: 'Cari nama, email, KTP, atau RT/RW',
+                        hintStyle: TextStyle(
+                          color: AppTheme.textSecondaryColor.withValues(
+                            alpha: 0.6,
+                          ),
+                        ),
+                        filled: true,
+                        fillColor: Colors.transparent,
+                        prefixIcon: const Icon(
+                          Icons.search,
+                          color: AppTheme.outlineColor,
+                          size: 20,
+                        ),
+                        prefixIconConstraints: const BoxConstraints(
+                          minWidth: 48,
+                          minHeight: 48,
+                        ),
+                        suffixIcon: _searchQuery.isEmpty
+                            ? null
+                            : IconButton(
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() => _searchQuery = '');
+                                },
+                                icon: const Icon(Icons.clear, size: 18),
+                                splashRadius: 18,
+                              ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 14,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide.none,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide.none,
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide.none,
+                        ),
                       ),
-                      const SizedBox(width: 10),
-                      _SummaryChip(
-                        label: 'Ditolak',
-                        value: rejected.length.toString(),
-                        color: AppTheme.statusHigh,
-                      ),
-                    ],
+                    ),
                   ),
                 ],
               ),
@@ -250,6 +270,46 @@ class _DaftarWargaAdminScreenState extends State<DaftarWargaAdminScreen>
   }
 }
 
+class _AdminHeaderTitle extends StatelessWidget {
+  const _AdminHeaderTitle({required this.title, required this.subtitle});
+
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: AppTheme.primaryColor,
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+            height: 1.05,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          subtitle,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: AppTheme.secondaryColor,
+            fontSize: 13.5,
+            fontWeight: FontWeight.w500,
+            height: 1.2,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _WargaListTab extends StatelessWidget {
   const _WargaListTab({
     required this.title,
@@ -278,7 +338,7 @@ class _WargaListTab extends StatelessWidget {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(24),
         children: [
-          const SizedBox(height: 80),
+          const SizedBox(height: 48),
           _EmptyState(icon: icon, title: title, subtitle: subtitle),
         ],
       );
@@ -291,6 +351,7 @@ class _WargaListTab extends StatelessWidget {
         final user = items[index];
         return _WargaCard(
           user: user,
+          statusLabel: statusLabel,
           statusColor: statusColor,
           statusText: _statusText(statusLabel),
           formatDate: formatDate,
@@ -314,6 +375,7 @@ class _WargaListTab extends StatelessWidget {
 class _WargaCard extends StatelessWidget {
   const _WargaCard({
     required this.user,
+    required this.statusLabel,
     required this.statusColor,
     required this.statusText,
     required this.formatDate,
@@ -321,6 +383,7 @@ class _WargaCard extends StatelessWidget {
   });
 
   final AppUser user;
+  final VerificationStatus statusLabel;
   final Color statusColor;
   final String statusText;
   final String Function(DateTime?) formatDate;
@@ -328,6 +391,21 @@ class _WargaCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final badgeText = switch (statusLabel) {
+      VerificationStatus.pending => 'Pending',
+      VerificationStatus.verified => 'Disetujui',
+      VerificationStatus.rejected => 'Ditolak',
+    };
+    final badgeTextStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
+      color: statusColor,
+      fontWeight: FontWeight.bold,
+      fontSize: 10,
+      letterSpacing: 0.2,
+    );
+    final ktpValue = _maskKtpNumber(user.ktpNumber);
+    final codeLabel = 'Kode Warga';
+    final ktpLabel = 'Nomor KTP';
+
     return Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(18),
@@ -335,7 +413,7 @@ class _WargaCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(18),
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
@@ -348,7 +426,7 @@ class _WargaCard extends StatelessWidget {
               Row(
                 children: [
                   CircleAvatar(
-                    radius: 22,
+                    radius: 23,
                     backgroundColor: AppTheme.primaryColor.withOpacity(0.12),
                     child: Text(
                       user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
@@ -366,18 +444,24 @@ class _WargaCard extends StatelessWidget {
                       children: [
                         Text(
                           user.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
+                            fontSize: 15.5,
+                            fontWeight: FontWeight.w700,
                             color: AppTheme.textPrimaryColor,
+                            height: 1.2,
                           ),
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 4),
                         Text(
                           user.email,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            fontSize: 12,
+                            fontSize: 12.5,
                             color: AppTheme.textSecondaryColor,
+                            height: 1.25,
                           ),
                         ),
                       ],
@@ -389,27 +473,20 @@ class _WargaCard extends StatelessWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(999),
+                      color: statusColor.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(100),
                     ),
-                    child: Text(
-                      statusText,
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: statusColor,
-                      ),
-                    ),
+                    child: Text(badgeText, style: badgeTextStyle),
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
-              _InfoRow(label: 'Kode', value: user.registrationCode ?? '-'),
-              const SizedBox(height: 6),
+              const SizedBox(height: 16),
+              _InfoRow(label: codeLabel, value: user.registrationCode ?? '-'),
+              const SizedBox(height: 8),
               _InfoRow(label: 'RT/RW', value: user.rtRw ?? '-'),
-              const SizedBox(height: 6),
-              _InfoRow(label: 'KTP', value: user.ktpNumber ?? '-'),
-              const SizedBox(height: 6),
+              const SizedBox(height: 8),
+              _InfoRow(label: ktpLabel, value: ktpValue),
+              const SizedBox(height: 8),
               _InfoRow(
                 label: 'Terdaftar',
                 value: formatDate(user.registeredAt),
@@ -419,6 +496,16 @@ class _WargaCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _maskKtpNumber(String? value) {
+    final raw = value?.replaceAll(RegExp(r'\D'), '') ?? '';
+    if (raw.isEmpty) return '-';
+    if (raw.length <= 4) return '****';
+    if (raw.length <= 8) {
+      return '${raw.substring(0, 2)}****${raw.substring(raw.length - 2)}';
+    }
+    return '${raw.substring(0, 4)} **** **** ${raw.substring(raw.length - 4)}';
   }
 }
 
@@ -438,94 +525,29 @@ class _InfoRow extends StatelessWidget {
           child: Text(
             label,
             style: const TextStyle(
-              fontSize: 11,
+              fontSize: 11.5,
               color: AppTheme.textSecondaryColor,
               fontWeight: FontWeight.w600,
+              height: 1.2,
             ),
           ),
         ),
         const Text(
           ': ',
-          style: TextStyle(fontSize: 11, color: AppTheme.textSecondaryColor),
+          style: TextStyle(fontSize: 11.5, color: AppTheme.textSecondaryColor),
         ),
         Expanded(
           child: Text(
             value,
             style: const TextStyle(
-              fontSize: 11,
+              fontSize: 11.5,
               color: AppTheme.textPrimaryColor,
               fontWeight: FontWeight.w600,
+              height: 1.2,
             ),
           ),
         ),
       ],
-    );
-  }
-}
-
-class _SummaryChip extends StatelessWidget {
-  const _SummaryChip({
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  final String label;
-  final String value;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: AppTheme.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: AppTheme.outlineVariantColor.withOpacity(0.5),
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 30,
-              height: 30,
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(Icons.circle, color: color, size: 12),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    value,
-                    style: const TextStyle(
-                      color: AppTheme.textPrimaryColor,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      height: 1,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    label,
-                    style: const TextStyle(
-                      color: AppTheme.textSecondaryColor,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -544,7 +566,7 @@ class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
@@ -555,32 +577,33 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            width: 56,
-            height: 56,
+            width: 64,
+            height: 64,
             decoration: BoxDecoration(
-              color: AppTheme.primaryColor.withOpacity(0.1),
+              color: AppTheme.primaryColor.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: AppTheme.primaryColor, size: 28),
+            child: Icon(icon, color: AppTheme.primaryColor, size: 32),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           Text(
             title,
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: AppTheme.textPrimaryColor,
-              fontSize: 15,
+              fontSize: 16.5,
               fontWeight: FontWeight.w700,
+              height: 1.15,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           Text(
             subtitle,
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: AppTheme.textSecondaryColor,
-              fontSize: 12,
-              height: 1.4,
+              fontSize: 12.5,
+              height: 1.45,
             ),
           ),
         ],
