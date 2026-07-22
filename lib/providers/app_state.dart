@@ -223,28 +223,6 @@ class AppState with ChangeNotifier {
       ),
     );
 
-    // Mock Activities
-    _activities.addAll([
-      AdminActivity(
-        id: 'act-1',
-        description: 'Memverifikasi warga baru: Rian Hidayat',
-        type: 'verification',
-        createdAt: DateTime.now().subtract(const Duration(days: 10)),
-      ),
-      AdminActivity(
-        id: 'act-2',
-        description: 'Membuat pengumuman',
-        type: 'announcement',
-        createdAt: DateTime.now().subtract(const Duration(days: 1)),
-      ),
-      AdminActivity(
-        id: 'act-3',
-        description: 'Membuat voting: Hari senam pagi warga',
-        type: 'poll',
-        createdAt: DateTime.now().subtract(const Duration(days: 7)),
-        relatedId: 'poll-1',
-      ),
-    ]);
     // Mock Registration Codes
     _registrationCodes.addAll([
       RegistrationCode(
@@ -438,22 +416,30 @@ class AppState with ChangeNotifier {
   }
 
   void _replaceWithSnapshot(BackendSnapshot snapshot) {
+    final backendUsers = List<AppUser>.of(snapshot.users);
+    final backendAnnouncements = List<Announcement>.of(snapshot.announcements);
+    final backendPolls = List<Poll>.of(snapshot.polls);
+    final backendActivities = List<AdminActivity>.of(snapshot.activities);
+    final backendRegistrationCodes = List<RegistrationCode>.of(
+      snapshot.registrationCodes,
+    );
+
     _registeredUsers
       ..clear()
-      ..addAll(snapshot.users);
+      ..addAll(backendUsers);
     _announcements
       ..clear()
-      ..addAll(snapshot.announcements);
+      ..addAll(backendAnnouncements);
     _setAnnouncementLoadState(isLoading: false, error: null);
     _polls
       ..clear()
-      ..addAll(snapshot.polls);
+      ..addAll(backendPolls);
     _activities
       ..clear()
-      ..addAll(snapshot.activities);
+      ..addAll(backendActivities);
     _registrationCodes
       ..clear()
-      ..addAll(snapshot.registrationCodes);
+      ..addAll(backendRegistrationCodes);
 
     if (_currentUser != null) {
       final matches = _registeredUsers.where((u) => u.id == _currentUser!.id);
@@ -702,6 +688,7 @@ class AppState with ChangeNotifier {
     _clearVerificationUsers();
     _clearReportState();
     _announcements.clear();
+    _activities.clear();
     _setAnnouncementLoadState(isLoading: false, error: null);
     _verificationUsersLoaded = false;
     _pendingRtRegistrationCode = null;
