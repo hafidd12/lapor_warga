@@ -26,6 +26,333 @@ class _DetailLaporanAdminScreenState extends State<DetailLaporanAdminScreen> {
   String? _completionPhotoName;
   bool _isUploadingCompletionPhoto = false;
 
+  String _formatWibDate(DateTime dateTime) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Agu',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des',
+    ];
+
+    final wib = dateTime.toUtc().add(const Duration(hours: 7));
+    final day = wib.day.toString().padLeft(2, '0');
+    final month = months[wib.month - 1];
+    final hour = wib.hour.toString().padLeft(2, '0');
+    final minute = wib.minute.toString().padLeft(2, '0');
+    return '$day $month ${wib.year}, $hour:$minute WIB';
+  }
+
+  bool _hasUrl(String? value) {
+    return value != null && value.trim().isNotEmpty;
+  }
+
+  void _showPhotoPreview(BuildContext context, String photoUrl) {
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          insetPadding: const EdgeInsets.all(16),
+          backgroundColor: Colors.transparent,
+          child: Stack(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(18),
+                child: InteractiveViewer(
+                  minScale: 1,
+                  maxScale: 4,
+                  child: Image.network(
+                    photoUrl,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return _buildPhotoPlaceholder(height: 360);
+                    },
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: IconButton.filled(
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.black.withValues(alpha: 0.6),
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPhotoPlaceholder({double height = 220}) {
+    return Container(
+      height: height,
+      width: double.infinity,
+      color: AppTheme.surfaceContainerHigh,
+      child: const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.image_not_supported_outlined,
+              color: AppTheme.outlineColor,
+              size: 42,
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Foto tidak tersedia',
+              style: TextStyle(
+                color: AppTheme.textSecondaryColor,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _detailMetaRow({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 17, color: AppTheme.textSecondaryColor),
+        const SizedBox(width: 8),
+        Expanded(
+          child: RichText(
+            text: TextSpan(
+              style: const TextStyle(
+                color: AppTheme.textPrimaryColor,
+                fontSize: 13,
+                height: 1.45,
+              ),
+              children: [
+                TextSpan(
+                  text: '$label: ',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textSecondaryColor,
+                  ),
+                ),
+                TextSpan(text: value),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildReportPhotoCard(Report report, ThemeData theme) {
+    final hasPhoto = _hasUrl(report.reportPhotoUrl);
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: AppTheme.outlineVariantColor.withValues(alpha: 0.6),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.035),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(22),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            GestureDetector(
+              onTap: hasPhoto
+                  ? () => _showPhotoPreview(context, report.reportPhotoUrl!)
+                  : null,
+              child: AspectRatio(
+                aspectRatio: 16 / 10,
+                child: hasPhoto
+                    ? Image.network(
+                        report.reportPhotoUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return _buildPhotoPlaceholder(
+                            height: double.infinity,
+                          );
+                        },
+                      )
+                    : _buildPhotoPlaceholder(height: double.infinity),
+              ),
+            ),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+              color: AppTheme.surfaceContainerLow,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      PriorityBadge(priority: report.priority),
+                      const SizedBox(width: 8),
+                      StatusBadge(status: report.status),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    report.title,
+                    style: const TextStyle(
+                      color: AppTheme.textPrimaryColor,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      height: 1.25,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  _detailMetaRow(
+                    icon: Icons.person_outline,
+                    label: 'Pelapor',
+                    value: report.citizenName,
+                  ),
+                  const SizedBox(height: 8),
+                  _detailMetaRow(
+                    icon: Icons.location_on_outlined,
+                    label: 'Lokasi',
+                    value: _hasUrl(report.locationLabel)
+                        ? report.locationLabel!.trim()
+                        : 'Lokasi belum ditentukan',
+                  ),
+                  const SizedBox(height: 8),
+                  _detailMetaRow(
+                    icon: Icons.schedule_rounded,
+                    label: 'Tanggal',
+                    value: _formatWibDate(report.createdAt),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Deskripsi',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: AppTheme.textSecondaryColor,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    report.description,
+                    style: const TextStyle(
+                      color: AppTheme.textPrimaryColor,
+                      fontSize: 13,
+                      height: 1.55,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompletionPhotoSection(Report report, ThemeData theme) {
+    if (!_hasUrl(report.completionPhotoUrl)) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: AppTheme.outlineVariantColor.withValues(alpha: 0.65),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 14,
+            offset: const Offset(0, 7),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            GestureDetector(
+              onTap: () =>
+                  _showPhotoPreview(context, report.completionPhotoUrl!),
+              child: AspectRatio(
+                aspectRatio: 16 / 10,
+                child: Image.network(
+                  report.completionPhotoUrl!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return _buildPhotoPlaceholder(height: double.infinity);
+                  },
+                ),
+              ),
+            ),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              color: AppTheme.surfaceContainerLow,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.verified_rounded,
+                        color: AppTheme.statusLow,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Foto Penyelesaian',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.statusLow,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Foto ini terpisah dari foto laporan warga.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: AppTheme.textSecondaryColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _pickCompletionPhoto(ImageSource source) async {
     try {
       final pickedFile = await _imagePicker.pickImage(
@@ -150,11 +477,10 @@ class _DetailLaporanAdminScreenState extends State<DetailLaporanAdminScreen> {
         elevation: 0.5,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Status and category
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -174,88 +500,78 @@ class _DetailLaporanAdminScreenState extends State<DetailLaporanAdminScreen> {
                 StatusBadge(status: report.status),
               ],
             ),
-            const SizedBox(height: 20),
-
-            // Card details
+            const SizedBox(height: 16),
+            _buildReportPhotoCard(report, theme),
+            const SizedBox(height: 22),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.grey.shade200),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: AppTheme.outlineVariantColor.withValues(alpha: 0.6),
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    report.title,
-                    style: theme.textTheme.headlineLarge?.copyWith(
-                      fontSize: 22,
+                    'Ringkasan Laporan',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.person_outline,
-                        size: 18,
-                        color: AppTheme.textSecondaryColor,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Pelapor: ${report.citizenName}',
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
+                  const SizedBox(height: 6),
+                  Text(
+                    'Informasi yang dirapikan untuk memudahkan penanganan.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: AppTheme.textSecondaryColor,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  _detailMetaRow(
+                    icon: Icons.person_outline,
+                    label: 'Pelapor',
+                    value: report.citizenName,
                   ),
                   const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.access_time_outlined,
-                        size: 18,
-                        color: AppTheme.textSecondaryColor,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Diajukan: ${report.createdAt.day}/${report.createdAt.month}/${report.createdAt.year} - ${report.createdAt.hour.toString().padLeft(2, '0')}:${report.createdAt.minute.toString().padLeft(2, '0')}',
-                        style: theme.textTheme.labelSmall,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  const Divider(),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Detail Kejadian / Masalah:',
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      fontSize: 16,
-                    ),
+                  _detailMetaRow(
+                    icon: Icons.location_on_outlined,
+                    label: 'Lokasi',
+                    value: _hasUrl(report.locationLabel)
+                        ? report.locationLabel!.trim()
+                        : 'Lokasi belum ditentukan',
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    report.description,
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      height: 1.5,
-                      color: Colors.grey.shade800,
-                    ),
+                  _detailMetaRow(
+                    icon: Icons.schedule_rounded,
+                    label: 'Tanggal',
+                    value: _formatWibDate(report.createdAt),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 24),
-
-            Text('Penanganan Laporan', style: theme.textTheme.headlineMedium),
+            Text(
+              'Penanganan Laporan',
+              style: theme.textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
             const SizedBox(height: 12),
+            if (_hasUrl(report.completionPhotoUrl)) ...[
+              _buildCompletionPhotoSection(report, theme),
+              const SizedBox(height: 16),
+            ],
             Container(
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.grey.shade200),
+                border: Border.all(
+                  color: AppTheme.outlineVariantColor.withValues(alpha: 0.6),
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.03),
@@ -279,7 +595,9 @@ class _DetailLaporanAdminScreenState extends State<DetailLaporanAdminScreen> {
                           width: 42,
                           height: 42,
                           decoration: BoxDecoration(
-                            color: AppTheme.primaryColor.withValues(alpha: 0.12),
+                            color: AppTheme.primaryColor.withValues(
+                              alpha: 0.12,
+                            ),
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
@@ -348,87 +666,56 @@ class _DetailLaporanAdminScreenState extends State<DetailLaporanAdminScreen> {
   Widget _buildResolvedCard(Report report, ThemeData theme) {
     final dateText = report.completedAt == null
         ? null
-        : '${report.completedAt!.day}/${report.completedAt!.month}/${report.completedAt!.year}';
+        : _formatWibDate(report.completedAt!);
 
     return Container(
-      padding: const EdgeInsets.all(0),
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
+        color: AppTheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: AppTheme.outlineVariantColor.withValues(alpha: 0.7),
         ),
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (report.completionPhotoUrl != null)
-              Image.network(
-                report.completionPhotoUrl!,
-                height: 220,
-                width: double.infinity,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    height: 220,
-                    color: AppTheme.surfaceContainerHigh,
-                    child: const Center(
-                      child: Icon(
-                        Icons.broken_image_outlined,
-                        color: AppTheme.outlineColor,
-                        size: 42,
-                      ),
-                    ),
-                  );
-                },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.verified_rounded,
+                color: AppTheme.statusLow,
+                size: 20,
               ),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              color: AppTheme.surfaceContainerLow,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.verified_rounded,
-                        color: AppTheme.statusLow,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Laporan ini telah selesai ditangani.',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: AppTheme.statusLow,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  if (report.completedBy != null)
-                    Text(
-                      'Diselesaikan oleh: ${report.completedBy}',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: AppTheme.textSecondaryColor,
-                      ),
-                    ),
-                  if (dateText != null) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      'Pada: $dateText',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: AppTheme.textSecondaryColor,
-                      ),
-                    ),
-                  ],
-                ],
+              const SizedBox(width: 8),
+              Text(
+                'Laporan ini telah selesai ditangani.',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.statusLow,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          if (report.completedBy != null)
+            Text(
+              'Diselesaikan oleh: ${report.completedBy}',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: AppTheme.textSecondaryColor,
+              ),
+            ),
+          if (dateText != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Pada: $dateText',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: AppTheme.textSecondaryColor,
               ),
             ),
           ],
-        ),
+        ],
       ),
     );
   }
@@ -459,7 +746,9 @@ class _DetailLaporanAdminScreenState extends State<DetailLaporanAdminScreen> {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: AppTheme.tertiaryContainerColor.withValues(alpha: 0.14),
+                  color: AppTheme.tertiaryContainerColor.withValues(
+                    alpha: 0.14,
+                  ),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -548,7 +837,11 @@ class _DetailLaporanAdminScreenState extends State<DetailLaporanAdminScreen> {
                       ),
                       child: const Row(
                         children: [
-                          Icon(Icons.check_circle, size: 14, color: Colors.white),
+                          Icon(
+                            Icons.check_circle,
+                            size: 14,
+                            color: Colors.white,
+                          ),
                           SizedBox(width: 6),
                           Text(
                             'Foto bukti siap digunakan',
@@ -634,7 +927,9 @@ class _DetailLaporanAdminScreenState extends State<DetailLaporanAdminScreen> {
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppTheme.textPrimaryColor,
                     side: BorderSide(
-                      color: AppTheme.outlineVariantColor.withValues(alpha: 0.9),
+                      color: AppTheme.outlineVariantColor.withValues(
+                        alpha: 0.9,
+                      ),
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
@@ -642,7 +937,10 @@ class _DetailLaporanAdminScreenState extends State<DetailLaporanAdminScreen> {
                     ),
                   ),
                   onPressed: _showCompletionImageSourcePicker,
-                  icon: const Icon(Icons.add_photo_alternate_outlined, size: 18),
+                  icon: const Icon(
+                    Icons.add_photo_alternate_outlined,
+                    size: 18,
+                  ),
                   label: const Text(
                     'Pilih Foto',
                     style: TextStyle(fontWeight: FontWeight.w700),
@@ -668,17 +966,19 @@ class _DetailLaporanAdminScreenState extends State<DetailLaporanAdminScreen> {
                           setState(() => _isUploadingCompletionPhoto = true);
                           try {
                             final backendService = BackendService();
-                            final uploadedUrl =
-                                await backendService.uploadCompletionPhoto(
-                              currentUser: state.currentUser!,
-                              completionPhotoBytes: _completionPhotoBytes!,
-                              completionPhotoName: _completionPhotoName,
-                            );
+                            final uploadedUrl = await backendService
+                                .uploadCompletionPhoto(
+                                  currentUser: state.currentUser!,
+                                  completionPhotoBytes: _completionPhotoBytes!,
+                                  completionPhotoName: _completionPhotoName,
+                                );
                             state.completeReport(report.id, uploadedUrl);
                             if (!mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('Laporan berhasil ditandai selesai.'),
+                                content: Text(
+                                  'Laporan berhasil ditandai selesai.',
+                                ),
                                 backgroundColor: AppTheme.statusLow,
                               ),
                             );
@@ -696,7 +996,9 @@ class _DetailLaporanAdminScreenState extends State<DetailLaporanAdminScreen> {
                             );
                           } finally {
                             if (mounted) {
-                              setState(() => _isUploadingCompletionPhoto = false);
+                              setState(
+                                () => _isUploadingCompletionPhoto = false,
+                              );
                             }
                           }
                         },
@@ -706,12 +1008,16 @@ class _DetailLaporanAdminScreenState extends State<DetailLaporanAdminScreen> {
                           height: 16,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
                           ),
                         )
                       : const Icon(Icons.check_circle, size: 18),
                   label: Text(
-                    _isUploadingCompletionPhoto ? 'Menyimpan...' : 'Tandai Selesai',
+                    _isUploadingCompletionPhoto
+                        ? 'Menyimpan...'
+                        : 'Tandai Selesai',
                     style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),
@@ -868,13 +1174,8 @@ class _DashedBorderPainter extends CustomPainter {
     for (final metric in path.computeMetrics()) {
       double distance = 0;
       while (distance < metric.length) {
-        final end = (distance + dashWidth)
-            .clamp(0, metric.length)
-            .toDouble();
-        canvas.drawPath(
-          metric.extractPath(distance, end),
-          paint,
-        );
+        final end = (distance + dashWidth).clamp(0, metric.length).toDouble();
+        canvas.drawPath(metric.extractPath(distance, end), paint);
         distance = end + dashSpace;
       }
     }

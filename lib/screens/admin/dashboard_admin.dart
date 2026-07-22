@@ -4,12 +4,54 @@ import 'package:provider/provider.dart';
 import '../../models/models.dart';
 import '../../providers/app_state.dart';
 import '../../theme.dart';
+import '../../widgets/dashboard_top_section.dart';
 import '../../widgets/status_badge.dart';
 import 'buat_pengumuman_admin.dart';
 import 'buat_voting_admin.dart';
 import 'daftar_warga_admin.dart';
 import 'detail_laporan_admin.dart';
 import '../shared/detail_voting_screen.dart';
+
+String _formatWibDate(DateTime dateTime) {
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'Mei',
+    'Jun',
+    'Jul',
+    'Agu',
+    'Sep',
+    'Okt',
+    'Nov',
+    'Des',
+  ];
+
+  final wib = dateTime.toUtc().add(const Duration(hours: 7));
+  final day = wib.day.toString().padLeft(2, '0');
+  final month = months[wib.month - 1];
+  final hour = wib.hour.toString().padLeft(2, '0');
+  final minute = wib.minute.toString().padLeft(2, '0');
+  return '$day $month ${wib.year}, $hour:$minute WIB';
+}
+
+String _formatPollDeadline(Poll poll) {
+  final match = RegExp(r'^poll-(\d+)$').firstMatch(poll.id);
+  if (match != null) {
+    final microseconds = int.tryParse(match.group(1) ?? '');
+    if (microseconds != null) {
+      final createdAt = DateTime.fromMicrosecondsSinceEpoch(
+        microseconds,
+        isUtc: true,
+      );
+      final deadline = createdAt.add(const Duration(days: 7));
+      return _formatWibDate(deadline);
+    }
+  }
+
+  return poll.isActive ? 'Belum diatur' : 'Sudah dinonaktifkan';
+}
 
 class DashboardAdminScreen extends StatefulWidget {
   const DashboardAdminScreen({super.key});
@@ -21,8 +63,6 @@ class DashboardAdminScreen extends StatefulWidget {
 class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
   final ScrollController _scrollController = ScrollController();
   final GlobalKey _reportSectionKey = GlobalKey();
-  final GlobalKey _announcementSectionKey = GlobalKey();
-  final GlobalKey _activitySectionKey = GlobalKey();
 
   String _selectedStatusFilter = 'Semua Status';
   String _selectedCategoryFilter = 'Semua Kategori';
@@ -55,6 +95,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      context.read<AppState>().refreshAnnouncements().catchError((_) {});
       context.read<AppState>().refreshPolls().catchError((_) {});
     });
   }
@@ -170,6 +211,84 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
     }
   }
 
+  void _showAllAnnouncementsSheet(
+    BuildContext context, {
+    required List<Announcement> announcements,
+  }) {
+    final sortedAnnouncements = [...announcements]
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.75,
+          minChildSize: 0.45,
+          maxChildSize: 0.95,
+          builder: (context, scrollController) {
+            return Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 12),
+                  Center(
+                    child: Container(
+                      width: 42,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppTheme.outlineVariantColor,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(20, 18, 20, 12),
+                    child: Text(
+                      'Semua Pengumuman',
+                      style: TextStyle(
+                        color: AppTheme.textPrimaryColor,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: ListView.separated(
+                      controller: scrollController,
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                      itemCount: sortedAnnouncements.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final announcement = sortedAnnouncements[index];
+                        return _AdminAnnouncementCard(
+                          announcement: announcement,
+                          onEditTap: () => _openAnnouncementForm(
+                            context,
+                            announcement: announcement,
+                          ),
+                          onDeleteTap: () =>
+                              _confirmDeleteAnnouncement(context, announcement),
+                          showLatestBadge: false,
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   Future<void> _confirmDeleteAnnouncement(
     BuildContext context,
     Announcement announcement,
@@ -242,6 +361,253 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
     await state.refreshPolls().catchError((_) {});
   }
 
+  Future<void> _confirmDeactivatePoll(BuildContext context, Poll poll) async {
+    final shouldDeactivate = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Nonaktifkan Voting?'),
+        content: Text(
+          'Voting "${poll.question}" akan dinonaktifkan. Lanjutkan?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Batal'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: FilledButton.styleFrom(backgroundColor: AppTheme.statusHigh),
+            child: const Text('Nonaktifkan'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldDeactivate != true || !mounted) return;
+
+    await context.read<AppState>().updatePoll(
+      pollId: poll.id,
+      question: poll.question,
+      isActive: false,
+      options: poll.options,
+    );
+  }
+
+  void _showAllPollsSheet(BuildContext context, {required List<Poll> polls}) {
+    final sortedPolls = [...polls]
+      ..sort((a, b) {
+        if (a.isActive != b.isActive) {
+          return a.isActive ? -1 : 1;
+        }
+        return 0;
+      });
+    final maxVotes = sortedPolls.fold<int>(
+      0,
+      (max, poll) => poll.totalVotes > max ? poll.totalVotes : max,
+    );
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.85,
+          minChildSize: 0.45,
+          maxChildSize: 0.95,
+          builder: (context, controller) {
+            return Container(
+              decoration: const BoxDecoration(
+                color: AppTheme.backgroundColor,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              ),
+              child: SafeArea(
+                top: false,
+                child: Column(
+                  children: [
+                    const SizedBox(height: 12),
+                    Container(
+                      width: 42,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppTheme.outlineVariantColor,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+                      child: Row(
+                        children: [
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Semua Voting',
+                                  style: TextStyle(
+                                    color: AppTheme.textPrimaryColor,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Daftar voting aktif maupun nonaktif.',
+                                  style: TextStyle(
+                                    color: AppTheme.textSecondaryColor,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () => Navigator.of(sheetContext).pop(),
+                            icon: const Icon(Icons.close_rounded),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: ListView.separated(
+                        controller: controller,
+                        padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+                        itemCount: sortedPolls.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          final poll = sortedPolls[index];
+                          return _AdminPollCard(
+                            poll: poll,
+                            maxVotes: maxVotes,
+                            onDetailTap: () {
+                              Navigator.of(sheetContext).push(
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      DetailVotingScreen(pollId: poll.id),
+                                ),
+                              );
+                            },
+                            onDeactivateTap: poll.isActive
+                                ? () =>
+                                      _confirmDeactivatePoll(sheetContext, poll)
+                                : null,
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showAllReportsSheet(
+    BuildContext context, {
+    required List<Report> reports,
+  }) {
+    final sortedReports = [...reports]
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.88,
+          minChildSize: 0.5,
+          maxChildSize: 0.96,
+          builder: (context, controller) {
+            return Container(
+              decoration: const BoxDecoration(
+                color: AppTheme.backgroundColor,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              ),
+              child: SafeArea(
+                top: false,
+                child: Column(
+                  children: [
+                    const SizedBox(height: 12),
+                    Container(
+                      width: 42,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppTheme.outlineVariantColor,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+                      child: Row(
+                        children: [
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Semua Laporan',
+                                  style: TextStyle(
+                                    color: AppTheme.textPrimaryColor,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Daftar laporan masuk terbaru dari warga.',
+                                  style: TextStyle(
+                                    color: AppTheme.textSecondaryColor,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () => Navigator.of(sheetContext).pop(),
+                            icon: const Icon(Icons.close_rounded),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: ListView.separated(
+                        controller: controller,
+                        padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+                        itemCount: sortedReports.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          final report = sortedReports[index];
+                          return _AdminReportCard(
+                            report: report,
+                            categoryIcon: _categoryIcon(report.category),
+                            onTap: () {
+                              Navigator.of(sheetContext).push(
+                                MaterialPageRoute(
+                                  builder: (_) => DetailLaporanAdminScreen(
+                                    reportId: report.id,
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   void _openQuickAction(BuildContext context, String action) {
     switch (action) {
       case 'warga':
@@ -291,24 +657,20 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
     final verifiedWargaCount = state.verifiedWarga.length;
     final pendingWargaCount = state.pendingWarga.length;
     final totalWargaCount = state.allWarga.length;
-
-    final filteredReports = reports.where((report) {
-      final statusMatch = switch (_selectedStatusFilter) {
-        'Baru' => report.status == ReportStatus.submitted,
-        'Diproses' => report.status == ReportStatus.processed,
-        'Selesai' => report.status == ReportStatus.resolved,
-        _ => true,
-      };
-
-      final categoryMatch =
-          _selectedCategoryFilter == 'Semua Kategori' ||
-          report.category.toLowerCase() ==
-              _selectedCategoryFilter.toLowerCase();
-
-      return statusMatch && categoryMatch;
-    }).toList();
-
-    final weeklyPoints = _buildWeeklyPoints(reports);
+    final sortedAnnouncements = [...announcements]
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final latestAnnouncement = sortedAnnouncements.isNotEmpty
+        ? sortedAnnouncements.first
+        : null;
+    final activePolls = polls.where((poll) => poll.isActive).toList();
+    final highlightedPoll = activePolls.isNotEmpty ? activePolls.first : null;
+    final maxPollVotes = polls.fold<int>(
+      0,
+      (max, poll) => poll.totalVotes > max ? poll.totalVotes : max,
+    );
+    final sortedReports = [...reports]
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final latestReport = sortedReports.isNotEmpty ? sortedReports.first : null;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -322,7 +684,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildHeader(context, user),
+                DashboardTopSection(user: user, onNotificationsTap: () {}),
                 const SizedBox(height: 18),
                 _buildHeroCard(
                   context,
@@ -351,7 +713,6 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
                 _buildQuickActions(context),
                 const SizedBox(height: 28),
                 Container(
-                  key: _announcementSectionKey,
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -372,25 +733,58 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _SectionHeader(
-                        title: 'Pengumuman RT (${announcements.length})',
-                        subtitle: 'Kelola pengumuman terbaru untuk warga',
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Pengumuman RT',
+                                  style: TextStyle(
+                                    color: AppTheme.textPrimaryColor,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                    height: 1.2,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Informasi terbaru dari Ketua RT',
+                                  style: TextStyle(
+                                    color: AppTheme.textSecondaryColor,
+                                    fontSize: 12,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () => _showAllAnnouncementsSheet(
+                              context,
+                              announcements: announcements,
+                            ),
+                            child: const Text('Lihat Semua'),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 16),
-                      if (isAnnouncementsLoading && announcements.isEmpty)
+                      if (isAnnouncementsLoading && latestAnnouncement == null)
                         const _LoadingDashboardState(
                           title: 'Memuat pengumuman',
                           subtitle: 'Mengambil data pengumuman dari Supabase.',
                         )
                       else if (announcementError != null &&
-                          announcements.isEmpty)
+                          latestAnnouncement == null)
                         _AnnouncementSectionErrorState(
                           message: announcementError,
                           onRetry: () {
                             state.refreshAnnouncements().catchError((_) {});
                           },
                         )
-                      else if (announcements.isEmpty)
+                      else if (latestAnnouncement == null)
                         const _EmptyDashboardState(
                           icon: Icons.campaign_rounded,
                           title: 'Belum ada pengumuman',
@@ -398,34 +792,31 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
                         )
                       else
                         Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            for (var i = 0; i < announcements.length; i++) ...[
-                              _AdminAnnouncementCard(
-                                announcement: announcements[i],
-                                formatTimeAgo: _formatTimeAgo,
-                                onEditTap: () => _openAnnouncementForm(
-                                  context,
-                                  announcement: announcements[i],
-                                ),
-                                onDeleteTap: () => _confirmDeleteAnnouncement(
-                                  context,
-                                  announcements[i],
-                                ),
+                            _AdminAnnouncementCard(
+                              announcement: latestAnnouncement,
+                              onEditTap: () => _openAnnouncementForm(
+                                context,
+                                announcement: latestAnnouncement,
                               ),
-                              if (i != announcements.length - 1)
-                                const SizedBox(height: 12),
-                            ],
+                              onDeleteTap: () => _confirmDeleteAnnouncement(
+                                context,
+                                latestAnnouncement,
+                              ),
+                              showLatestBadge: true,
+                            ),
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              width: double.infinity,
+                              child: FilledButton.icon(
+                                onPressed: () => _openAnnouncementForm(context),
+                                icon: const Icon(Icons.add_rounded),
+                                label: const Text('Tambah Pengumuman'),
+                              ),
+                            ),
                           ],
                         ),
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        width: double.infinity,
-                        child: FilledButton.icon(
-                          onPressed: () => _openAnnouncementForm(context),
-                          icon: const Icon(Icons.add_rounded),
-                          label: const Text('Tambah Pengumuman'),
-                        ),
-                      ),
                     ],
                   ),
                 ),
@@ -451,18 +842,48 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _SectionHeader(
-                        title: 'Voting RT (${polls.length})',
-                        subtitle:
-                            'Kelola voting aktif maupun yang sudah ditutup',
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Voting RT',
+                                  style: TextStyle(
+                                    color: AppTheme.textPrimaryColor,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                    height: 1.2,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Voting aktif yang sedang berjalan',
+                                  style: TextStyle(
+                                    color: AppTheme.textSecondaryColor,
+                                    fontSize: 12,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () =>
+                                _showAllPollsSheet(context, polls: polls),
+                            child: const Text('Lihat Semua'),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 16),
-                      if (isPollsLoading && polls.isEmpty)
+                      if (isPollsLoading && highlightedPoll == null)
                         const _LoadingDashboardState(
                           title: 'Memuat voting',
                           subtitle: 'Mengambil data voting dari Supabase.',
                         )
-                      else if (pollsError != null && polls.isEmpty)
+                      else if (pollsError != null && highlightedPoll == null)
                         _PollSectionErrorState(
                           message: pollsError,
                           onRetry: () {
@@ -471,56 +892,51 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
                             );
                           },
                         )
-                      else if (polls.isEmpty)
+                      else if (highlightedPoll == null)
                         const _EmptyDashboardState(
                           icon: Icons.how_to_vote_rounded,
-                          title: 'Belum ada voting',
-                          subtitle: 'Voting baru akan tampil di sini.',
+                          title: 'Belum ada voting aktif',
+                          subtitle:
+                              'Voting aktif akan tampil di sini ketika tersedia.',
                         )
                       else
                         Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            for (var i = 0; i < polls.length; i++) ...[
-                              _AdminPollCard(
-                                poll: polls[i],
-                                onEditTap: () =>
-                                    _openPollForm(context, poll: polls[i]),
-                                onDeleteTap: () =>
-                                    _confirmDeletePoll(context, polls[i]),
-                                onDetailTap: () {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => DetailVotingScreen(
-                                        pollId: polls[i].id,
-                                      ),
+                            _AdminPollCard(
+                              poll: highlightedPoll,
+                              maxVotes: maxPollVotes,
+                              onDetailTap: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => DetailVotingScreen(
+                                      pollId: highlightedPoll.id,
                                     ),
-                                  );
-                                },
+                                  ),
+                                );
+                              },
+                              onDeactivateTap: () => _confirmDeactivatePoll(
+                                context,
+                                highlightedPoll,
                               ),
-                              if (i != polls.length - 1)
-                                const SizedBox(height: 12),
-                            ],
+                            ),
                           ],
                         ),
                       const SizedBox(height: 16),
-                      SizedBox(
-                        width: double.infinity,
-                        child: FilledButton.icon(
-                          onPressed: () => _openPollForm(context),
-                          icon: const Icon(Icons.add_rounded),
-                          label: const Text('Tambah Voting'),
-                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: FilledButton.icon(
+                              onPressed: () => _openPollForm(context),
+                              icon: const Icon(Icons.add_rounded),
+                              label: const Text('Tambah Voting'),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 28),
-                _SectionHeader(
-                  title: 'Laporan 7 Hari Terakhir',
-                  subtitle: 'Distribusi laporan masuk dalam seminggu terakhir',
-                ),
-                const SizedBox(height: 16),
-                _WeeklyReportChart(points: weeklyPoints),
                 const SizedBox(height: 28),
                 Container(
                   key: _reportSectionKey,
@@ -544,157 +960,73 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _SectionHeader(
-                        title:
-                            'Daftar Laporan Masuk (${filteredReports.length})',
-                        subtitle:
-                            'Kelola laporan warga dengan filter yang lebih cepat',
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Laporan Masuk',
+                                  style: TextStyle(
+                                    color: AppTheme.textPrimaryColor,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                    height: 1.2,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Laporan terbaru dari warga.',
+                                  style: TextStyle(
+                                    color: AppTheme.textSecondaryColor,
+                                    fontSize: 12,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () =>
+                                _showAllReportsSheet(context, reports: reports),
+                            child: const Text('Lihat Semua'),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 18),
-                      Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: AppTheme.surfaceContainerLow,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Column(children: [_buildReportFilters()]),
-                      ),
-                      const SizedBox(height: 16),
-                      if (isReportsLoading && filteredReports.isEmpty)
+                      if (isReportsLoading && latestReport == null)
                         const _LoadingDashboardState(
                           title: 'Memuat laporan masuk',
                           subtitle: 'Mengambil data laporan dari Supabase.',
                         )
-                      else if (reportError != null && filteredReports.isEmpty)
+                      else if (reportError != null && latestReport == null)
                         _ReportSectionErrorState(
                           message: reportError,
                           onRetry: () => state.refreshAdminReports(),
                         )
-                      else if (reports.isEmpty)
+                      else if (latestReport == null)
                         const _EmptyDashboardState(
                           icon: Icons.inbox_rounded,
                           title: 'Belum ada laporan masuk',
                           subtitle:
                               'Laporan warga yang baru masuk akan tampil di sini.',
                         )
-                      else if (filteredReports.isEmpty)
-                        const _EmptyDashboardState(
-                          icon: Icons.filter_alt_off_rounded,
-                          title: 'Tidak ada laporan yang sesuai',
-                          subtitle:
-                              'Coba ubah filter untuk melihat laporan lain.',
-                        )
                       else
-                        Column(
-                          children: [
-                            for (
-                              var i = 0;
-                              i < filteredReports.length;
-                              i++
-                            ) ...[
-                              _AdminReportCard(
-                                report: filteredReports[i],
-                                categoryIcon: _categoryIcon(
-                                  filteredReports[i].category,
+                        _AdminReportCard(
+                          report: latestReport,
+                          categoryIcon: _categoryIcon(latestReport.category),
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => DetailLaporanAdminScreen(
+                                  reportId: latestReport.id,
                                 ),
-                                formatTimeAgo: _formatTimeAgo,
-                                onDetailTap: () {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => DetailLaporanAdminScreen(
-                                        reportId: filteredReports[i].id,
-                                      ),
-                                    ),
-                                  );
-                                },
-                                onFollowUpTap:
-                                    filteredReports[i].status ==
-                                        ReportStatus.resolved
-                                    ? () {
-                                        Navigator.of(context).push(
-                                          MaterialPageRoute(
-                                            builder: (_) =>
-                                                DetailLaporanAdminScreen(
-                                                  reportId:
-                                                      filteredReports[i].id,
-                                                ),
-                                          ),
-                                        );
-                                      }
-                                    : () {
-                                        Navigator.of(context).push(
-                                          MaterialPageRoute(
-                                            builder: (_) =>
-                                                DetailLaporanAdminScreen(
-                                                  reportId:
-                                                      filteredReports[i].id,
-                                                ),
-                                          ),
-                                        );
-                                      },
                               ),
-                              if (i != filteredReports.length - 1)
-                                const SizedBox(height: 12),
-                            ],
-                          ],
+                            );
+                          },
                         ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 28),
-                Container(
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: AppTheme.outlineVariantColor.withValues(
-                        alpha: 0.55,
-                      ),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.04),
-                        blurRadius: 16,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const _SectionHeader(
-                        title: 'Status Warga',
-                        subtitle: 'Ringkasan verifikasi warga yang terdaftar',
-                      ),
-                      const SizedBox(height: 16),
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          final isWide = constraints.maxWidth > 640;
-                          final child = Wrap(
-                            spacing: 12,
-                            runSpacing: 12,
-                            children: [
-                              _MiniSummaryChip(
-                                label: 'Terverifikasi',
-                                value: verifiedWargaCount.toString(),
-                                color: AppTheme.primaryColor,
-                              ),
-                              _MiniSummaryChip(
-                                label: 'Menunggu',
-                                value: pendingWargaCount.toString(),
-                                color: AppTheme.statusMedium,
-                              ),
-                              _MiniSummaryChip(
-                                label: 'Total Warga',
-                                value: totalWargaCount.toString(),
-                                color: const Color(0xFF2563EB),
-                              ),
-                            ],
-                          );
-                          return isWide ? child : child;
-                        },
-                      ),
                     ],
                   ),
                 ),
@@ -1044,17 +1376,25 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
       ),
     ];
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      physics: const BouncingScrollPhysics(),
-      child: Row(
-        children: [
-          for (var i = 0; i < actions.length; i++) ...[
-            if (i > 0) const SizedBox(width: 12),
-            _QuickActionCard(data: actions[i]),
-          ],
-        ],
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final childAspectRatio = constraints.maxWidth > 700 ? 3.2 : 2.45;
+
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: actions.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: childAspectRatio,
+          ),
+          itemBuilder: (context, index) {
+            return _QuickActionCard(data: actions[index]);
+          },
+        );
+      },
     );
   }
 
@@ -1108,32 +1448,43 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
 class _AdminPollCard extends StatelessWidget {
   const _AdminPollCard({
     required this.poll,
-    required this.onEditTap,
-    required this.onDeleteTap,
+    this.maxVotes = 0,
     required this.onDetailTap,
+    this.onDeactivateTap,
   });
 
   final Poll poll;
-  final VoidCallback onEditTap;
-  final VoidCallback onDeleteTap;
+  final int maxVotes;
   final VoidCallback onDetailTap;
+  final VoidCallback? onDeactivateTap;
 
   @override
   Widget build(BuildContext context) {
+    final progressValue = maxVotes <= 0
+        ? (poll.totalVotes > 0 ? 1.0 : 0.0)
+        : (poll.totalVotes / maxVotes).clamp(0.0, 1.0);
+
     return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(20),
+      color: Colors.transparent,
       child: InkWell(
         onTap: onDetailTap,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: AppTheme.outlineVariantColor.withValues(alpha: 0.6),
+              color: AppTheme.outlineVariantColor.withValues(alpha: 0.55),
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.035),
+                blurRadius: 14,
+                offset: const Offset(0, 7),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1142,8 +1493,8 @@ class _AdminPollCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    width: 44,
-                    height: 44,
+                    width: 42,
+                    height: 42,
                     decoration: BoxDecoration(
                       color: AppTheme.primaryColor.withValues(alpha: 0.10),
                       borderRadius: BorderRadius.circular(14),
@@ -1153,14 +1504,16 @@ class _AdminPollCard extends StatelessWidget {
                       color: poll.isActive
                           ? AppTheme.primaryColor
                           : AppTheme.statusHigh,
+                      size: 22,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Expanded(
                               child: Text(
@@ -1169,22 +1522,77 @@ class _AdminPollCard extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                   color: AppTheme.textPrimaryColor,
-                                  fontSize: 15,
+                                  fontSize: 14,
                                   fontWeight: FontWeight.w700,
-                                  height: 1.35,
+                                  height: 1.25,
                                 ),
                               ),
                             ),
-                            _PollStatusBadge(isActive: poll.isActive),
+                            const SizedBox(width: 10),
+                            _PollStatusBadge(
+                              isActive: poll.isActive,
+                              label: poll.isActive ? 'Aktif' : 'Nonaktif',
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            const Expanded(
+                              child: Text(
+                                'Progress pemilih',
+                                style: TextStyle(
+                                  color: AppTheme.textSecondaryColor,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              '${poll.totalVotes} suara',
+                              style: const TextStyle(
+                                color: AppTheme.textSecondaryColor,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ],
                         ),
                         const SizedBox(height: 6),
-                        Text(
-                          '${poll.options.length} opsi • ${poll.totalVotes} suara',
-                          style: const TextStyle(
-                            color: AppTheme.textSecondaryColor,
-                            fontSize: 12,
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(999),
+                          child: LinearProgressIndicator(
+                            value: progressValue,
+                            minHeight: 6,
+                            backgroundColor: AppTheme.primaryColor.withValues(
+                              alpha: 0.10,
+                            ),
+                            valueColor: const AlwaysStoppedAnimation<Color>(
+                              AppTheme.primaryColor,
+                            ),
                           ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.schedule_rounded,
+                              size: 13,
+                              color: AppTheme.textSecondaryColor,
+                            ),
+                            const SizedBox(width: 5),
+                            Expanded(
+                              child: Text(
+                                'Berakhir ${_formatPollDeadline(poll)}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: AppTheme.textSecondaryColor,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -1192,25 +1600,67 @@ class _AdminPollCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 14),
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
+              Row(
                 children: [
-                  OutlinedButton(
-                    onPressed: onDetailTap,
-                    child: const Text('Lihat Detail'),
-                  ),
-                  OutlinedButton(
-                    onPressed: onEditTap,
-                    child: const Text('Edit'),
-                  ),
-                  OutlinedButton(
-                    onPressed: onDeleteTap,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppTheme.statusHigh,
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: onDetailTap,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppTheme.primaryColor,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        side: BorderSide(
+                          color: AppTheme.outlineVariantColor.withValues(
+                            alpha: 0.7,
+                          ),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: const Text(
+                        'Lihat Detail',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
-                    child: const Text('Hapus'),
                   ),
+                  if (poll.isActive && onDeactivateTap != null) ...[
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: onDeactivateTap,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppTheme.statusHigh,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          side: BorderSide(
+                            color: AppTheme.statusHigh.withValues(alpha: 0.25),
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: const Text(
+                          'Nonaktifkan',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ],
@@ -1262,23 +1712,24 @@ class _PollSectionErrorState extends StatelessWidget {
 }
 
 class _PollStatusBadge extends StatelessWidget {
-  const _PollStatusBadge({required this.isActive});
+  const _PollStatusBadge({required this.isActive, this.label});
 
   final bool isActive;
+  final String? label;
 
   @override
   Widget build(BuildContext context) {
     final color = isActive ? AppTheme.primaryColor : AppTheme.statusHigh;
-    final label = isActive ? 'Aktif' : 'Ditutup';
+    final resolvedLabel = label ?? (isActive ? 'Aktif' : 'Nonaktif');
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
-        label,
+        resolvedLabel,
         style: TextStyle(
           color: color,
           fontSize: 10,
@@ -1425,50 +1876,50 @@ class _QuickActionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(22),
       child: InkWell(
         onTap: data.onTap,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(22),
         child: Container(
-          width: 150,
-          height: 92,
-          padding: const EdgeInsets.all(14),
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(22),
             border: Border.all(
               color: AppTheme.outlineVariantColor.withValues(alpha: 0.7),
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
-                blurRadius: 12,
-                offset: const Offset(0, 5),
+                color: Colors.black.withValues(alpha: 0.035),
+                blurRadius: 14,
+                offset: const Offset(0, 7),
               ),
             ],
           ),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
-                width: 42,
-                height: 42,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
+                  color: AppTheme.primaryColor.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(data.icon, color: AppTheme.primaryColor, size: 24),
+                child: Icon(data.icon, color: AppTheme.primaryColor, size: 26),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   data.label,
-                  maxLines: 2,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: AppTheme.textPrimaryColor,
-                    fontSize: 12,
+                    fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    height: 1.25,
+                    height: 1.2,
                   ),
                 ),
               ),
@@ -1673,16 +2124,12 @@ class _FilterDropdown extends StatelessWidget {
 class _AdminReportCard extends StatelessWidget {
   final Report report;
   final IconData categoryIcon;
-  final String Function(DateTime) formatTimeAgo;
-  final VoidCallback onDetailTap;
-  final VoidCallback onFollowUpTap;
+  final VoidCallback onTap;
 
   const _AdminReportCard({
     required this.report,
     required this.categoryIcon,
-    required this.formatTimeAgo,
-    required this.onDetailTap,
-    required this.onFollowUpTap,
+    required this.onTap,
   });
 
   bool get _hasPhoto =>
@@ -1690,167 +2137,125 @@ class _AdminReportCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isResolved = report.status == ReportStatus.resolved;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: AppTheme.outlineVariantColor.withValues(alpha: 0.65),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.035),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final isWide = constraints.maxWidth > 520;
-
-          final preview = ClipRRect(
-            borderRadius: BorderRadius.circular(18),
-            child: SizedBox(
-              width: isWide ? 116 : 92,
-              height: isWide ? 116 : 92,
-              child: _hasPhoto
-                  ? Image.network(
-                      report.reportPhotoUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return _ReportFallbackIcon(icon: categoryIcon);
-                      },
-                    )
-                  : _ReportFallbackIcon(icon: categoryIcon),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(
+              color: AppTheme.outlineVariantColor.withValues(alpha: 0.65),
             ),
-          );
-
-          final content = Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  PriorityBadge(priority: report.priority),
-                  StatusBadge(status: report.status),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Text(
-                report.title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: AppTheme.textPrimaryColor,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  height: 1.25,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                report.description,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: AppTheme.textSecondaryColor,
-                  fontSize: 12,
-                  height: 1.45,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 10,
-                runSpacing: 8,
-                children: [
-                  _MetaPill(
-                    icon: Icons.location_on_outlined,
-                    label: report.locationLabel ?? 'Lokasi belum ditentukan',
-                  ),
-                  _MetaPill(
-                    icon: Icons.schedule_rounded,
-                    label: formatTimeAgo(report.createdAt),
-                  ),
-                  _MetaPill(
-                    icon: Icons.thumb_up_rounded,
-                    label: '${report.votesCount} dukungan',
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: onDetailTap,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppTheme.textPrimaryColor,
-                        side: BorderSide(
-                          color: AppTheme.outlineVariantColor.withValues(
-                            alpha: 0.9,
-                          ),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 11),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      child: const Text(
-                        'Detail',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: onFollowUpTap,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryColor,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(vertical: 11),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      child: Text(
-                        isResolved ? 'Selesai' : 'Tindak Lanjut',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.035),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
               ),
             ],
-          );
+          ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isWide = constraints.maxWidth > 520;
+              final preview = ClipRRect(
+                borderRadius: BorderRadius.circular(18),
+                child: SizedBox(
+                  width: isWide ? 112 : 92,
+                  height: isWide ? 112 : 92,
+                  child: _hasPhoto
+                      ? Image.network(
+                          report.reportPhotoUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return _ReportFallbackIcon(icon: categoryIcon);
+                          },
+                        )
+                      : _ReportFallbackIcon(icon: categoryIcon),
+                ),
+              );
 
-          return isWide
-              ? Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    preview,
-                    const SizedBox(width: 14),
-                    Expanded(child: content),
-                  ],
-                )
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [preview, const SizedBox(height: 12), content],
-                );
-        },
+              final content = Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          report.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: AppTheme.textPrimaryColor,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            height: 1.25,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      StatusBadge(status: report.status),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      PriorityBadge(priority: report.priority),
+                      _MetaPill(
+                        icon: Icons.location_on_outlined,
+                        label:
+                            report.locationLabel ?? 'Lokasi belum ditentukan',
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.schedule_rounded,
+                        size: 13,
+                        color: AppTheme.textSecondaryColor,
+                      ),
+                      const SizedBox(width: 5),
+                      Expanded(
+                        child: Text(
+                          _formatWibDate(report.createdAt),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: AppTheme.textSecondaryColor,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+
+              return isWide
+                  ? Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        preview,
+                        const SizedBox(width: 14),
+                        Expanded(child: content),
+                      ],
+                    )
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [preview, const SizedBox(height: 12), content],
+                    );
+            },
+          ),
+        ),
       ),
     );
   }
@@ -2282,118 +2687,202 @@ class _AnnouncementSectionErrorState extends StatelessWidget {
 
 class _AdminAnnouncementCard extends StatelessWidget {
   final Announcement announcement;
-  final String Function(DateTime) formatTimeAgo;
+  final bool showLatestBadge;
   final VoidCallback onEditTap;
   final VoidCallback onDeleteTap;
 
   const _AdminAnnouncementCard({
     required this.announcement,
-    required this.formatTimeAgo,
+    this.showLatestBadge = false,
     required this.onEditTap,
     required this.onDeleteTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppTheme.outlineVariantColor.withValues(alpha: 0.55),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: null,
+        borderRadius: BorderRadius.circular(24),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: AppTheme.outlineVariantColor.withValues(alpha: 0.55),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.035),
+                blurRadius: 16,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(
-                  Icons.campaign_rounded,
-                  color: AppTheme.primaryColor,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      announcement.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppTheme.textPrimaryColor,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        height: 1.25,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      announcement.content,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppTheme.textSecondaryColor,
-                        fontSize: 12,
-                        height: 1.45,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Column(
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  IconButton(
-                    onPressed: onEditTap,
-                    icon: const Icon(Icons.edit_outlined),
-                    tooltip: 'Edit',
-                    style: IconButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: AppTheme.primaryColor,
-                      shape: const CircleBorder(),
+                  Container(
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryColor.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(
+                      Icons.campaign_rounded,
+                      color: AppTheme.primaryColor,
+                      size: 24,
                     ),
                   ),
-                  IconButton(
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                announcement.title,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: AppTheme.textPrimaryColor,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  height: 1.25,
+                                ),
+                              ),
+                            ),
+                            if (showLatestBadge) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.primaryColor.withValues(
+                                    alpha: 0.10,
+                                  ),
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                child: const Text(
+                                  'Terbaru',
+                                  style: TextStyle(
+                                    color: AppTheme.primaryColor,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          announcement.content,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: AppTheme.textSecondaryColor,
+                            fontSize: 12,
+                            height: 1.45,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  const Icon(
+                    Icons.schedule_rounded,
+                    size: 14,
+                    color: AppTheme.textSecondaryColor,
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    _formatWibDate(announcement.createdAt),
+                    style: const TextStyle(
+                      color: AppTheme.textSecondaryColor,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  OutlinedButton(
+                    onPressed: onEditTap,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppTheme.primaryColor,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 9,
+                      ),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      side: BorderSide(
+                        color: AppTheme.outlineVariantColor.withValues(
+                          alpha: 0.7,
+                        ),
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: const Text(
+                      'Edit',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  OutlinedButton(
                     onPressed: onDeleteTap,
-                    icon: const Icon(Icons.delete_outline_rounded),
-                    tooltip: 'Hapus',
-                    style: IconButton.styleFrom(
-                      backgroundColor: Colors.white,
+                    style: OutlinedButton.styleFrom(
                       foregroundColor: AppTheme.statusHigh,
-                      shape: const CircleBorder(),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 9,
+                      ),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      side: BorderSide(
+                        color: AppTheme.statusHigh.withValues(alpha: 0.35),
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: const Text(
+                      'Hapus',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ],
               ),
             ],
           ),
-          const SizedBox(height: 14),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              _ActivityChip(label: announcement.authorName),
-              if (announcement.rtRw.isNotEmpty)
-                _ActivityChip(label: 'RT/RW ${announcement.rtRw}'),
-              _ActivityChip(label: formatTimeAgo(announcement.createdAt)),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }
