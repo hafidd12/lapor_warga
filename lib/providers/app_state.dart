@@ -336,6 +336,36 @@ class AppState with ChangeNotifier {
     }
   }
 
+  Future<void> refreshActivities() async {
+    if (!SupabaseService.isInitialized) {
+      _activities.clear();
+      notifyListeners();
+      return;
+    }
+
+    final currentUser = _currentUser;
+    if (currentUser == null || currentUser.role != UserRole.admin) {
+      _activities.clear();
+      notifyListeners();
+      return;
+    }
+
+    try {
+      final activities = await _activeBackendService.fetchActivities();
+      _activities
+        ..clear()
+        ..addAll(activities);
+      notifyListeners();
+    } catch (error, stackTrace) {
+      debugPrint(
+        '[AppState][activity] refreshActivities error=${error.runtimeType}: $error',
+      );
+      debugPrint(stackTrace.toString());
+      _activities.clear();
+      notifyListeners();
+    }
+  }
+
   Future<void> refreshAnnouncements() async {
     if (!SupabaseService.isInitialized) {
       _setAnnouncementLoadState(isLoading: false, error: null);
@@ -592,6 +622,7 @@ class AppState with ChangeNotifier {
         '[AppState][verification] loginWithSupabase currentUser.rtRw=${_currentUser?.rtRw ?? "null"}',
       );
       await refreshRemoteData();
+      await refreshActivities();
       await refreshAnnouncements();
       if (user.role == UserRole.admin) {
         await refreshAdminReports();
@@ -659,6 +690,7 @@ class AppState with ChangeNotifier {
         '[AppState][verification] restoreSession currentUser.rtRw=${_currentUser?.rtRw ?? "null"}',
       );
       await refreshRemoteData();
+      await refreshActivities();
       await refreshAnnouncements();
       if (user.role == UserRole.admin) {
         await refreshAdminReports();
@@ -1251,14 +1283,14 @@ class AppState with ChangeNotifier {
   // RT/Admin - Warga Management Actions
   // ============================================
 
-  void verifyWarga(String userId) {
-    final index = _registeredUsers.indexWhere((u) => u.id == userId);
-    if (index != -1) {
-      final user = _registeredUsers[index];
-      _registeredUsers[index] = user.copyWith(
-        verificationStatus: VerificationStatus.verified,
-      );
+  Future<void> verifyWarga(String userId) async {
+    final user = await _resolveWargaForVerification(userId);
+    if (user == null) {
+      throw StateError('Data warga tidak ditemukan.');
+    }
 
+    if (!SupabaseService.isInitialized) {
+      _updateLocalWargaVerificationStatus(userId, VerificationStatus.verified);
       _activities.insert(
         0,
         AdminActivity(
@@ -1266,31 +1298,35 @@ class AppState with ChangeNotifier {
           description: 'Memverifikasi warga baru: ${user.name}',
           type: 'verification',
           createdAt: DateTime.now(),
+          relatedId: userId,
         ),
       );
-
       notifyListeners();
-
-      _runRemote(() async {
-        await _activeBackendService.setWargaVerification(
-          userId: userId,
-          status: VerificationStatus.verified,
-          currentUser: _currentUser!,
-          wargaName: user.name,
-        );
-        await refreshRemoteData();
-      });
+      return;
     }
+
+    debugPrint(
+      '[AppState][verification] verifyWarga start userId="$userId" currentUserId="${_currentUser?.id ?? "null"}" currentUserRole="${_currentUser?.role.name ?? "null"}" wargaName="${user.name}"',
+    );
+    await _activeBackendService.setWargaVerification(
+      userId: userId,
+      status: VerificationStatus.verified,
+      currentUser: _currentUser!,
+      wargaName: user.name,
+    );
+    _updateLocalWargaVerificationStatus(userId, VerificationStatus.verified);
+    await refreshRemoteData();
+    await refreshVerificationUsers();
   }
 
-  void rejectWarga(String userId) {
-    final index = _registeredUsers.indexWhere((u) => u.id == userId);
-    if (index != -1) {
-      final user = _registeredUsers[index];
-      _registeredUsers[index] = user.copyWith(
-        verificationStatus: VerificationStatus.rejected,
-      );
+  Future<void> rejectWarga(String userId) async {
+    final user = await _resolveWargaForVerification(userId);
+    if (user == null) {
+      throw StateError('Data warga tidak ditemukan.');
+    }
 
+    if (!SupabaseService.isInitialized) {
+      _updateLocalWargaVerificationStatus(userId, VerificationStatus.rejected);
       _activities.insert(
         0,
         AdminActivity(
@@ -1298,50 +1334,76 @@ class AppState with ChangeNotifier {
           description: 'Menolak pendaftaran warga: ${user.name}',
           type: 'verification',
           createdAt: DateTime.now(),
+          relatedId: userId,
         ),
       );
-
       notifyListeners();
+      return;
+    }
 
-      _runRemote(() async {
-        await _activeBackendService.setWargaVerification(
-          userId: userId,
-          status: VerificationStatus.rejected,
-          currentUser: _currentUser!,
-          wargaName: user.name,
-        );
-        await refreshRemoteData();
-      });
+    debugPrint(
+      '[AppState][verification] rejectWarga start userId="$userId" currentUserId="${_currentUser?.id ?? "null"}" currentUserRole="${_currentUser?.role.name ?? "null"}" wargaName="${user.name}"',
+    );
+    await _activeBackendService.setWargaVerification(
+      userId: userId,
+      status: VerificationStatus.rejected,
+      currentUser: _currentUser!,
+      wargaName: user.name,
+    );
+    _updateLocalWargaVerificationStatus(userId, VerificationStatus.rejected);
+    await refreshRemoteData();
+    await refreshVerificationUsers();
+  }
+
+  Future<void> removeWarga(String userId) async {
+    final user = await _resolveWargaForVerification(userId);
+    if (user == null) {
+      throw StateError('Data warga tidak ditemukan.');
+    }
+
+    await _activeBackendService.removeWarga(
+      userId: userId,
+      currentUser: _currentUser!,
+      wargaName: user.name,
+    );
+    _registeredUsers.removeWhere((warga) => warga.id == userId);
+    notifyListeners();
+    await refreshRemoteData();
+    await refreshVerificationUsers();
+  }
+
+  Future<AppUser?> _resolveWargaForVerification(String userId) async {
+    final localIndex = _registeredUsers.indexWhere((user) => user.id == userId);
+    if (localIndex != -1) {
+      return _registeredUsers[localIndex];
+    }
+
+    if (!SupabaseService.isInitialized) {
+      return null;
+    }
+
+    try {
+      return await _activeVerificationService.getWargaById(userId);
+    } catch (error, stackTrace) {
+      debugPrint(
+        '[AppState][verification] resolveWargaForVerification error=${error.runtimeType}: $error',
+      );
+      debugPrint(stackTrace.toString());
+      return null;
     }
   }
 
-  void removeWarga(String userId) {
-    final index = _registeredUsers.indexWhere((u) => u.id == userId);
-    if (index != -1) {
-      final user = _registeredUsers[index];
-      _registeredUsers.removeAt(index);
+  void _updateLocalWargaVerificationStatus(
+    String userId,
+    VerificationStatus status,
+  ) {
+    final index = _registeredUsers.indexWhere((user) => user.id == userId);
+    if (index == -1) return;
 
-      _activities.insert(
-        0,
-        AdminActivity(
-          id: 'act-${DateTime.now().millisecondsSinceEpoch}',
-          description: 'Mengeluarkan warga: ${user.name}',
-          type: 'warga_removed',
-          createdAt: DateTime.now(),
-        ),
-      );
-
-      notifyListeners();
-
-      _runRemote(() async {
-        await _activeBackendService.removeWarga(
-          userId: userId,
-          currentUser: _currentUser!,
-          wargaName: user.name,
-        );
-        await refreshRemoteData();
-      });
-    }
+    _registeredUsers[index] = _registeredUsers[index].copyWith(
+      verificationStatus: status,
+    );
+    notifyListeners();
   }
 
   // ============================================
@@ -1438,12 +1500,17 @@ class AppState with ChangeNotifier {
     unawaited(submitVote(pollId: pollId, optionLabel: option));
   }
 
+  bool _isRtUser(AppUser? user) {
+    final jabatan = user?.jabatan?.toUpperCase() ?? '';
+    return user?.role == UserRole.admin && jabatan.contains('RT');
+  }
+
   Future<void> submitVote({
     required String pollId,
     required String optionLabel,
   }) async {
     final currentUser = _currentUser;
-    if (currentUser == null) return;
+    if (currentUser == null || _isRtUser(currentUser)) return;
 
     final pollIndex = _polls.indexWhere((poll) => poll.id == pollId);
     if (pollIndex == -1) return;
@@ -1717,32 +1784,29 @@ class AppState with ChangeNotifier {
     }
 
     final now = DateTime.now();
-    final tempOptionIds = List<String>.generate(
-      normalizedOptions.length,
-      (index) => 'temp-option-${now.microsecondsSinceEpoch}-$index',
-    );
-    final newPoll = Poll(
+    final localPoll = Poll(
       id: 'poll-${now.microsecondsSinceEpoch}',
       question: normalizedQuestion,
-      options: normalizedOptions,
-      optionIds: tempOptionIds,
-      votes: {for (final opt in normalizedOptions) opt: 0},
-      userVotes: {},
+      options: List<String>.from(normalizedOptions),
+      optionIds: List<String>.generate(
+        normalizedOptions.length,
+        (index) => 'option-${now.microsecondsSinceEpoch}-$index',
+      ),
+      votes: {for (final option in normalizedOptions) option: 0},
+      userVotes: const {},
       isActive: true,
     );
-    _polls.insert(0, newPoll);
-
+    _polls.insert(0, localPoll);
     _activities.insert(
       0,
       AdminActivity(
-        id: 'act-${now.microsecondsSinceEpoch + 1}',
+        id: 'act-${now.microsecondsSinceEpoch}',
         description: 'Membuat voting: $normalizedQuestion',
         type: 'poll',
         createdAt: now,
-        relatedId: newPoll.id,
+        relatedId: localPoll.id,
       ),
     );
-
     notifyListeners();
 
     if (!SupabaseService.isInitialized) {
@@ -1750,17 +1814,25 @@ class AppState with ChangeNotifier {
     }
 
     try {
-      await _activeBackendService.createPoll(
+      final createdPoll = await _activeBackendService.createPoll(
         question: normalizedQuestion,
         options: normalizedOptions,
         currentUser: currentUser,
       );
+      final localIndex = _polls.indexWhere((poll) => poll.id == createdPoll.id);
+      if (localIndex == -1) {
+        _polls[0] = createdPoll;
+      } else {
+        _polls[localIndex] = createdPoll;
+      }
+      notifyListeners();
       await refreshRemoteData();
     } catch (error, stackTrace) {
       debugPrint(
         '[AppState][poll] createPoll error=${error.runtimeType}: $error',
       );
       debugPrint(stackTrace.toString());
+      rethrow;
     }
   }
 
@@ -1812,6 +1884,7 @@ class AppState with ChangeNotifier {
         '[AppState][poll] updatePoll error=${error.runtimeType}: $error',
       );
       debugPrint(stackTrace.toString());
+      rethrow;
     }
   }
 

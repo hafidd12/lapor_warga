@@ -19,6 +19,7 @@ class _BuatVotingAdminScreenState extends State<BuatVotingAdminScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _questionController;
   late final List<TextEditingController> _optionControllers;
+  late final List<FocusNode> _optionFocusNodes;
   bool _isActive = true;
   bool _isSubmitting = false;
 
@@ -30,17 +31,23 @@ class _BuatVotingAdminScreenState extends State<BuatVotingAdminScreen> {
     _questionController = TextEditingController(
       text: widget.poll?.question ?? '',
     );
-    final initialOptions =
-        widget.poll?.options ?? const ['Pilihan A', 'Pilihan B'];
+    final initialOptions = widget.poll?.options ?? const ['', ''];
     _optionControllers = initialOptions
         .map((option) => TextEditingController(text: option))
         .toList();
+    _optionFocusNodes = List.generate(
+      _optionControllers.length,
+      (_) => FocusNode(),
+    );
     if (_optionControllers.length < 2) {
       _optionControllers.addAll(
         List.generate(
           2 - _optionControllers.length,
           (_) => TextEditingController(),
         ),
+      );
+      _optionFocusNodes.addAll(
+        List.generate(2 - _optionFocusNodes.length, (_) => FocusNode()),
       );
     }
     _isActive = widget.poll?.isActive ?? true;
@@ -52,6 +59,9 @@ class _BuatVotingAdminScreenState extends State<BuatVotingAdminScreen> {
     for (final controller in _optionControllers) {
       controller.dispose();
     }
+    for (final focusNode in _optionFocusNodes) {
+      focusNode.dispose();
+    }
     super.dispose();
   }
 
@@ -59,6 +69,7 @@ class _BuatVotingAdminScreenState extends State<BuatVotingAdminScreen> {
     if (_optionControllers.length < 5) {
       setState(() {
         _optionControllers.add(TextEditingController());
+        _optionFocusNodes.add(FocusNode());
       });
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -73,7 +84,9 @@ class _BuatVotingAdminScreenState extends State<BuatVotingAdminScreen> {
     if (_optionControllers.length > 2) {
       setState(() {
         final removed = _optionControllers.removeAt(index);
+        final removedFocusNode = _optionFocusNodes.removeAt(index);
         removed.dispose();
+        removedFocusNode.dispose();
       });
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -82,7 +95,49 @@ class _BuatVotingAdminScreenState extends State<BuatVotingAdminScreen> {
     }
   }
 
+  void _focusOptionField(int index) {
+    if (index < 0 || index >= _optionFocusNodes.length) return;
+    _optionFocusNodes[index].requestFocus();
+  }
+
+  bool _validateOptionValues() {
+    final normalizedOptions = _optionControllers
+        .map((controller) => controller.text.trim())
+        .toList();
+
+    for (var index = 0; index < normalizedOptions.length; index++) {
+      if (normalizedOptions[index].isEmpty) {
+        _focusOptionField(index);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Semua pilihan voting wajib diisi.')),
+        );
+        return false;
+      }
+    }
+
+    final seen = <String, int>{};
+    for (var index = 0; index < normalizedOptions.length; index++) {
+      final normalized = normalizedOptions[index].toLowerCase();
+      final previousIndex = seen[normalized];
+      if (previousIndex != null) {
+        _focusOptionField(index);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Pilihan voting tidak boleh sama. Ubah salah satu pilihan yang duplikat.',
+            ),
+          ),
+        );
+        return false;
+      }
+      seen[normalized] = index;
+    }
+
+    return true;
+  }
+
   Future<void> _handleSubmit() async {
+    if (_isSubmitting) return;
     if (!_formKey.currentState!.validate()) return;
 
     final question = _questionController.text.trim();
@@ -97,6 +152,8 @@ class _BuatVotingAdminScreenState extends State<BuatVotingAdminScreen> {
       );
       return;
     }
+
+    if (!_validateOptionValues()) return;
 
     final state = context.read<AppState>();
     setState(() {
@@ -116,7 +173,15 @@ class _BuatVotingAdminScreenState extends State<BuatVotingAdminScreen> {
       }
 
       if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Voting berhasil dipublikasikan.')),
+      );
       Navigator.of(context).pop(true);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal mempublikasikan voting: $error')),
+      );
     } finally {
       if (mounted) {
         setState(() {
@@ -129,8 +194,10 @@ class _BuatVotingAdminScreenState extends State<BuatVotingAdminScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final title = _isEditing ? 'Edit Voting' : 'Buat Voting Komunitas';
+    final title = _isEditing ? 'Edit Voting' : 'Buat Voting';
     final submitText = _isEditing ? 'Simpan Perubahan' : 'Publikasikan Voting';
+    final optionCount = _optionControllers.length;
+    final canAddOption = optionCount < 5;
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
@@ -220,7 +287,7 @@ class _BuatVotingAdminScreenState extends State<BuatVotingAdminScreen> {
                     ),
                   ),
                   TextButton.icon(
-                    onPressed: _addOption,
+                    onPressed: canAddOption ? _addOption : null,
                     icon: const Icon(Icons.add, size: 18),
                     label: const Text(
                       'Tambah Opsi',
@@ -231,6 +298,14 @@ class _BuatVotingAdminScreenState extends State<BuatVotingAdminScreen> {
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '$optionCount / 5 pilihan',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: AppTheme.textSecondaryColor,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
               const SizedBox(height: 8),
               ListView.builder(
@@ -245,8 +320,13 @@ class _BuatVotingAdminScreenState extends State<BuatVotingAdminScreen> {
                         Expanded(
                           child: TextFormField(
                             controller: _optionControllers[index],
+                            focusNode: _optionFocusNodes[index],
                             decoration: InputDecoration(
-                              hintText: 'Pilihan ${index + 1}',
+                              hintText: switch (index) {
+                                0 => 'Masukkan pilihan pertama',
+                                1 => 'Masukkan pilihan kedua',
+                                _ => 'Masukkan pilihan ${index + 1}',
+                              },
                               fillColor: Colors.white,
                               filled: true,
                               contentPadding: const EdgeInsets.symmetric(
@@ -276,13 +356,14 @@ class _BuatVotingAdminScreenState extends State<BuatVotingAdminScreen> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        IconButton(
-                          icon: const Icon(
-                            Icons.delete_outline,
-                            color: Colors.red,
+                        if (index >= 2)
+                          IconButton(
+                            icon: const Icon(
+                              Icons.delete_outline,
+                              color: Colors.red,
+                            ),
+                            onPressed: () => _removeOption(index),
                           ),
-                          onPressed: () => _removeOption(index),
-                        ),
                       ],
                     ),
                   );

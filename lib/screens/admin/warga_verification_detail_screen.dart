@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../models/models.dart';
+import '../../providers/app_state.dart';
 import '../../services/warga_verification_service.dart';
 import '../../theme.dart';
 
@@ -44,10 +46,11 @@ class _WargaVerificationDetailScreenState
 
     setState(() => _isProcessing = true);
     try {
+      final state = context.read<AppState>();
       if (approve) {
-        await _service.approveWarga(user.id);
+        await state.verifyWarga(user.id);
       } else {
-        await _service.rejectWarga(user.id);
+        await state.rejectWarga(user.id);
       }
 
       if (!mounted) return;
@@ -58,7 +61,9 @@ class _WargaVerificationDetailScreenState
                 ? '${user.name} berhasil disetujui.'
                 : '${user.name} berhasil ditolak.',
           ),
-          backgroundColor: approve ? AppTheme.primaryColor : AppTheme.statusHigh,
+          backgroundColor: approve
+              ? AppTheme.primaryColor
+              : AppTheme.statusHigh,
         ),
       );
       Navigator.of(context).pop(true);
@@ -124,9 +129,7 @@ class _WargaVerificationDetailScreenState
 
           final user = snapshot.data;
           if (user == null) {
-            return const _ErrorState(
-              message: 'Data warga tidak ditemukan.',
-            );
+            return const _ErrorState(message: 'Data warga tidak ditemukan.');
           }
 
           return FutureBuilder<String?>(
@@ -154,28 +157,29 @@ class _WargaVerificationDetailScreenState
                             width: double.infinity,
                             height: 240,
                             color: AppTheme.surfaceContainerLow,
-                            child: ktpSnapshot.connectionState ==
+                            child:
+                                ktpSnapshot.connectionState ==
                                     ConnectionState.waiting
                                 ? const Center(
                                     child: CircularProgressIndicator(),
                                   )
                                 : ktpUrl == null || ktpUrl.isEmpty
-                                    ? const Center(
-                                        child: Text(
-                                          'Foto KTP tidak tersedia',
-                                          style: TextStyle(
-                                            color: AppTheme.textSecondaryColor,
-                                          ),
-                                        ),
-                                      )
-                                    : Center(
-                                        child: Image.network(
-                                          ktpUrl,
-                                          width: double.infinity,
-                                          height: double.infinity,
-                                          fit: BoxFit.contain,
-                                          errorBuilder:
-                                              (context, error, stackTrace) {
+                                ? const Center(
+                                    child: Text(
+                                      'Foto KTP tidak tersedia',
+                                      style: TextStyle(
+                                        color: AppTheme.textSecondaryColor,
+                                      ),
+                                    ),
+                                  )
+                                : Center(
+                                    child: Image.network(
+                                      ktpUrl,
+                                      width: double.infinity,
+                                      height: double.infinity,
+                                      fit: BoxFit.contain,
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
                                             return const Center(
                                               child: Text(
                                                 'Foto KTP gagal dimuat',
@@ -186,8 +190,8 @@ class _WargaVerificationDetailScreenState
                                               ),
                                             );
                                           },
-                                        ),
-                                      ),
+                                    ),
+                                  ),
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -212,18 +216,9 @@ class _WargaVerificationDetailScreenState
                           label: 'No. KTP',
                           value: user.ktpNumber ?? '-',
                         ),
-                        _InfoRow(
-                          label: 'RT/RW',
-                          value: user.rtRw ?? '-',
-                        ),
-                        _InfoRow(
-                          label: 'No. HP',
-                          value: user.phone ?? '-',
-                        ),
-                        _InfoRow(
-                          label: 'Alamat',
-                          value: user.address ?? '-',
-                        ),
+                        _InfoRow(label: 'RT/RW', value: user.rtRw ?? '-'),
+                        _InfoRow(label: 'No. HP', value: user.phone ?? '-'),
+                        _InfoRow(label: 'Alamat', value: user.address ?? '-'),
                         _InfoRow(
                           label: 'Kode Reg.',
                           value: user.registrationCode ?? '-',
@@ -249,8 +244,7 @@ class _WargaVerificationDetailScreenState
                               side: const BorderSide(
                                 color: AppTheme.statusHigh,
                               ),
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 14),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14),
                               ),
@@ -271,8 +265,7 @@ class _WargaVerificationDetailScreenState
                               backgroundColor: AppTheme.primaryColor,
                               foregroundColor: Colors.white,
                               elevation: 0,
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 14),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14),
                               ),
@@ -390,7 +383,10 @@ class _ProfileCard extends StatelessWidget {
                   spacing: 10,
                   runSpacing: 8,
                   children: [
-                    _MetaChip(label: user.rtRw ?? '-', icon: Icons.map_outlined),
+                    _MetaChip(
+                      label: user.rtRw ?? '-',
+                      icon: Icons.map_outlined,
+                    ),
                     _MetaChip(
                       label: formatDate(user.registeredAt),
                       icon: Icons.schedule_outlined,
@@ -466,11 +462,10 @@ class _InfoRow extends StatelessWidget {
               ),
             ),
           ),
-          const Text(': ',
-              style: TextStyle(
-                fontSize: 12,
-                color: AppTheme.textSecondaryColor,
-              )),
+          const Text(
+            ': ',
+            style: TextStyle(fontSize: 12, color: AppTheme.textSecondaryColor),
+          ),
           Expanded(
             child: Text(
               value,

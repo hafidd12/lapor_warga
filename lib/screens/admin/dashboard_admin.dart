@@ -8,7 +8,6 @@ import '../../widgets/dashboard_top_section.dart';
 import '../../widgets/status_badge.dart';
 import 'buat_pengumuman_admin.dart';
 import 'buat_voting_admin.dart';
-import 'daftar_warga_admin.dart';
 import 'detail_laporan_admin.dart';
 import '../shared/detail_voting_screen.dart';
 
@@ -54,7 +53,14 @@ String _formatPollDeadline(Poll poll) {
 }
 
 class DashboardAdminScreen extends StatefulWidget {
-  const DashboardAdminScreen({super.key});
+  const DashboardAdminScreen({
+    super.key,
+    this.onGoToPendingWarga,
+    this.onGoToApprovedWarga,
+  });
+
+  final VoidCallback? onGoToPendingWarga;
+  final VoidCallback? onGoToApprovedWarga;
 
   @override
   State<DashboardAdminScreen> createState() => _DashboardAdminScreenState();
@@ -211,13 +217,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
     }
   }
 
-  void _showAllAnnouncementsSheet(
-    BuildContext context, {
-    required List<Announcement> announcements,
-  }) {
-    final sortedAnnouncements = [...announcements]
-      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-
+  void _showAllAnnouncementsSheet(BuildContext context) {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -229,59 +229,85 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
           minChildSize: 0.45,
           maxChildSize: 0.95,
           builder: (context, scrollController) {
-            return Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 12),
-                  Center(
-                    child: Container(
-                      width: 42,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: AppTheme.outlineVariantColor,
-                        borderRadius: BorderRadius.circular(999),
-                      ),
+            return Consumer<AppState>(
+              builder: (context, state, _) {
+                final sortedAnnouncements = [...state.announcements]
+                  ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+                return Container(
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(28),
                     ),
                   ),
-                  const Padding(
-                    padding: EdgeInsets.fromLTRB(20, 18, 20, 12),
-                    child: Text(
-                      'Semua Pengumuman',
-                      style: TextStyle(
-                        color: AppTheme.textPrimaryColor,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: ListView.separated(
-                      controller: scrollController,
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                      itemCount: sortedAnnouncements.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 12),
-                      itemBuilder: (context, index) {
-                        final announcement = sortedAnnouncements[index];
-                        return _AdminAnnouncementCard(
-                          announcement: announcement,
-                          onEditTap: () => _openAnnouncementForm(
-                            context,
-                            announcement: announcement,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 12),
+                      Center(
+                        child: Container(
+                          width: 42,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: AppTheme.outlineVariantColor,
+                            borderRadius: BorderRadius.circular(999),
                           ),
-                          onDeleteTap: () =>
-                              _confirmDeleteAnnouncement(context, announcement),
-                          showLatestBadge: false,
-                        );
-                      },
-                    ),
+                        ),
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.fromLTRB(20, 18, 20, 12),
+                        child: Text(
+                          'Semua Pengumuman',
+                          style: TextStyle(
+                            color: AppTheme.textPrimaryColor,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: sortedAnnouncements.isEmpty
+                            ? const _EmptyDashboardState(
+                                icon: Icons.campaign_rounded,
+                                title: 'Belum ada pengumuman',
+                                subtitle:
+                                    'Pengumuman terbaru akan tampil di sini.',
+                              )
+                            : ListView.separated(
+                                controller: scrollController,
+                                padding: const EdgeInsets.fromLTRB(
+                                  20,
+                                  0,
+                                  20,
+                                  24,
+                                ),
+                                itemCount: sortedAnnouncements.length,
+                                separatorBuilder: (_, _) =>
+                                    const SizedBox(height: 12),
+                                itemBuilder: (context, index) {
+                                  final announcement =
+                                      sortedAnnouncements[index];
+                                  return _AdminAnnouncementCard(
+                                    announcement: announcement,
+                                    onEditTap: () => _openAnnouncementForm(
+                                      context,
+                                      announcement: announcement,
+                                    ),
+                                    onDeleteTap: () =>
+                                        _confirmDeleteAnnouncement(
+                                          context,
+                                          announcement,
+                                        ),
+                                    showLatestBadge: false,
+                                  );
+                                },
+                              ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                );
+              },
             );
           },
         );
@@ -330,6 +356,14 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
     if (result == true) {
       await context.read<AppState>().refreshPolls().catchError((_) {});
     }
+  }
+
+  void _openPendingWargaTab() {
+    widget.onGoToPendingWarga?.call();
+  }
+
+  void _openApprovedWargaTab() {
+    widget.onGoToApprovedWarga?.call();
   }
 
   Future<void> _confirmDeletePoll(BuildContext context, Poll poll) async {
@@ -391,21 +425,10 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
       isActive: false,
       options: poll.options,
     );
+    await context.read<AppState>().refreshPolls().catchError((_) {});
   }
 
-  void _showAllPollsSheet(BuildContext context, {required List<Poll> polls}) {
-    final sortedPolls = [...polls]
-      ..sort((a, b) {
-        if (a.isActive != b.isActive) {
-          return a.isActive ? -1 : 1;
-        }
-        return 0;
-      });
-    final maxVotes = sortedPolls.fold<int>(
-      0,
-      (max, poll) => poll.totalVotes > max ? poll.totalVotes : max,
-    );
-
+  void _showAllPollsSheet(BuildContext context) {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -416,88 +439,110 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
           minChildSize: 0.45,
           maxChildSize: 0.95,
           builder: (context, controller) {
-            return Container(
-              decoration: const BoxDecoration(
-                color: AppTheme.backgroundColor,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-              ),
-              child: SafeArea(
-                top: false,
-                child: Column(
-                  children: [
-                    const SizedBox(height: 12),
-                    Container(
-                      width: 42,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: AppTheme.outlineVariantColor,
-                        borderRadius: BorderRadius.circular(999),
-                      ),
+            return Consumer<AppState>(
+              builder: (context, state, _) {
+                final sortedPolls = [...state.polls]
+                  ..sort((a, b) {
+                    if (a.isActive != b.isActive) {
+                      return a.isActive ? -1 : 1;
+                    }
+                    return 0;
+                  });
+                final maxVotes = sortedPolls.fold<int>(
+                  0,
+                  (max, poll) => poll.totalVotes > max ? poll.totalVotes : max,
+                );
+
+                return Container(
+                  decoration: const BoxDecoration(
+                    color: AppTheme.backgroundColor,
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(28),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-                      child: Row(
-                        children: [
-                          const Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Semua Voting',
-                                  style: TextStyle(
-                                    color: AppTheme.textPrimaryColor,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  'Daftar voting aktif maupun nonaktif.',
-                                  style: TextStyle(
-                                    color: AppTheme.textSecondaryColor,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
+                  ),
+                  child: SafeArea(
+                    top: false,
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 12),
+                        Container(
+                          width: 42,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: AppTheme.outlineVariantColor,
+                            borderRadius: BorderRadius.circular(999),
                           ),
-                          IconButton(
-                            onPressed: () => Navigator.of(sheetContext).pop(),
-                            icon: const Icon(Icons.close_rounded),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: ListView.separated(
-                        controller: controller,
-                        padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-                        itemCount: sortedPolls.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 12),
-                        itemBuilder: (context, index) {
-                          final poll = sortedPolls[index];
-                          return _AdminPollCard(
-                            poll: poll,
-                            maxVotes: maxVotes,
-                            onDetailTap: () {
-                              Navigator.of(sheetContext).push(
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      DetailVotingScreen(pollId: poll.id),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+                          child: Row(
+                            children: [
+                              const Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Semua Voting',
+                                      style: TextStyle(
+                                        color: AppTheme.textPrimaryColor,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    SizedBox(height: 4),
+                                    Text(
+                                      'Daftar voting aktif maupun nonaktif.',
+                                      style: TextStyle(
+                                        color: AppTheme.textSecondaryColor,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
                                 ),
+                              ),
+                              IconButton(
+                                onPressed: () =>
+                                    Navigator.of(sheetContext).pop(),
+                                icon: const Icon(Icons.close_rounded),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Expanded(
+                          child: ListView.separated(
+                            controller: controller,
+                            padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+                            itemCount: sortedPolls.length,
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(height: 12),
+                            itemBuilder: (context, index) {
+                              final poll = sortedPolls[index];
+                              return _AdminPollCard(
+                                poll: poll,
+                                maxVotes: maxVotes,
+                                onDetailTap: () {
+                                  Navigator.of(sheetContext).push(
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          DetailVotingScreen(pollId: poll.id),
+                                    ),
+                                  );
+                                },
+                                onDeactivateTap: poll.isActive
+                                    ? () => _confirmDeactivatePoll(
+                                        sheetContext,
+                                        poll,
+                                      )
+                                    : null,
                               );
                             },
-                            onDeactivateTap: poll.isActive
-                                ? () =>
-                                      _confirmDeactivatePoll(sheetContext, poll)
-                                : null,
-                          );
-                        },
-                      ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
+                  ),
+                );
+              },
             );
           },
         );
@@ -611,9 +656,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
   void _openQuickAction(BuildContext context, String action) {
     switch (action) {
       case 'warga':
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const DaftarWargaAdminScreen()),
-        );
+        _openPendingWargaTab();
         break;
       case 'announcement':
         Navigator.of(context).push(
@@ -643,6 +686,9 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
     final polls = state.polls;
     final isPollsLoading = state.pollsLoading;
     final pollsError = state.pollsError;
+    final userJabatan = user?.jabatan?.toUpperCase();
+    final canAddAnnouncement =
+        user?.role == UserRole.admin && (userJabatan?.contains('RT') ?? false);
 
     final reports = state.adminReports;
     final newCount = reports
@@ -762,10 +808,8 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
                             ),
                           ),
                           TextButton(
-                            onPressed: () => _showAllAnnouncementsSheet(
-                              context,
-                              announcements: announcements,
-                            ),
+                            onPressed: () =>
+                                _showAllAnnouncementsSheet(context),
                             child: const Text('Lihat Semua'),
                           ),
                         ],
@@ -806,17 +850,19 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
                               ),
                               showLatestBadge: true,
                             ),
-                            const SizedBox(height: 12),
-                            SizedBox(
-                              width: double.infinity,
-                              child: FilledButton.icon(
-                                onPressed: () => _openAnnouncementForm(context),
-                                icon: const Icon(Icons.add_rounded),
-                                label: const Text('Tambah Pengumuman'),
-                              ),
-                            ),
                           ],
                         ),
+                      if (canAddAnnouncement) ...[
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton.icon(
+                            onPressed: () => _openAnnouncementForm(context),
+                            icon: const Icon(Icons.add_rounded),
+                            label: const Text('Tambah Pengumuman'),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -871,8 +917,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
                             ),
                           ),
                           TextButton(
-                            onPressed: () =>
-                                _showAllPollsSheet(context, polls: polls),
+                            onPressed: () => _showAllPollsSheet(context),
                             child: const Text('Lihat Semua'),
                           ),
                         ],
@@ -1172,9 +1217,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
   }) {
     return InkWell(
       onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const DaftarWargaAdminScreen()),
-        );
+        _openApprovedWargaTab();
       },
       borderRadius: BorderRadius.circular(24),
       child: Container(

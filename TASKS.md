@@ -71,12 +71,12 @@
 
 - [x] Rapikan spacing, warna, typography, radius, dan shadow
 - [x] Finalisasi dashboard warga
-- [ ] Finalisasi dashboard RT/Admin
+- [x] Finalisasi dashboard RT/Admin
 - [x] Finalisasi halaman aktivitas
 - [x] Finalisasi halaman profil
 - [x] Finalisasi login & register
-- [ ] Tambahkan detail pengumuman warga
-- [ ] Implementasi logo/brand asset
+- [x] Tambahkan detail pengumuman warga
+- [x] Implementasi logo/brand asset
 
 ### Testing & Bug Fixing
 
@@ -85,7 +85,7 @@
 - [ ] Jalankan `flutter test`
 - [ ] Manual testing warga
 - [ ] Manual testing RT/Admin
-- [ ] Perbaiki bug yang ditemukan
+- [x] Perbaiki bug yang ditemukan
 
 ### Deployment Preparation
 

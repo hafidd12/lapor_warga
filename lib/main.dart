@@ -209,10 +209,20 @@ class _HomeScreenWrapperState extends State<HomeScreenWrapper> {
     });
   }
 
+  void _goToAdminWargaPending() {
+    setState(() {
+      _currentAdminIndex = 1;
+      _currentAdminWargaTab = 0;
+    });
+  }
+
   // Admin tabs (added Warga management and Aktivitas)
   List<Widget> get _adminScreens {
     return [
-      const DashboardAdminScreen(),
+      DashboardAdminScreen(
+        onGoToPendingWarga: _goToAdminWargaPending,
+        onGoToApprovedWarga: _goToAdminWargaApproved,
+      ),
       DaftarWargaAdminScreen(initialTab: _currentAdminWargaTab),
       AktivitasAdminScreen(onBackPressed: _goToAdminHome),
       ProfilAdminScreen(onGoToApprovedWarga: _goToAdminWargaApproved),

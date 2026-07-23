@@ -18,6 +18,11 @@ class _DetailVotingScreenState extends State<DetailVotingScreen> {
   String? _selectedOption;
   bool _submitting = false;
 
+  bool _isRtUser(AppUser? user) {
+    final jabatan = user?.jabatan?.toUpperCase() ?? '';
+    return user?.role == UserRole.admin && jabatan.contains('RT');
+  }
+
   Future<void> _submitVote(AppState state, Poll poll) async {
     final selectedOption = _selectedOption;
     if (selectedOption == null || _submitting) return;
@@ -71,6 +76,9 @@ class _DetailVotingScreenState extends State<DetailVotingScreen> {
     }
 
     final pollData = poll;
+    final hasVoted = user != null && pollData.userVotes.containsKey(user.id);
+    final canVote =
+        pollData.isActive && user != null && !hasVoted && !_isRtUser(user);
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
@@ -99,6 +107,7 @@ class _DetailVotingScreenState extends State<DetailVotingScreen> {
                 },
                 onSubmit: () => _submitVote(state, pollData),
                 isSubmitting: _submitting,
+                canVote: canVote,
               ),
             ],
           ),
@@ -249,6 +258,7 @@ class _VoteBody extends StatelessWidget {
     required this.onSelected,
     required this.onSubmit,
     required this.isSubmitting,
+    required this.canVote,
   });
 
   final Poll poll;
@@ -257,13 +267,13 @@ class _VoteBody extends StatelessWidget {
   final ValueChanged<String> onSelected;
   final VoidCallback onSubmit;
   final bool isSubmitting;
+  final bool canVote;
 
   @override
   Widget build(BuildContext context) {
     final userId = user?.id;
     final userVote = userId == null ? null : poll.userVotes[userId];
     final hasVoted = userVote != null;
-    final canVote = poll.isActive && !hasVoted;
 
     return Container(
       width: double.infinity,

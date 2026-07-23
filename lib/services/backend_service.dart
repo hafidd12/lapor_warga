@@ -40,6 +40,8 @@ class BackendService {
   static const String _reportPhotoBucket = 'report-photos';
   static const String _reportSelectColumns =
       'id, citizen_id, citizen_name, title, description, category, priority, status, votes_count, report_photo_url, location_label, completion_photo_url, completed_at, completed_by_id, completed_by_name, created_at, updated_at';
+  static const String _profileColumns =
+      'id, name, email, role, avatar_url, verification_status, ktp_number, registration_code, ktp_image_path, phone, rt_rw, address, jabatan, registered_at, created_at, updated_at';
 
   Future<BackendSnapshot> fetchSnapshot({String? rtRw}) async {
     final users = await fetchUsers();
@@ -174,9 +176,7 @@ class BackendService {
       final pollRows = _rows(
         await _client
             .from('polls')
-            .select(
-              'id, question, created_by_id, created_by_name, rt_rw, is_active, created_at, updated_at',
-            )
+            .select('*')
             .eq('rt_rw', normalizedRtRw)
             .order('created_at', ascending: false),
       );
@@ -223,7 +223,7 @@ class BackendService {
   Future<List<AdminActivity>> fetchActivities() async {
     final data = await _client
         .from('admin_activities')
-        .select('id, description, type, photo_url, related_id, created_at')
+        .select('*')
         .order('created_at', ascending: false);
 
     return _rows(data).map(_activityFromRow).toList();
@@ -479,6 +479,11 @@ class BackendService {
     required List<String> options,
     required AppUser currentUser,
   }) async {
+    final actorName = currentUser.name.trim().isNotEmpty
+        ? currentUser.name.trim()
+        : currentUser.email.trim().isNotEmpty
+        ? currentUser.email.trim()
+        : 'Pengguna';
     final normalizedQuestion = question.trim();
     final normalizedOptions = options
         .map((option) => option.trim())
@@ -506,7 +511,7 @@ class BackendService {
         .insert({
           'question': normalizedQuestion,
           'created_by_id': currentUser.id,
-          'created_by_name': currentUser.name,
+          'created_by_name': actorName,
           'rt_rw': rtRw,
           'is_active': true,
           'created_at': DateTime.now().toUtc().toIso8601String(),
@@ -665,7 +670,7 @@ class BackendService {
         .eq('user_id', userId)
         .maybeSingle();
     if (data == null) return null;
-    return _stringValue((data as Map<String, dynamic>)['option_id']);
+    return _stringValue(data['option_id']);
   }
 
   Future<void> voteInPoll({
@@ -699,6 +704,14 @@ class BackendService {
         .from('profiles')
         .update({'verification_status': _verificationValue(status)})
         .eq('id', userId);
+
+    final check = await _client
+        .from('profiles')
+        .select('id, verification_status')
+        .eq('id', userId)
+        .single();
+
+    debugPrint('[VERIFY CHECK] $check');
 
     await createActivity(
       description: status == VerificationStatus.verified
@@ -867,8 +880,14 @@ class BackendService {
     String? relatedTable,
     String? relatedId,
   }) async {
+    final actorName = currentUser.name.trim().isNotEmpty
+        ? currentUser.name.trim()
+        : currentUser.email.trim().isNotEmpty
+        ? currentUser.email.trim()
+        : 'Pengguna';
     await _client.from('admin_activities').insert({
       'actor_id': currentUser.id,
+      'actor_name': actorName,
       'description': description,
       'type': type,
       'photo_url': photoUrl,
@@ -894,7 +913,7 @@ class BackendService {
         .maybeSingle();
 
     if (data == null) return null;
-    return _stringValue((data as Map<String, dynamic>)['rt_rw']);
+    return _stringValue(data['rt_rw']);
   }
 
   List<Poll> _buildPollsFromRows({
@@ -987,13 +1006,7 @@ class BackendService {
 
   Future<Poll> _fetchPollById(String pollId) async {
     final pollRows = _rows(
-      await _client
-          .from('polls')
-          .select(
-            'id, question, created_by_id, created_by_name, rt_rw, is_active, created_at, updated_at',
-          )
-          .eq('id', pollId)
-          .limit(1),
+      await _client.from('polls').select('*').eq('id', pollId).limit(1),
     );
     if (pollRows.isEmpty) {
       throw const BackendServiceException('Voting tidak ditemukan.');
@@ -1058,7 +1071,7 @@ class BackendService {
     return AdminActivity(
       id: _stringValue(row['id']) ?? '',
       description: _stringValue(row['description']) ?? '',
-      type: _stringValue(row['type']) ?? 'verification',
+      type: _activityTypeValue(row['type']),
       createdAt: _dateTimeValue(row['created_at']) ?? DateTime.now(),
       photoUrl: _stringValue(row['photo_url']),
       relatedId: _stringValue(row['related_id']),
@@ -1115,6 +1128,12 @@ class BackendService {
       RegistrationCodeType.warga => 'warga',
       RegistrationCodeType.admin => 'admin',
     };
+  }
+
+  String _activityTypeValue(dynamic value) {
+    final type = value?.toString().trim().toLowerCase();
+    if (type == null || type.isEmpty) return 'verification';
+    return type;
   }
 
   RegistrationCodeType _parseRegistrationType(dynamic value) {
