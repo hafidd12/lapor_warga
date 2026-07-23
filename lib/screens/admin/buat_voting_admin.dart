@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../models/models.dart';
 import '../../providers/app_state.dart';
 import '../../theme.dart';
+import '../../widgets/notification_bell_button.dart';
 import '../../widgets/custom_button.dart';
 
 class BuatVotingAdminScreen extends StatefulWidget {
@@ -206,6 +207,7 @@ class _BuatVotingAdminScreenState extends State<BuatVotingAdminScreen> {
         backgroundColor: Colors.white,
         foregroundColor: AppTheme.textPrimaryColor,
         elevation: 0.5,
+        actions: const [NotificationBellButton()],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../models/models.dart';
 import '../../providers/app_state.dart';
 import '../../theme.dart';
+import '../../widgets/notification_bell_button.dart';
 import 'warga_verification_detail_screen.dart';
 
 class DaftarWargaAdminScreen extends StatefulWidget {
@@ -121,6 +122,7 @@ class _DaftarWargaAdminScreenState extends State<DaftarWargaAdminScreen>
           title: 'Verifikasi Warga',
           subtitle: 'Kelola verifikasi akun warga',
         ),
+        actions: const [NotificationBellButton()],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
           child: Container(

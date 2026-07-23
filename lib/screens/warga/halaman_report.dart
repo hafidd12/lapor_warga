@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../models/models.dart';
 import '../../providers/app_state.dart';
 import '../../theme.dart';
+import '../../widgets/notification_bell_button.dart';
 
 class HalamanReportScreen extends StatefulWidget {
   final bool showBackButton;
@@ -572,10 +573,7 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('$e'),
-          backgroundColor: AppTheme.statusHigh,
-        ),
+        SnackBar(content: Text('$e'), backgroundColor: AppTheme.statusHigh),
       );
     }
   }
@@ -636,12 +634,7 @@ class _HalamanReportScreenState extends State<HalamanReportScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: _handleBack,
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none_outlined),
-            onPressed: () {},
-          ),
-        ],
+        actions: const [NotificationBellButton()],
       ),
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),

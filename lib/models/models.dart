@@ -4,6 +4,15 @@ enum UserRole { warga, admin }
 
 enum VerificationStatus { pending, verified, rejected }
 
+enum NotificationType {
+  verification,
+  announcement,
+  voting,
+  votingResult,
+  report,
+  newReport,
+}
+
 enum RegistrationCodeType { warga, admin }
 
 class AppUser {
@@ -202,6 +211,114 @@ class RegistrationCodeLookupResult {
     if (value == null) return null;
     if (value is DateTime) return value;
     return DateTime.tryParse(value.toString());
+  }
+}
+
+class AppNotification {
+  final String id;
+  final String userId;
+  final NotificationType type;
+  final String title;
+  final String message;
+  final bool isRead;
+  final DateTime createdAt;
+  final DateTime? readAt;
+  final String? targetId;
+  final String? targetType;
+
+  AppNotification({
+    required this.id,
+    required this.userId,
+    required this.type,
+    required this.title,
+    required this.message,
+    required this.isRead,
+    required this.createdAt,
+    this.readAt,
+    this.targetId,
+    this.targetType,
+  });
+
+  factory AppNotification.fromRow(Map<String, dynamic> row) {
+    final type = _parseNotificationType(row['type']);
+
+    return AppNotification(
+      id: _stringValue(row['id']) ?? '',
+      userId: _stringValue(row['user_id']) ?? '',
+      type: type,
+      title: _stringValue(row['title']) ?? _defaultTitle(type),
+      message:
+          _stringValue(row['message']) ??
+          _stringValue(row['body']) ??
+          _stringValue(row['description']) ??
+          _stringValue(row['content']) ??
+          '',
+      isRead:
+          row['is_read'] == true ||
+          row['is_read'] == 1 ||
+          row['is_read'] == 'true' ||
+          row['read_at'] != null,
+      createdAt:
+          _dateTimeValue(row['created_at']) ??
+          DateTime.fromMillisecondsSinceEpoch(0),
+      readAt: _dateTimeValue(row['read_at']),
+      targetId:
+          _stringValue(row['target_id']) ?? _stringValue(row['related_id']),
+      targetType:
+          _stringValue(row['target_type']) ?? _stringValue(row['related_type']),
+    );
+  }
+
+  static String? _stringValue(dynamic value) {
+    if (value == null) return null;
+    final text = value.toString().trim();
+    return text.isEmpty ? null : text;
+  }
+
+  static DateTime? _dateTimeValue(dynamic value) {
+    if (value == null) return null;
+    if (value is DateTime) return value;
+    return DateTime.tryParse(value.toString());
+  }
+
+  static NotificationType _parseNotificationType(dynamic value) {
+    final text = value?.toString().toLowerCase().trim();
+    switch (text) {
+      case 'announcement':
+        return NotificationType.announcement;
+      case 'voting':
+        return NotificationType.voting;
+      case 'voting_result':
+      case 'voting-result':
+      case 'votingresult':
+        return NotificationType.votingResult;
+      case 'report':
+        return NotificationType.report;
+      case 'new_report':
+      case 'new-report':
+      case 'newreport':
+        return NotificationType.newReport;
+      case 'verification':
+      default:
+        return NotificationType.verification;
+    }
+  }
+
+  static String _defaultTitle(NotificationType type) {
+    switch (type) {
+      case NotificationType.announcement:
+        return 'Pengumuman baru';
+      case NotificationType.voting:
+        return 'Voting baru dibuka';
+      case NotificationType.votingResult:
+        return 'Hasil voting tersedia';
+      case NotificationType.report:
+        return 'Status laporan berubah';
+      case NotificationType.newReport:
+        return 'Laporan baru masuk';
+      case NotificationType.verification:
+        return 'Verifikasi akun';
+    }
   }
 }
 

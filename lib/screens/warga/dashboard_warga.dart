@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../models/models.dart';
 import '../../providers/app_state.dart';
 import '../../theme.dart';
+import '../../widgets/notification_bell_button.dart';
 import '../../widgets/custom_image.dart';
 import 'aktivitas_laporan.dart';
 import 'daftar_pengumuman.dart';
@@ -613,17 +614,7 @@ class _DashboardWargaScreenState extends State<DashboardWargaScreen> {
             ],
           ),
         ),
-        IconButton(
-          onPressed: () {},
-          icon: const Icon(
-            Icons.notifications_none_rounded,
-            color: AppTheme.textPrimaryColor,
-          ),
-          style: IconButton.styleFrom(
-            backgroundColor: AppTheme.surfaceContainerLow,
-            shape: const CircleBorder(),
-          ),
-        ),
+        const NotificationBellButton(filled: true),
       ],
     );
   }

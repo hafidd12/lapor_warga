@@ -3,16 +3,12 @@ import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../theme.dart';
 import 'custom_image.dart';
+import 'notification_bell_button.dart';
 
 class DashboardTopSection extends StatelessWidget {
   final AppUser? user;
-  final VoidCallback onNotificationsTap;
 
-  const DashboardTopSection({
-    super.key,
-    required this.user,
-    required this.onNotificationsTap,
-  });
+  const DashboardTopSection({super.key, required this.user});
 
   String _greetingFor(DateTime now) {
     final hour = now.hour;
@@ -74,17 +70,7 @@ class DashboardTopSection extends StatelessWidget {
                 ],
               ),
             ),
-            IconButton(
-              onPressed: onNotificationsTap,
-              icon: const Icon(
-                Icons.notifications_none_rounded,
-                color: AppTheme.textPrimaryColor,
-              ),
-              style: IconButton.styleFrom(
-                backgroundColor: AppTheme.surfaceContainerLow,
-                shape: const CircleBorder(),
-              ),
-            ),
+            const NotificationBellButton(filled: true),
           ],
         ),
         const SizedBox(height: 18),

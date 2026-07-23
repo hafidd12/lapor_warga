@@ -8,6 +8,7 @@ import '../../models/models.dart';
 import '../../providers/app_state.dart';
 import '../../services/backend_service.dart';
 import '../../theme.dart';
+import '../../widgets/notification_bell_button.dart';
 import '../../widgets/status_badge.dart';
 
 class DetailLaporanAdminScreen extends StatefulWidget {
@@ -462,7 +463,10 @@ class _DetailLaporanAdminScreenState extends State<DetailLaporanAdminScreen> {
     );
     if (reportIndex == -1) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Detail Laporan')),
+        appBar: AppBar(
+          title: const Text('Detail Laporan'),
+          actions: const [NotificationBellButton()],
+        ),
         body: const Center(child: Text('Laporan tidak ditemukan.')),
       );
     }
@@ -475,6 +479,7 @@ class _DetailLaporanAdminScreenState extends State<DetailLaporanAdminScreen> {
         backgroundColor: Colors.white,
         foregroundColor: AppTheme.textPrimaryColor,
         elevation: 0.5,
+        actions: const [NotificationBellButton()],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),

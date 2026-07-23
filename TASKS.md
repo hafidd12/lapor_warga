@@ -80,15 +80,15 @@
 
 ### Testing & Bug Fixing
 
-- [ ] Jalankan `dart format`
-- [ ] Jalankan `flutter analyze`
-- [ ] Jalankan `flutter test`
-- [ ] Manual testing warga
-- [ ] Manual testing RT/Admin
+- [x] Jalankan `dart format`
+- [x] Jalankan `flutter analyze`
+- [x] Jalankan `flutter test`
+- [x] Manual testing warga
+- [x] Manual testing RT/Admin
 - [x] Perbaiki bug yang ditemukan
 
 ### Deployment Preparation
 
-- [ ] Cek konfigurasi aplikasi
-- [ ] Konfigurasi Production API
-- [ ] Build APK Release
+- [x] Cek konfigurasi aplikasi
+- [x] Konfigurasi Production API
+- [x] Build APK Release

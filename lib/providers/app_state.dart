@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import '../models/models.dart';
 import '../services/auth_service.dart';
 import '../services/backend_service.dart';
+import '../services/notification_service.dart';
 import '../services/supabase_service.dart';
 import '../services/warga_verification_service.dart';
 
@@ -11,6 +12,7 @@ class AppState with ChangeNotifier {
   AppUser? _currentUser;
   final AuthService? _authService;
   final BackendService? _backendService;
+  final NotificationService? _notificationService;
   final List<AppUser> _registeredUsers = [];
   final List<Report> _reports = [];
   final List<Report> _myReports = [];
@@ -18,6 +20,7 @@ class AppState with ChangeNotifier {
   final List<Announcement> _announcements = [];
   final List<Poll> _polls = [];
   final List<AdminActivity> _activities = [];
+  final List<AppNotification> _notifications = [];
   final List<RegistrationCode> _registrationCodes = [];
   RegistrationCodeLookupResult? _pendingRtRegistrationCode;
   final List<AppUser> _pendingVerificationUsers = [];
@@ -29,9 +32,11 @@ class AppState with ChangeNotifier {
   AppState({
     AuthService? authService,
     BackendService? backendService,
+    NotificationService? notificationService,
     WargaVerificationService? verificationService,
   }) : _authService = authService,
        _backendService = backendService,
+       _notificationService = notificationService,
        _verificationService = verificationService {
     _loadMockData();
   }
@@ -44,6 +49,9 @@ class AppState with ChangeNotifier {
   List<Poll> get polls => List.unmodifiable(_polls);
   List<AppUser> get registeredUsers => List.unmodifiable(_registeredUsers);
   List<AdminActivity> get activities => List.unmodifiable(_activities);
+  List<AppNotification> get notifications => List.unmodifiable(_notifications);
+  int get unreadNotificationCount =>
+      _notifications.where((notification) => !notification.isRead).length;
   List<RegistrationCode> get registrationCodes =>
       List.unmodifiable(_registrationCodes);
   bool get reportsLoading => _reportsLoading;
@@ -253,8 +261,91 @@ class AppState with ChangeNotifier {
   AuthService get _activeAuthService => _authService ?? AuthService();
   BackendService get _activeBackendService =>
       _backendService ?? BackendService();
+
+  NotificationService get _activeNotificationService =>
+      _notificationService ?? NotificationService();
   WargaVerificationService get _activeVerificationService =>
       _verificationService ?? WargaVerificationService();
+
+  bool _isRtAdmin(AppUser user) {
+    final jabatan = user.jabatan?.toUpperCase().trim() ?? '';
+    return user.role == UserRole.admin && jabatan.contains('RT');
+  }
+
+  List<AppUser> _findRtAdminsByRtRw(String rtRw) {
+    final normalizedRtRw = rtRw.trim();
+    if (normalizedRtRw.isEmpty) return const [];
+
+    return _registeredUsers
+        .where(
+          (user) =>
+              _isRtAdmin(user) && (user.rtRw?.trim() ?? '') == normalizedRtRw,
+        )
+        .toList();
+  }
+
+  Future<void> _sendNotification({
+    required String userId,
+    required NotificationType type,
+    required String title,
+    required String message,
+  }) async {
+    final normalizedUserId = userId.trim();
+    if (normalizedUserId.isEmpty) return;
+
+    if (!SupabaseService.isInitialized) {
+      _notifications.insert(
+        0,
+        AppNotification(
+          id: 'notif-${DateTime.now().microsecondsSinceEpoch}',
+          userId: normalizedUserId,
+          type: type,
+          title: title,
+          message: message,
+          isRead: false,
+          createdAt: DateTime.now(),
+        ),
+      );
+      notifyListeners();
+      return;
+    }
+
+    await _activeNotificationService.createNotification(
+      userId: normalizedUserId,
+      type: type,
+      title: title,
+      message: message,
+    );
+  }
+
+  Future<void> _notifyRtAdminsAboutNewWarga(AppUser warga) async {
+    final rtRw = warga.rtRw?.trim() ?? '';
+    if (rtRw.isEmpty) return;
+
+    final recipients = _findRtAdminsByRtRw(rtRw);
+    for (final recipient in recipients) {
+      await _sendNotification(
+        userId: recipient.id,
+        type: NotificationType.verification,
+        title: 'Verifikasi Warga',
+        message: '${warga.name} menunggu verifikasi.',
+      );
+    }
+  }
+
+  Future<void> _notifyWargaVerificationResult(
+    String userId,
+    bool isApproved,
+  ) async {
+    await _sendNotification(
+      userId: userId,
+      type: NotificationType.verification,
+      title: isApproved ? 'Akun Disetujui' : 'Verifikasi Ditolak',
+      message: isApproved
+          ? 'Akun Anda telah berhasil diverifikasi oleh RT.'
+          : 'Pendaftaran Anda ditolak oleh RT.',
+    );
+  }
 
   void _setCurrentUser(AppUser? user) {
     _currentUser = user;
@@ -362,6 +453,38 @@ class AppState with ChangeNotifier {
       );
       debugPrint(stackTrace.toString());
       _activities.clear();
+      notifyListeners();
+    }
+  }
+
+  Future<void> refreshNotifications() async {
+    if (!SupabaseService.isInitialized) {
+      _notifications.clear();
+      notifyListeners();
+      return;
+    }
+
+    final currentUser = _currentUser;
+    if (currentUser == null) {
+      _notifications.clear();
+      notifyListeners();
+      return;
+    }
+
+    try {
+      final notifications = await _activeNotificationService.fetchNotifications(
+        currentUser.id,
+      );
+      _notifications
+        ..clear()
+        ..addAll(notifications);
+      notifyListeners();
+    } catch (error, stackTrace) {
+      debugPrint(
+        '[AppState][notification] refreshNotifications error=${error.runtimeType}: $error',
+      );
+      debugPrint(stackTrace.toString());
+      _notifications.clear();
       notifyListeners();
     }
   }
@@ -721,6 +844,7 @@ class AppState with ChangeNotifier {
     _clearReportState();
     _announcements.clear();
     _activities.clear();
+    _notifications.clear();
     _setAnnouncementLoadState(isLoading: false, error: null);
     _verificationUsersLoaded = false;
     _pendingRtRegistrationCode = null;
@@ -844,6 +968,7 @@ class AppState with ChangeNotifier {
       );
       _setCurrentUser(user);
       await refreshRemoteData();
+      await _notifyRtAdminsAboutNewWarga(user);
 
       return {
         'success': true,
@@ -1039,6 +1164,7 @@ class AppState with ChangeNotifier {
     _registeredUsers.add(newUser);
     _currentUser = newUser;
     notifyListeners();
+    unawaited(_notifyRtAdminsAboutNewWarga(newUser));
   }
 
   /// Register a new RT/RW admin (immediately verified)
@@ -1069,6 +1195,7 @@ class AppState with ChangeNotifier {
 
   void logout() {
     _currentUser = null;
+    _notifications.clear();
     notifyListeners();
   }
 
@@ -1315,6 +1442,7 @@ class AppState with ChangeNotifier {
       wargaName: user.name,
     );
     _updateLocalWargaVerificationStatus(userId, VerificationStatus.verified);
+    await _notifyWargaVerificationResult(userId, true);
     await refreshRemoteData();
     await refreshVerificationUsers();
   }
@@ -1351,6 +1479,7 @@ class AppState with ChangeNotifier {
       wargaName: user.name,
     );
     _updateLocalWargaVerificationStatus(userId, VerificationStatus.rejected);
+    await _notifyWargaVerificationResult(userId, false);
     await refreshRemoteData();
     await refreshVerificationUsers();
   }

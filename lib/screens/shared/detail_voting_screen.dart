@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../models/models.dart';
 import '../../providers/app_state.dart';
 import '../../theme.dart';
+import '../../widgets/notification_bell_button.dart';
 
 class DetailVotingScreen extends StatefulWidget {
   const DetailVotingScreen({super.key, required this.pollId});
@@ -67,6 +68,7 @@ class _DetailVotingScreenState extends State<DetailVotingScreen> {
           backgroundColor: Colors.white,
           foregroundColor: AppTheme.textPrimaryColor,
           elevation: 0.5,
+          actions: const [NotificationBellButton()],
         ),
         body: _buildEmptyState(
           title: 'Voting tidak ditemukan',
@@ -87,6 +89,7 @@ class _DetailVotingScreenState extends State<DetailVotingScreen> {
         backgroundColor: Colors.white,
         foregroundColor: AppTheme.textPrimaryColor,
         elevation: 0.5,
+        actions: const [NotificationBellButton()],
       ),
       body: SafeArea(
         child: SingleChildScrollView(

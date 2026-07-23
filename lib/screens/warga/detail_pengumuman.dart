@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/models.dart';
 import '../../theme.dart';
+import '../../widgets/notification_bell_button.dart';
 
 class DetailPengumumanScreen extends StatelessWidget {
   final Announcement announcement;
@@ -26,6 +27,7 @@ class DetailPengumumanScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         foregroundColor: AppTheme.textPrimaryColor,
         elevation: 0.5,
+        actions: const [NotificationBellButton()],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),

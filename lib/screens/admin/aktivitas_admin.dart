@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../models/models.dart';
 import '../../providers/app_state.dart';
 import '../../theme.dart';
+import '../../widgets/notification_bell_button.dart';
 
 class AktivitasAdminScreen extends StatelessWidget {
   final VoidCallback? onBackPressed;
@@ -31,6 +32,7 @@ class AktivitasAdminScreen extends StatelessWidget {
           title: 'Riwayat Aktivitas RT',
           subtitle: 'Riwayat aktivitas yang telah dilakukan RT',
         ),
+        actions: const [NotificationBellButton()],
       ),
       body: groupedActivities.isEmpty
           ? const _ActivityEmptyState()

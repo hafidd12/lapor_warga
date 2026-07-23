@@ -6,6 +6,7 @@ import '../../theme.dart';
 import '../../models/models.dart';
 import '../../widgets/report_card.dart';
 import '../../widgets/status_badge.dart';
+import '../../widgets/notification_bell_button.dart';
 
 class AktivitasLaporanScreen extends StatefulWidget {
   const AktivitasLaporanScreen({super.key});
@@ -247,6 +248,7 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
         backgroundColor: AppTheme.surfaceColor,
         elevation: 0.5,
         automaticallyImplyLeading: false,
+        actions: const [NotificationBellButton()],
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 18, 16, 20),
@@ -791,6 +793,7 @@ class DetailLaporanScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         elevation: 0.5,
         scrolledUnderElevation: 1,
+        actions: const [NotificationBellButton()],
       ),
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),

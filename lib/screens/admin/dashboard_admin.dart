@@ -730,7 +730,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                DashboardTopSection(user: user, onNotificationsTap: () {}),
+                DashboardTopSection(user: user),
                 const SizedBox(height: 18),
                 _buildHeroCard(
                   context,

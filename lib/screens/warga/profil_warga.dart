@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
 import '../../theme.dart';
 import '../../widgets/custom_image.dart';
+import '../../widgets/notification_bell_button.dart';
 
 class ProfilWargaScreen extends StatefulWidget {
   const ProfilWargaScreen({super.key, required this.onGoToAktivitas});
@@ -183,25 +184,17 @@ class _ProfilWargaScreenState extends State<ProfilWargaScreen> {
         title: Text(
           'Profil',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: AppTheme.primaryColor,
-                fontWeight: FontWeight.w700,
-                fontSize: 22,
-                letterSpacing: -0.2,
-              ),
+            color: AppTheme.primaryColor,
+            fontWeight: FontWeight.w700,
+            fontSize: 22,
+            letterSpacing: -0.2,
+          ),
         ),
         backgroundColor: Colors.white,
         elevation: 0.5,
         scrolledUnderElevation: 1,
         automaticallyImplyLeading: false,
-        actions: [
-          IconButton(
-            icon: const Icon(
-              Icons.notifications_none_outlined,
-              color: AppTheme.primaryColor,
-            ),
-            onPressed: () {},
-          ),
-        ],
+        actions: [const NotificationBellButton(filled: true)],
       ),
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),

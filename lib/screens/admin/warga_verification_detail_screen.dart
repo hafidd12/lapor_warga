@@ -5,6 +5,7 @@ import '../../models/models.dart';
 import '../../providers/app_state.dart';
 import '../../services/warga_verification_service.dart';
 import '../../theme.dart';
+import '../../widgets/notification_bell_button.dart';
 
 class WargaVerificationDetailScreen extends StatefulWidget {
   const WargaVerificationDetailScreen({super.key, required this.userId});
@@ -107,6 +108,7 @@ class _WargaVerificationDetailScreenState
         backgroundColor: Colors.white,
         foregroundColor: AppTheme.textPrimaryColor,
         elevation: 0.5,
+        actions: const [NotificationBellButton()],
       ),
       body: FutureBuilder<AppUser?>(
         future: _userFuture,

@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/models.dart';
+import 'notification_service.dart';
 import 'supabase_service.dart';
 
 class BackendServiceException implements Exception {
@@ -34,14 +35,14 @@ class BackendSnapshot {
 
 class BackendService {
   BackendService({SupabaseClient? client})
-    : _client = client ?? SupabaseService.client;
+    : _client = client ?? SupabaseService.client,
+      _notificationService = NotificationService(client: client);
 
   final SupabaseClient _client;
+  final NotificationService _notificationService;
   static const String _reportPhotoBucket = 'report-photos';
   static const String _reportSelectColumns =
       'id, citizen_id, citizen_name, title, description, category, priority, status, votes_count, report_photo_url, location_label, completion_photo_url, completed_at, completed_by_id, completed_by_name, created_at, updated_at';
-  static const String _profileColumns =
-      'id, name, email, role, avatar_url, verification_status, ktp_number, registration_code, ktp_image_path, phone, rt_rw, address, jabatan, registered_at, created_at, updated_at';
 
   Future<BackendSnapshot> fetchSnapshot({String? rtRw}) async {
     final users = await fetchUsers();
@@ -374,6 +375,10 @@ class BackendService {
         .from('reports')
         .update({'status': _statusValue(status)})
         .eq('id', reportId);
+
+    if (status == ReportStatus.processed) {
+      await _notifyReportOwnerAboutStatus(reportId: reportId, status: status);
+    }
   }
 
   Future<void> completeReport({
@@ -399,6 +404,11 @@ class BackendService {
       relatedTable: 'reports',
       relatedId: reportId,
       currentUser: currentUser,
+    );
+
+    await _notifyReportOwnerAboutStatus(
+      reportId: reportId,
+      status: ReportStatus.resolved,
     );
   }
 
@@ -447,6 +457,8 @@ class BackendService {
       relatedId: _stringValue(data['id']),
       currentUser: currentUser,
     );
+
+    await _notifyWargaAboutAnnouncement(currentUser: currentUser, title: title);
 
     return _announcementFromRow(Map<String, dynamic>.from(data));
   }
@@ -541,6 +553,11 @@ class BackendService {
       relatedTable: 'polls',
       relatedId: pollId,
       currentUser: currentUser,
+    );
+
+    await _notifyWargaAboutPoll(
+      currentUser: currentUser,
+      title: normalizedQuestion,
     );
 
     return _fetchPollById(pollId);
@@ -894,6 +911,97 @@ class BackendService {
       'related_table': relatedTable,
       'related_id': relatedId,
     });
+  }
+
+  Future<void> _notifyWargaAboutAnnouncement({
+    required AppUser currentUser,
+    required String title,
+  }) async {
+    final rtRw = currentUser.rtRw?.trim() ?? '';
+    if (rtRw.isEmpty) return;
+
+    final wargaRows = _rows(
+      await _client
+          .from('profiles')
+          .select('id')
+          .eq('role', 'warga')
+          .eq('rt_rw', rtRw),
+    );
+    final wargaIds = wargaRows
+        .map((row) => _stringValue(row['id']))
+        .whereType<String>()
+        .toList();
+    if (wargaIds.isEmpty) return;
+
+    await Future.wait(
+      wargaIds.map(
+        (wargaId) => _notificationService.createNotification(
+          userId: wargaId,
+          type: NotificationType.announcement,
+          title: 'Pengumuman Baru',
+          message: 'RT telah menerbitkan pengumuman "$title".',
+        ),
+      ),
+    );
+  }
+
+  Future<void> _notifyWargaAboutPoll({
+    required AppUser currentUser,
+    required String title,
+  }) async {
+    final rtRw = currentUser.rtRw?.trim() ?? '';
+    if (rtRw.isEmpty) return;
+
+    final wargaRows = _rows(
+      await _client
+          .from('profiles')
+          .select('id')
+          .eq('role', 'warga')
+          .eq('rt_rw', rtRw),
+    );
+    final wargaIds = wargaRows
+        .map((row) => _stringValue(row['id']))
+        .whereType<String>()
+        .toList();
+    if (wargaIds.isEmpty) return;
+
+    await Future.wait(
+      wargaIds.map(
+        (wargaId) => _notificationService.createNotification(
+          userId: wargaId,
+          type: NotificationType.voting,
+          title: 'Voting Baru',
+          message: 'Voting "$title" telah dibuka.',
+        ),
+      ),
+    );
+  }
+
+  Future<void> _notifyReportOwnerAboutStatus({
+    required String reportId,
+    required ReportStatus status,
+  }) async {
+    final report = await _client
+        .from('reports')
+        .select('citizen_id, title')
+        .eq('id', reportId)
+        .maybeSingle();
+    if (report == null) return;
+
+    final citizenId = _stringValue(report['citizen_id']);
+    if (citizenId == null || citizenId.isEmpty) return;
+
+    final title = _stringValue(report['title']) ?? 'Laporan Anda';
+    final isProcessed = status == ReportStatus.processed;
+
+    await _notificationService.createNotification(
+      userId: citizenId,
+      type: NotificationType.report,
+      title: isProcessed ? 'Laporan Diproses' : 'Laporan Selesai',
+      message: isProcessed
+          ? 'Laporan "$title" sedang diproses oleh RT.'
+          : 'Laporan "$title" telah dinyatakan selesai.',
+    );
   }
 
   List<Map<String, dynamic>> _rows(Object? data) {

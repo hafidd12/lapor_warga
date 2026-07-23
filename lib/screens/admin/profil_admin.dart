@@ -5,7 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../providers/app_state.dart';
 import '../../theme.dart';
 import '../../widgets/custom_image.dart';
-import '../../models/models.dart';
+import '../../widgets/notification_bell_button.dart';
 
 class ProfilAdminScreen extends StatefulWidget {
   const ProfilAdminScreen({super.key, this.onGoToApprovedWarga});
@@ -244,6 +244,7 @@ class _ProfilAdminScreenState extends State<ProfilAdminScreen> {
             letterSpacing: -0.2,
           ),
         ),
+        actions: const [NotificationBellButton()],
       ),
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),

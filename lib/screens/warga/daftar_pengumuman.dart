@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../models/models.dart';
 import '../../providers/app_state.dart';
 import '../../theme.dart';
+import '../../widgets/notification_bell_button.dart';
 import 'detail_pengumuman.dart';
 
 class DaftarPengumumanScreen extends StatelessWidget {
@@ -42,6 +43,7 @@ class DaftarPengumumanScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         foregroundColor: AppTheme.textPrimaryColor,
         elevation: 0.5,
+        actions: const [NotificationBellButton()],
       ),
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
