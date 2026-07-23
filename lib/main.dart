@@ -196,18 +196,26 @@ class HomeScreenWrapper extends StatefulWidget {
 class _HomeScreenWrapperState extends State<HomeScreenWrapper> {
   int _currentCitizenIndex = 0;
   int _currentAdminIndex = 0;
+  int _currentAdminWargaTab = 0;
 
   void _goToAdminHome() {
     setState(() => _currentAdminIndex = 0);
+  }
+
+  void _goToAdminWargaApproved() {
+    setState(() {
+      _currentAdminIndex = 1;
+      _currentAdminWargaTab = 1;
+    });
   }
 
   // Admin tabs (added Warga management and Aktivitas)
   List<Widget> get _adminScreens {
     return [
       const DashboardAdminScreen(),
-      const DaftarWargaAdminScreen(),
+      DaftarWargaAdminScreen(initialTab: _currentAdminWargaTab),
       AktivitasAdminScreen(onBackPressed: _goToAdminHome),
-      const ProfilAdminScreen(),
+      ProfilAdminScreen(onGoToApprovedWarga: _goToAdminWargaApproved),
     ];
   }
 
@@ -356,6 +364,9 @@ class _HomeScreenWrapperState extends State<HomeScreenWrapper> {
               onTap: (index) {
                 setState(() {
                   _currentAdminIndex = index;
+                  if (index == 1) {
+                    _currentAdminWargaTab = 0;
+                  }
                 });
               },
               type: BottomNavigationBarType.fixed,

@@ -1,15 +1,16 @@
-﻿import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter/material.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../providers/app_state.dart';
 import '../../theme.dart';
 import '../../widgets/custom_image.dart';
 import '../../models/models.dart';
-import 'daftar_warga_admin.dart';
 
 class ProfilAdminScreen extends StatefulWidget {
-  const ProfilAdminScreen({super.key});
+  const ProfilAdminScreen({super.key, this.onGoToApprovedWarga});
+
+  final VoidCallback? onGoToApprovedWarga;
 
   @override
   State<ProfilAdminScreen> createState() => _ProfilAdminScreenState();
@@ -34,17 +35,188 @@ class _ProfilAdminScreenState extends State<ProfilAdminScreen> {
   Future<void> _pickImage(ImageSource source) async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: source);
-    if (pickedFile != null) {
-      if (mounted) {
-        final state = Provider.of<AppState>(context, listen: false);
-        state.updateCurrentUser(avatarUrl: pickedFile.path);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Foto profil berhasil diperbarui'),
-            backgroundColor: AppTheme.statusLow,
+    if (pickedFile == null || !mounted) return;
+
+    final croppedFile = await _cropAvatarImage(pickedFile);
+    if (croppedFile == null || !mounted) return;
+
+    final state = Provider.of<AppState>(context, listen: false);
+    try {
+      final imageBytes = await croppedFile.readAsBytes();
+      await state.saveCurrentUserProfile(
+        avatarBytes: imageBytes,
+        avatarSourceName: pickedFile.name,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Foto profil berhasil diperbarui'),
+          backgroundColor: AppTheme.statusLow,
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal memperbarui foto profil: $error'),
+          backgroundColor: AppTheme.statusHigh,
+        ),
+      );
+    }
+  }
+
+  Future<CroppedFile?> _cropAvatarImage(XFile pickedFile) async {
+    try {
+      return await ImageCropper().cropImage(
+        sourcePath: pickedFile.path,
+        aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+        uiSettings: [
+          AndroidUiSettings(
+            toolbarTitle: 'Crop Foto',
+            toolbarColor: AppTheme.primaryColor,
+            toolbarWidgetColor: Colors.white,
+            initAspectRatio: CropAspectRatioPreset.square,
+            lockAspectRatio: true,
+          ),
+          IOSUiSettings(
+            title: 'Crop Foto',
+            aspectRatioLockEnabled: true,
+            minimumAspectRatio: 1.0,
+          ),
+        ],
+      );
+    } catch (error) {
+      if (!mounted) return null;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal memotong foto: $error'),
+          backgroundColor: AppTheme.statusHigh,
+        ),
+      );
+      return null;
+    }
+  }
+
+  Future<void> _showAvatarPreview(String avatarUrl) async {
+    final transformationController = TransformationController();
+    var isZoomed = false;
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      barrierColor: Colors.black,
+      builder: (context) {
+        final hasAvatar = avatarUrl.trim().isNotEmpty;
+        final imageProvider = hasAvatar
+            ? CustomImageProvider.get(avatarUrl)
+            : null;
+
+        void toggleZoom() {
+          if (!hasAvatar) return;
+          isZoomed = !isZoomed;
+          final matrix = Matrix4.identity();
+          if (isZoomed) {
+            matrix.scale(2.5);
+          }
+          transformationController.value = matrix;
+        }
+
+        return Material(
+          color: Colors.black,
+          child: SafeArea(
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => Navigator.of(context).pop(),
+                    child: const SizedBox.expand(),
+                  ),
+                ),
+                Positioned.fill(
+                  child: Center(
+                    child: hasAvatar
+                        ? GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () {},
+                            onDoubleTap: toggleZoom,
+                            child: InteractiveViewer(
+                              transformationController:
+                                  transformationController,
+                              minScale: 1,
+                              maxScale: 4,
+                              panEnabled: true,
+                              scaleEnabled: true,
+                              child: Image(
+                                image: imageProvider!,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          )
+                        : const Icon(
+                            Icons.admin_panel_settings,
+                            size: 120,
+                            color: Colors.white70,
+                          ),
+                  ),
+                ),
+                Positioned(
+                  top: 12,
+                  left: 12,
+                  child: IconButton(
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.white.withValues(alpha: 0.12),
+                      foregroundColor: Colors.white,
+                      shape: const CircleBorder(),
+                    ),
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close),
+                  ),
+                ),
+              ],
+            ),
           ),
         );
-      }
+      },
+    );
+  }
+
+  Future<void> _confirmLogout(AppState state) async {
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text('Log Out'),
+          content: const Text('Apakah Anda yakin ingin keluar dari akun ini?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Batal'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.statusHigh,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Log Out'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldLogout == true && mounted) {
+      state.logout();
+      Navigator.of(context).pushReplacementNamed('/login');
     }
   }
 
@@ -56,41 +228,34 @@ class _ProfilAdminScreenState extends State<ProfilAdminScreen> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text(
-          'Resident Directory',
-          style: TextStyle(
-            color: AppTheme.primaryColor,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        automaticallyImplyLeading: false,
         backgroundColor: Colors.white,
         elevation: 0.5,
         scrolledUnderElevation: 1,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search, color: AppTheme.primaryColor),
-            onPressed: () {},
+        shadowColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        titleSpacing: 16,
+        title: Text(
+          'Profil RT',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            color: AppTheme.primaryColor,
+            fontWeight: FontWeight.w700,
+            fontSize: 22,
+            letterSpacing: -0.2,
           ),
-        ],
+        ),
       ),
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         child: Column(
           children: [
-            // Profile Header
             _buildProfileHeader(user),
-            const SizedBox(height: 24),
-
-            // Info Fields Section
+            const SizedBox(height: 16),
             _buildInfoFields(user),
             const SizedBox(height: 32),
-
-            // Management Section
             _buildManagementSection(context, state),
             const SizedBox(height: 12),
-
-            // Last Updated
             Text(
               'Terakhir diperbarui: ${_formatDate(DateTime.now())}',
               style: const TextStyle(
@@ -106,109 +271,178 @@ class _ProfilAdminScreenState extends State<ProfilAdminScreen> {
   }
 
   Widget _buildProfileHeader(dynamic user) {
-    return Column(
-      children: [
-        // Avatar with camera icon
-        Stack(
-          children: [
-            Container(
-              width: 112,
-              height: 112,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 4),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.primaryColor.withValues(alpha: 0.1),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: CircleAvatar(
-                radius: 52,
-                backgroundColor: AppTheme.surfaceContainerHigh,
-                backgroundImage: user?.avatarUrl != null
-                    ? CustomImageProvider.get(user!.avatarUrl)
-                    : null,
-                child: user?.avatarUrl == null
-                    ? const Icon(
-                        Icons.admin_panel_settings,
-                        size: 48,
-                        color: AppTheme.primaryColor,
-                      )
-                    : null,
-              ),
-            ),
-            Positioned(
-              bottom: 2,
-              right: 2,
-              child: GestureDetector(
-                onTap: () {
-                  showModalBottomSheet(
-                    context: context,
-                    builder: (context) => SafeArea(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          ListTile(
-                            leading: const Icon(Icons.camera_alt),
-                            title: const Text('Ambil Foto'),
-                            onTap: () {
-                              Navigator.pop(context);
-                              _pickImage(ImageSource.camera);
-                            },
-                          ),
-                          ListTile(
-                            leading: const Icon(Icons.photo_library),
-                            title: const Text('Pilih dari Galeri'),
-                            onTap: () {
-                              Navigator.pop(context);
-                              _pickImage(ImageSource.gallery);
-                            },
-                          ),
-                        ],
-                      ),
+    final avatarUrl = user?.avatarUrl?.trim() ?? '';
+    final userName = user?.name?.trim().isNotEmpty == true
+        ? user!.name.trim()
+        : 'Nama belum tersedia';
+    final rtRwLabel = _formatRtRwLabel(user?.rtRw);
+    final jabatan = rtRwLabel.isNotEmpty
+        ? 'Ketua $rtRwLabel'
+        : user?.jabatan?.trim().isNotEmpty == true
+        ? user!.jabatan!.trim()
+        : 'Jabatan belum tersedia';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: AppTheme.outlineVariantColor.withValues(alpha: 0.55),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryColor.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Stack(
+            children: [
+              Container(
+                width: 112,
+                height: 112,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 4),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
                     ),
-                  );
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryColor,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.15),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.camera_alt,
-                    size: 16,
-                    color: Colors.white,
+                  ],
+                ),
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: avatarUrl.isEmpty
+                      ? null
+                      : () => _showAvatarPreview(avatarUrl),
+                  child: CircleAvatar(
+                    radius: 52,
+                    backgroundColor: AppTheme.surfaceContainerHigh,
+                    backgroundImage: avatarUrl.isNotEmpty
+                        ? CustomImageProvider.get(avatarUrl)
+                        : null,
+                    child: avatarUrl.isEmpty
+                        ? const Icon(
+                            Icons.admin_panel_settings,
+                            size: 48,
+                            color: AppTheme.primaryColor,
+                          )
+                        : null,
                   ),
                 ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        // Subtitle label
-        Text(
-          'INFORMASI KETUA RT',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: AppTheme.textSecondaryColor,
-            letterSpacing: 1.5,
+              Positioned(
+                bottom: 2,
+                right: 2,
+                child: GestureDetector(
+                  onTap: () {
+                    showModalBottomSheet(
+                      context: context,
+                      builder: (context) => SafeArea(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ListTile(
+                              leading: const Icon(Icons.camera_alt),
+                              title: const Text('Ambil Foto'),
+                              onTap: () {
+                                Navigator.pop(context);
+                                _pickImage(ImageSource.camera);
+                              },
+                            ),
+                            ListTile(
+                              leading: const Icon(Icons.photo_library),
+                              title: const Text('Pilih dari Galeri'),
+                              onTap: () {
+                                Navigator.pop(context);
+                                _pickImage(ImageSource.gallery);
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryColor,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.15),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.camera_alt,
+                      size: 16,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ),
-      ],
+          const SizedBox(height: 16),
+          Text(
+            userName,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.textPrimaryColor,
+              height: 1.15,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            jabatan,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w500,
+              color: AppTheme.textSecondaryColor,
+              height: 1.25,
+            ),
+          ),
+        ],
+      ),
     );
+  }
+
+  String _formatRtRwLabel(String? rtRw) {
+    final raw = rtRw?.trim() ?? '';
+    if (raw.isEmpty) return '';
+
+    final parts = raw.split('/');
+    if (parts.length < 2) return '';
+
+    final rt = _normalizeRtRwPart(parts[0]);
+    final rw = _normalizeRtRwPart(parts[1]);
+    if (rt.isEmpty || rw.isEmpty) return '';
+
+    return 'RT $rt / RW $rw';
+  }
+
+  String _normalizeRtRwPart(String value) {
+    final digits = value.replaceAll(RegExp(r'\D'), '');
+    if (digits.isEmpty) return '';
+    return digits.padLeft(2, '0').substring(digits.padLeft(2, '0').length - 2);
   }
 
   Widget _buildInfoFields(dynamic user) {
@@ -220,11 +454,11 @@ class _ProfilAdminScreenState extends State<ProfilAdminScreen> {
           value: user?.name ?? 'Admin Lapor Warga',
           icon: Icons.person_outline,
           fieldKey: 'name',
-          onSave: (newValue) {
-            Provider.of<AppState>(
+          onSave: (newValue) async {
+            await Provider.of<AppState>(
               context,
               listen: false,
-            ).updateCurrentUser(name: newValue);
+            ).saveCurrentUserProfile(name: newValue);
           },
         ),
         const SizedBox(height: 10),
@@ -281,17 +515,13 @@ class _ProfilAdminScreenState extends State<ProfilAdminScreen> {
           value: user?.phone ?? '+62 812-3456-7890',
           icon: Icons.chat_outlined,
           fieldKey: 'phone',
-          onSave: (newValue) {
-            Provider.of<AppState>(
+          onSave: (newValue) async {
+            await Provider.of<AppState>(
               context,
               listen: false,
-            ).updateCurrentUser(phone: newValue);
+            ).saveCurrentUserProfile(phone: newValue);
           },
         ),
-        const SizedBox(height: 10),
-
-        // Password with expandable form
-        _buildPasswordCard(),
       ],
     );
   }
@@ -301,7 +531,7 @@ class _ProfilAdminScreenState extends State<ProfilAdminScreen> {
     required String value,
     required IconData icon,
     required String fieldKey,
-    required void Function(String) onSave,
+    required Future<void> Function(String) onSave,
   }) {
     final isEditing = _editingField == fieldKey;
 
@@ -447,16 +677,38 @@ class _ProfilAdminScreenState extends State<ProfilAdminScreen> {
                               borderRadius: BorderRadius.circular(10),
                             ),
                           ),
-                          onPressed: () {
-                            if (_editController.text.trim().isNotEmpty) {
-                              onSave(_editController.text.trim());
+                          onPressed: () async {
+                            final newValue = _editController.text.trim();
+                            if (newValue.isEmpty) {
+                              setState(() {
+                                _editingField = '';
+                                _editController.clear();
+                              });
+                              return;
+                            }
+
+                            try {
+                              await onSave(newValue);
+                              if (!mounted) return;
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text('$label berhasil diperbarui.'),
                                   backgroundColor: AppTheme.statusLow,
                                 ),
                               );
+                            } catch (error) {
+                              if (!mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Gagal memperbarui $label: $error',
+                                  ),
+                                  backgroundColor: AppTheme.statusHigh,
+                                ),
+                              );
                             }
+
+                            if (!mounted) return;
                             setState(() {
                               _editingField = '';
                               _editController.clear();
@@ -701,9 +953,25 @@ class _ProfilAdminScreenState extends State<ProfilAdminScreen> {
                               borderRadius: BorderRadius.circular(10),
                             ),
                           ),
-                          onPressed: () {
-                            if (_newPasswordController.text !=
-                                _confirmPasswordController.text) {
+                          onPressed: () async {
+                            final newPassword = _newPasswordController.text
+                                .trim();
+                            final confirmPassword = _confirmPasswordController
+                                .text
+                                .trim();
+
+                            if (newPassword.isEmpty ||
+                                confirmPassword.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Password baru wajib diisi.'),
+                                  backgroundColor: AppTheme.statusHigh,
+                                ),
+                              );
+                              return;
+                            }
+
+                            if (newPassword != confirmPassword) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text(
@@ -714,13 +982,22 @@ class _ProfilAdminScreenState extends State<ProfilAdminScreen> {
                               );
                               return;
                             }
-                            if (_newPasswordController.text.isNotEmpty) {
-                              Provider.of<AppState>(
+                            try {
+                              await Provider.of<AppState>(
                                 context,
                                 listen: false,
-                              ).updateCurrentUser(
-                                password: _newPasswordController.text,
+                              ).updateCurrentUserPassword(newPassword);
+                            } catch (error) {
+                              if (!mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Gagal memperbarui Kata Sandi: $error',
+                                  ),
+                                  backgroundColor: AppTheme.statusHigh,
+                                ),
                               );
+                              return;
                             }
 
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -791,8 +1068,6 @@ class _ProfilAdminScreenState extends State<ProfilAdminScreen> {
   }
 
   Widget _buildManagementSection(BuildContext context, AppState state) {
-    final pendingCount = state.pendingWarga.length;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -809,47 +1084,11 @@ class _ProfilAdminScreenState extends State<ProfilAdminScreen> {
           ),
         ),
 
-        // Persetujuan Warga Baru
-        _buildManagementItem(
-          icon: Icons.person_add_outlined,
-          title: 'Persetujuan Warga Baru',
-          badgeCount: pendingCount,
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) =>
-                    const DaftarWargaAdminScreen(initialTab: 1),
-              ),
-            );
-          },
-        ),
-        const SizedBox(height: 10),
-
         // Daftar & Data Warga RT
         _buildManagementItem(
           icon: Icons.group_outlined,
           title: 'Daftar & Data Warga RT',
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) =>
-                    const DaftarWargaAdminScreen(initialTab: 0),
-              ),
-            );
-          },
-        ),
-        const SizedBox(height: 10),
-
-        // Kelola Kode Registrasi
-        _buildManagementItem(
-          icon: Icons.vpn_key_outlined,
-          title: 'Kelola Kode Registrasi',
-          badgeCount: state.myRegistrationCodes.where((c) => c.isActive).length,
-          badgeText: 'aktif',
-          badgeColor: AppTheme.primaryColor,
-          onTap: () {
-            _showRegistrationCodeSheet(context);
-          },
+          onTap: widget.onGoToApprovedWarga ?? () {},
         ),
         const SizedBox(height: 24),
 
@@ -868,13 +1107,10 @@ class _ProfilAdminScreenState extends State<ProfilAdminScreen> {
                 borderRadius: BorderRadius.circular(16),
               ),
             ),
-            onPressed: () {
-              state.logout();
-              Navigator.of(context).pushReplacementNamed('/login');
-            },
+            onPressed: () => _confirmLogout(state),
             icon: const Icon(Icons.logout, size: 20),
             label: const Text(
-              'Keluar Sesi',
+              'Log Out',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
             ),
           ),
@@ -959,635 +1195,6 @@ class _ProfilAdminScreenState extends State<ProfilAdminScreen> {
             const Icon(Icons.chevron_right, color: AppTheme.textSecondaryColor),
           ],
         ),
-      ),
-    );
-  }
-
-  void _showRegistrationCodeSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => const _RegistrationCodeBottomSheet(),
-    );
-  }
-
-  String _formatDate(DateTime date) {
-    final months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'Mei',
-      'Jun',
-      'Jul',
-      'Agu',
-      'Sep',
-      'Okt',
-      'Nov',
-      'Des',
-    ];
-    return '${date.day} ${months[date.month - 1]} ${date.year}';
-  }
-}
-
-class _RegistrationCodeBottomSheet extends StatefulWidget {
-  const _RegistrationCodeBottomSheet();
-
-  @override
-  State<_RegistrationCodeBottomSheet> createState() =>
-      _RegistrationCodeBottomSheetState();
-}
-
-class _RegistrationCodeBottomSheetState
-    extends State<_RegistrationCodeBottomSheet> {
-  final _newCodeController = TextEditingController();
-  bool _showNewCodeForm = false;
-
-  @override
-  void dispose() {
-    _newCodeController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final state = Provider.of<AppState>(context);
-    final myCodes = state.myRegistrationCodes;
-    final user = state.currentUser;
-
-    return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.75,
-      ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Handle bar
-          const SizedBox(height: 12),
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: AppTheme.outlineVariantColor,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Title
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryFixed.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.vpn_key_rounded,
-                    color: AppTheme.primaryColor,
-                    size: 22,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Kode Registrasi',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.textPrimaryColor,
-                        ),
-                      ),
-                      Text(
-                        'Bagikan kode ini ke warga untuk mendaftar',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: AppTheme.textSecondaryColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Divider(height: 1),
-
-          // Code list
-          Flexible(
-            child: myCodes.isEmpty && !_showNewCodeForm
-                ? _buildEmptyState()
-                : ListView(
-                    shrinkWrap: true,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
-                    ),
-                    children: [
-                      ...myCodes.map((code) => _buildCodeCard(code, state)),
-                      if (_showNewCodeForm) _buildNewCodeForm(state, user),
-                    ],
-                  ),
-          ),
-
-          // Bottom action
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border(
-                top: BorderSide(
-                  color: AppTheme.outlineVariantColor.withValues(alpha: 0.5),
-                ),
-              ),
-            ),
-            child: SafeArea(
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryContainerColor,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      _showNewCodeForm = !_showNewCodeForm;
-                      _newCodeController.clear();
-                    });
-                  },
-                  icon: Icon(
-                    _showNewCodeForm ? Icons.close : Icons.add_rounded,
-                    size: 20,
-                  ),
-                  label: Text(
-                    _showNewCodeForm ? 'Batal' : 'Buat Kode Baru',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: AppTheme.primaryFixed.withValues(alpha: 0.15),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.vpn_key_off_rounded,
-              size: 40,
-              color: AppTheme.primaryColor,
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Belum ada kode registrasi',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.textPrimaryColor,
-            ),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            'Buat kode registrasi agar warga bisa mendaftar ke RT Anda',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 12, color: AppTheme.textSecondaryColor),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCodeCard(RegistrationCode code, AppState state) {
-    final isActive = code.isActive;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: isActive
-            ? AppTheme.primaryFixed.withValues(alpha: 0.08)
-            : Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isActive
-              ? AppTheme.primaryColor.withValues(alpha: 0.2)
-              : Colors.grey.shade200,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.vpn_key_rounded,
-                      size: 16,
-                      color: isActive
-                          ? AppTheme.primaryColor
-                          : AppTheme.textSecondaryColor,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      code.code,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.5,
-                        color: isActive
-                            ? AppTheme.primaryColor
-                            : AppTheme.textSecondaryColor,
-                        decoration: isActive
-                            ? null
-                            : TextDecoration.lineThrough,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: isActive
-                      ? AppTheme.statusLow.withValues(alpha: 0.1)
-                      : AppTheme.statusHigh.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  isActive ? 'Aktif' : 'Nonaktif',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: isActive ? AppTheme.statusLow : AppTheme.statusHigh,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Icon(
-                Icons.location_on_outlined,
-                size: 12,
-                color: AppTheme.textSecondaryColor,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                'RT/RW: ${code.rtRw}',
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: AppTheme.textSecondaryColor,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Icon(
-                Icons.schedule,
-                size: 12,
-                color: AppTheme.textSecondaryColor,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                _formatDate(code.createdAt),
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: AppTheme.textSecondaryColor,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppTheme.primaryColor,
-                    side: BorderSide(
-                      color: AppTheme.primaryColor.withValues(alpha: 0.3),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  onPressed: () {
-                    Clipboard.setData(ClipboardData(text: code.code));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Kode "${code.code}" disalin ke clipboard',
-                        ),
-                        backgroundColor: AppTheme.primaryColor,
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.copy_rounded, size: 14),
-                  label: const Text(
-                    'Salin',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: isActive
-                        ? AppTheme.statusMedium
-                        : AppTheme.statusLow,
-                    side: BorderSide(
-                      color: isActive
-                          ? AppTheme.statusMedium.withValues(alpha: 0.3)
-                          : AppTheme.statusLow.withValues(alpha: 0.3),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  onPressed: () {
-                    state.toggleRegistrationCodeActive(code.id);
-                  },
-                  icon: Icon(
-                    isActive ? Icons.block : Icons.check_circle_outline,
-                    size: 14,
-                  ),
-                  label: Text(
-                    isActive ? 'Nonaktifkan' : 'Aktifkan',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              SizedBox(
-                height: 36,
-                width: 36,
-                child: IconButton(
-                  style: IconButton.styleFrom(
-                    backgroundColor: AppTheme.statusHigh.withValues(
-                      alpha: 0.08,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  padding: EdgeInsets.zero,
-                  onPressed: () {
-                    _showDeleteConfirmation(context, state, code);
-                  },
-                  icon: const Icon(
-                    Icons.delete_outline_rounded,
-                    size: 16,
-                    color: AppTheme.statusHigh,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNewCodeForm(AppState state, AppUser? user) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.primaryFixed.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'BUAT KODE BARU',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.8,
-              color: AppTheme.primaryColor,
-            ),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            'Masukkan kode sendiri atau generate otomatis',
-            style: TextStyle(fontSize: 11, color: AppTheme.textSecondaryColor),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _newCodeController,
-                  textCapitalization: TextCapitalization.characters,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 1.2,
-                    color: AppTheme.textPrimaryColor,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: 'RT05-XXXX',
-                    hintStyle: TextStyle(
-                      color: AppTheme.textSecondaryColor.withValues(alpha: 0.4),
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 12,
-                    ),
-                    prefixIcon: const Icon(
-                      Icons.vpn_key_outlined,
-                      size: 18,
-                      color: AppTheme.outlineColor,
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(
-                        color: AppTheme.outlineVariantColor,
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(
-                        color: AppTheme.primaryColor,
-                        width: 1.5,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              SizedBox(
-                height: 48,
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryFixed,
-                    foregroundColor: AppTheme.primaryColor,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  onPressed: () {
-                    final rtRw = user?.rtRw ?? '001/001';
-                    final code = state.generateRegistrationCode(rtRw);
-                    _newCodeController.text = code;
-                  },
-                  icon: const Icon(Icons.auto_awesome, size: 16),
-                  label: const Text(
-                    'Generate',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.statusLow,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              onPressed: () {
-                final code = _newCodeController.text.trim();
-                if (code.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Masukkan atau generate kode terlebih dahulu',
-                      ),
-                      backgroundColor: AppTheme.statusMedium,
-                    ),
-                  );
-                  return;
-                }
-                final rtRw = user?.rtRw ?? '001/001';
-                state.addRegistrationCode(code: code, rtRw: rtRw);
-                setState(() {
-                  _showNewCodeForm = false;
-                  _newCodeController.clear();
-                });
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Kode "$code" berhasil dibuat!'),
-                    backgroundColor: AppTheme.statusLow,
-                  ),
-                );
-              },
-              icon: const Icon(Icons.check_rounded, size: 18),
-              label: const Text(
-                'Simpan Kode',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showDeleteConfirmation(
-    BuildContext context,
-    AppState state,
-    RegistrationCode code,
-  ) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
-          'Hapus Kode Registrasi?',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-        content: Text(
-          'Kode "${code.code}" akan dihapus permanen. Warga yang belum mendaftar dengan kode ini tidak akan bisa menggunakannya lagi.',
-          style: const TextStyle(
-            fontSize: 13,
-            color: AppTheme.textSecondaryColor,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Batal'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.statusHigh,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            onPressed: () {
-              state.deleteRegistrationCode(code.id);
-              Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Kode "${code.code}" dihapus'),
-                  backgroundColor: AppTheme.statusHigh,
-                ),
-              );
-            },
-            child: const Text(
-              'Hapus',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
       ),
     );
   }

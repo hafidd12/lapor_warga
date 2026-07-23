@@ -1117,6 +1117,27 @@ class AppState with ChangeNotifier {
     }
   }
 
+  Future<void> updateCurrentUserPassword(String newPassword) async {
+    final currentUser = _currentUser;
+    if (currentUser == null) return;
+
+    if (!SupabaseService.isInitialized) {
+      throw const AuthServiceException(
+        'Ubah password memerlukan koneksi Supabase.',
+      );
+    }
+
+    try {
+      await _activeAuthService.updatePassword(newPassword: newPassword);
+    } catch (error, stackTrace) {
+      debugPrint(
+        '[AppState][profile] updateCurrentUserPassword error=${error.runtimeType}: $error',
+      );
+      debugPrint(stackTrace.toString());
+      rethrow;
+    }
+  }
+
   // ============================================
   // Registration Code Management
   // ============================================
@@ -1171,6 +1192,10 @@ class AppState with ChangeNotifier {
       );
       await refreshRemoteData();
     });
+  }
+
+  String generateWargaRegistrationCode(String rtRw) {
+    return _activeBackendService.generateWargaRegistrationCode(rtRw);
   }
 
   /// Look up a registration code → returns the rtRw if found and active, null otherwise

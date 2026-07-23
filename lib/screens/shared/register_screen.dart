@@ -464,9 +464,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
               jabatan: _jabatanController.text,
               rtRw: rtRw,
             );
-            final regCode = _wargaRegistrationCodeController.text.trim().isEmpty
-                ? 'WRG$rt-$rw'
-                : _wargaRegistrationCodeController.text.trim();
+            final regCode = state.generateWargaRegistrationCode(rtRw);
+            _wargaRegistrationCodeController.text = regCode;
             if (regCode.isNotEmpty) {
               state.addRegistrationCode(code: regCode, rtRw: rtRw);
             }

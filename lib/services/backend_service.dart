@@ -580,8 +580,7 @@ class BackendService {
         })
         .eq('id', pollId);
 
-    final overlapCount =
-        existingOptionRows.length < normalizedOptions.length
+    final overlapCount = existingOptionRows.length < normalizedOptions.length
         ? existingOptionRows.length
         : normalizedOptions.length;
 
@@ -591,18 +590,17 @@ class BackendService {
 
       await _client
           .from('poll_options')
-          .update({
-            'label': normalizedOptions[i],
-            'sort_order': i,
-          })
+          .update({'label': normalizedOptions[i], 'sort_order': i})
           .eq('id', optionId);
     }
 
     if (normalizedOptions.length > existingOptionRows.length) {
       await _client.from('poll_options').insert([
-        for (var i = existingOptionRows.length;
-            i < normalizedOptions.length;
-            i++)
+        for (
+          var i = existingOptionRows.length;
+          i < normalizedOptions.length;
+          i++
+        )
           {
             'poll_id': pollId,
             'label': normalizedOptions[i],
@@ -763,13 +761,15 @@ class BackendService {
     _logRegistrationCodes(
       'generateWargaRegistrationCode input rtRw="$rtRw" splitRt="${splitRtRw.$1}" splitRw="${splitRtRw.$2}"',
     );
-    if (splitRtRw.$1.isEmpty || splitRtRw.$2.isEmpty) {
+    final rt = _normalizeRtRwPart(splitRtRw.$1);
+    final rw = _normalizeRtRwPart(splitRtRw.$2);
+    if (rt.isEmpty || rw.isEmpty) {
       throw const BackendServiceException(
         'Format RT/RW tidak valid untuk generate kode warga.',
       );
     }
 
-    final generated = 'WRG${splitRtRw.$1}-${splitRtRw.$2}';
+    final generated = 'WRG$rt-$rw';
     _logRegistrationCodes('generateWargaRegistrationCode result="$generated"');
     return generated;
   }
@@ -910,7 +910,8 @@ class BackendService {
     for (final row in optionRows) {
       final pollId = _stringValue(row['poll_id']);
       final optionId = _stringValue(row['id']);
-      final label = _stringValue(row['label']) ?? _stringValue(row['option_text']);
+      final label =
+          _stringValue(row['label']) ?? _stringValue(row['option_text']);
       if (pollId == null || optionId == null || label == null) continue;
 
       optionRowsByPoll.putIfAbsent(pollId, () => []).add(row);
@@ -948,7 +949,8 @@ class BackendService {
 
         for (final optionRow in optionRowsForPoll) {
           final optionId = _stringValue(optionRow['id']);
-          final label = _stringValue(optionRow['label']) ??
+          final label =
+              _stringValue(optionRow['label']) ??
               _stringValue(optionRow['option_text']);
           if (optionId == null || label == null) continue;
 
@@ -1127,6 +1129,13 @@ class BackendService {
     final rt = parts.isNotEmpty ? parts.first.trim() : '';
     final rw = parts.length > 1 ? parts[1].trim() : '';
     return (rt, rw);
+  }
+
+  String _normalizeRtRwPart(String value) {
+    final digits = value.replaceAll(RegExp(r'\D'), '');
+    if (digits.isEmpty) return '';
+    final normalized = digits.padLeft(2, '0');
+    return normalized.substring(normalized.length - 2);
   }
 
   String _composeRtRw(String rt, String rw) {

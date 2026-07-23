@@ -36,6 +36,14 @@ class _DaftarWargaAdminScreenState extends State<DaftarWargaAdminScreen>
   }
 
   @override
+  void didUpdateWidget(covariant DaftarWargaAdminScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialTab != widget.initialTab) {
+      _tabController.animateTo(widget.initialTab.clamp(0, 2).toInt());
+    }
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     _tabController.dispose();

@@ -280,6 +280,20 @@ class AuthService {
     return AppUser.fromProfileRow(Map<String, dynamic>.from(profileData));
   }
 
+  Future<void> updatePassword({required String newPassword}) async {
+    final normalizedPassword = newPassword.trim();
+    if (normalizedPassword.isEmpty) {
+      throw const AuthServiceException('Password baru wajib diisi.');
+    }
+
+    final currentUser = _client.auth.currentUser;
+    if (currentUser == null) {
+      throw const AuthServiceException('Sesi login tidak ditemukan.');
+    }
+
+    await _client.auth.updateUser(UserAttributes(password: normalizedPassword));
+  }
+
   Future<AppUser> registerWargaWithSupabase({
     required String name,
     required String email,
