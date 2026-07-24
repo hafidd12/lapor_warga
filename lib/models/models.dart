@@ -216,56 +216,56 @@ class RegistrationCodeLookupResult {
 
 class AppNotification {
   final String id;
-  final String userId;
+  final String recipientId;
+  final String? senderId;
   final NotificationType type;
   final String title;
   final String message;
+  final String? relatedTable;
+  final String? relatedId;
   final bool isRead;
   final DateTime createdAt;
   final DateTime? readAt;
-  final String? targetId;
-  final String? targetType;
+
+  String get userId => recipientId;
+  String? get targetId => relatedId;
+  String? get targetType => relatedTable;
 
   AppNotification({
     required this.id,
-    required this.userId,
+    String? userId,
+    String? recipientId,
+    this.senderId,
     required this.type,
     required this.title,
     required this.message,
+    this.relatedTable,
+    this.relatedId,
     required this.isRead,
     required this.createdAt,
     this.readAt,
-    this.targetId,
-    this.targetType,
-  });
+  }) : recipientId = (recipientId ?? userId ?? '').trim();
 
   factory AppNotification.fromRow(Map<String, dynamic> row) {
     final type = _parseNotificationType(row['type']);
 
     return AppNotification(
       id: _stringValue(row['id']) ?? '',
-      userId: _stringValue(row['user_id']) ?? '',
+      recipientId: _stringValue(row['recipient_id']) ?? '',
+      senderId: _stringValue(row['sender_id']),
       type: type,
       title: _stringValue(row['title']) ?? _defaultTitle(type),
-      message:
-          _stringValue(row['message']) ??
-          _stringValue(row['body']) ??
-          _stringValue(row['description']) ??
-          _stringValue(row['content']) ??
-          '',
+      message: _stringValue(row['message']) ?? '',
+      relatedTable: _stringValue(row['related_table']),
+      relatedId: _stringValue(row['related_id']),
       isRead:
           row['is_read'] == true ||
           row['is_read'] == 1 ||
-          row['is_read'] == 'true' ||
-          row['read_at'] != null,
+          row['is_read'] == 'true',
       createdAt:
           _dateTimeValue(row['created_at']) ??
           DateTime.fromMillisecondsSinceEpoch(0),
-      readAt: _dateTimeValue(row['read_at']),
-      targetId:
-          _stringValue(row['target_id']) ?? _stringValue(row['related_id']),
-      targetType:
-          _stringValue(row['target_type']) ?? _stringValue(row['related_type']),
+      readAt: null,
     );
   }
 

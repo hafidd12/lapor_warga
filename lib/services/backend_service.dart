@@ -49,7 +49,7 @@ class BackendService {
     const reports = <Report>[];
     final announcements = await fetchAnnouncements(rtRw: rtRw);
     final polls = await fetchPolls();
-    final activities = await fetchActivities();
+    final activities = await fetchActivities(rtRw?.trim() ?? '');
     final registrationCodes = await fetchRegistrationCodes();
 
     return BackendSnapshot(
@@ -221,10 +221,16 @@ class BackendService {
     }
   }
 
-  Future<List<AdminActivity>> fetchActivities() async {
+  Future<List<AdminActivity>> fetchActivities(String rtRw) async {
+    final normalizedRtRw = rtRw.trim();
+    if (normalizedRtRw.isEmpty) {
+      return const [];
+    }
+
     final data = await _client
         .from('admin_activities')
         .select('*')
+        .eq('rt_rw', normalizedRtRw)
         .order('created_at', ascending: false);
 
     return _rows(data).map(_activityFromRow).toList();
@@ -458,7 +464,11 @@ class BackendService {
       currentUser: currentUser,
     );
 
-    await _notifyWargaAboutAnnouncement(currentUser: currentUser, title: title);
+    await _notifyWargaAboutAnnouncement(
+      currentUser: currentUser,
+      title: title,
+      relatedId: _stringValue(data['id']),
+    );
 
     return _announcementFromRow(Map<String, dynamic>.from(data));
   }
@@ -558,6 +568,7 @@ class BackendService {
     await _notifyWargaAboutPoll(
       currentUser: currentUser,
       title: normalizedQuestion,
+      relatedId: pollId,
     );
 
     return _fetchPollById(pollId);
@@ -907,6 +918,7 @@ class BackendService {
       'actor_name': actorName,
       'description': description,
       'type': type,
+      'rt_rw': currentUser.rtRw,
       'photo_url': photoUrl,
       'related_table': relatedTable,
       'related_id': relatedId,
@@ -916,6 +928,7 @@ class BackendService {
   Future<void> _notifyWargaAboutAnnouncement({
     required AppUser currentUser,
     required String title,
+    String? relatedId,
   }) async {
     final rtRw = currentUser.rtRw?.trim() ?? '';
     if (rtRw.isEmpty) return;
@@ -937,9 +950,12 @@ class BackendService {
       wargaIds.map(
         (wargaId) => _notificationService.createNotification(
           userId: wargaId,
+          senderId: currentUser.id,
           type: NotificationType.announcement,
           title: 'Pengumuman Baru',
           message: 'RT telah menerbitkan pengumuman "$title".',
+          relatedTable: 'announcements',
+          relatedId: relatedId,
         ),
       ),
     );
@@ -948,6 +964,7 @@ class BackendService {
   Future<void> _notifyWargaAboutPoll({
     required AppUser currentUser,
     required String title,
+    String? relatedId,
   }) async {
     final rtRw = currentUser.rtRw?.trim() ?? '';
     if (rtRw.isEmpty) return;
@@ -969,9 +986,12 @@ class BackendService {
       wargaIds.map(
         (wargaId) => _notificationService.createNotification(
           userId: wargaId,
+          senderId: currentUser.id,
           type: NotificationType.voting,
           title: 'Voting Baru',
           message: 'Voting "$title" telah dibuka.',
+          relatedTable: 'polls',
+          relatedId: relatedId,
         ),
       ),
     );
@@ -1001,6 +1021,8 @@ class BackendService {
       message: isProcessed
           ? 'Laporan "$title" sedang diproses oleh RT.'
           : 'Laporan "$title" telah dinyatakan selesai.',
+      relatedTable: 'reports',
+      relatedId: reportId,
     );
   }
 

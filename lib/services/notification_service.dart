@@ -20,43 +20,42 @@ class NotificationService {
   final SupabaseClient _client;
 
   static const String _selectColumns =
-      'id, user_id, type, title, message, body, description, content, is_read, created_at, read_at, target_id, target_type, related_id, related_type';
+      'id, recipient_id, sender_id, title, message, type, related_table, related_id, is_read, created_at';
 
   Future<void> createNotification({
-    required String userId,
+    String? userId,
+    String? recipientId,
+    String? senderId,
     required NotificationType type,
     String? title,
     String? message,
-    String? targetId,
-    String? targetType,
+    String? relatedTable,
+    String? relatedId,
     bool isRead = false,
     DateTime? createdAt,
-    DateTime? readAt,
   }) async {
-    final normalizedUserId = userId.trim();
-    if (normalizedUserId.isEmpty) {
-      throw const NotificationServiceException('User ID not found.');
+    final normalizedRecipientId = (recipientId ?? userId ?? '').trim();
+    if (normalizedRecipientId.isEmpty) {
+      throw const NotificationServiceException('Recipient ID not found.');
     }
 
     final normalizedTitle = title?.trim() ?? '';
     final normalizedMessage = message?.trim() ?? '';
     final now = (createdAt ?? DateTime.now()).toUtc().toIso8601String();
-    final resolvedReadAt = isRead
-        ? (readAt ?? DateTime.now()).toUtc().toIso8601String()
-        : readAt?.toUtc().toIso8601String();
+    final normalizedSenderId = senderId?.trim() ?? '';
 
     final payload = <String, dynamic>{
-      'user_id': normalizedUserId,
+      'recipient_id': normalizedRecipientId,
+      if (normalizedSenderId.isNotEmpty) 'sender_id': normalizedSenderId,
       'type': _typeValue(type),
       'title': normalizedTitle.isNotEmpty
           ? normalizedTitle
           : _defaultTitle(type),
       'message': normalizedMessage,
+      'related_table': _normalizedValue(relatedTable),
+      'related_id': _normalizedValue(relatedId),
       'is_read': isRead,
       'created_at': now,
-      'read_at': resolvedReadAt,
-      'target_id': _normalizedValue(targetId),
-      'target_type': _normalizedValue(targetType),
     };
 
     debugPrint('[NotificationService] createNotification payload=$payload');
@@ -65,15 +64,15 @@ class NotificationService {
   }
 
   Future<List<AppNotification>> fetchNotifications(String userId) async {
-    final normalizedUserId = userId.trim();
-    if (normalizedUserId.isEmpty) {
+    final normalizedRecipientId = userId.trim();
+    if (normalizedRecipientId.isEmpty) {
       return const [];
     }
 
     final rows = await _client
         .from('notifications')
         .select(_selectColumns)
-        .eq('user_id', normalizedUserId)
+        .eq('recipient_id', normalizedRecipientId)
         .order('created_at', ascending: false);
 
     return rows
@@ -89,26 +88,20 @@ class NotificationService {
 
     await _client
         .from('notifications')
-        .update({
-          'is_read': true,
-          'read_at': DateTime.now().toUtc().toIso8601String(),
-        })
+        .update({'is_read': true})
         .eq('id', normalizedId);
   }
 
   Future<void> markAllAsRead(String userId) async {
-    final normalizedUserId = userId.trim();
-    if (normalizedUserId.isEmpty) {
-      throw const NotificationServiceException('User ID not found.');
+    final normalizedRecipientId = userId.trim();
+    if (normalizedRecipientId.isEmpty) {
+      throw const NotificationServiceException('Recipient ID not found.');
     }
 
     await _client
         .from('notifications')
-        .update({
-          'is_read': true,
-          'read_at': DateTime.now().toUtc().toIso8601String(),
-        })
-        .eq('user_id', normalizedUserId)
+        .update({'is_read': true})
+        .eq('recipient_id', normalizedRecipientId)
         .eq('is_read', false);
   }
 

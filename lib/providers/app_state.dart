@@ -441,8 +441,17 @@ class AppState with ChangeNotifier {
       return;
     }
 
+    final currentRtRw = currentUser.rtRw?.trim() ?? '';
+    if (currentRtRw.isEmpty) {
+      _activities.clear();
+      notifyListeners();
+      return;
+    }
+
     try {
-      final activities = await _activeBackendService.fetchActivities();
+      final activities = await _activeBackendService.fetchActivities(
+        currentRtRw,
+      );
       _activities
         ..clear()
         ..addAll(activities);
@@ -1443,6 +1452,7 @@ class AppState with ChangeNotifier {
     );
     _updateLocalWargaVerificationStatus(userId, VerificationStatus.verified);
     await _notifyWargaVerificationResult(userId, true);
+    await refreshActivities();
     await refreshRemoteData();
     await refreshVerificationUsers();
   }
@@ -1480,6 +1490,7 @@ class AppState with ChangeNotifier {
     );
     _updateLocalWargaVerificationStatus(userId, VerificationStatus.rejected);
     await _notifyWargaVerificationResult(userId, false);
+    await refreshActivities();
     await refreshRemoteData();
     await refreshVerificationUsers();
   }
