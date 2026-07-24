@@ -6,6 +6,8 @@ import '../../providers/app_state.dart';
 import '../../theme.dart';
 import '../../widgets/notification_bell_button.dart';
 import '../../widgets/custom_image.dart';
+import '../../widgets/announcement_preview_card.dart';
+import '../../widgets/dashboard_top_section.dart';
 import 'aktivitas_laporan.dart';
 import 'daftar_pengumuman.dart';
 import 'detail_pengumuman.dart';
@@ -247,9 +249,7 @@ class _DashboardWargaScreenState extends State<DashboardWargaScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildHeader(context),
-                const SizedBox(height: 18),
-                _buildGreetingCard(user),
+                DashboardTopSection(user: user, onNotificationsTap: () {}),
                 const SizedBox(height: 18),
                 _buildHeroBanner(context),
                 const SizedBox(height: 22),
@@ -339,7 +339,7 @@ class _DashboardWargaScreenState extends State<DashboardWargaScreen> {
                       itemCount: announcements.length,
                       separatorBuilder: (_, _) => const SizedBox(width: 14),
                       itemBuilder: (context, index) {
-                        return _AnnouncementCard(
+                        return AnnouncementPreviewCard(
                           announcement: announcements[index],
                           onTap: () {
                             Navigator.of(context).push(
@@ -1220,102 +1220,6 @@ class _CompletionProofCard extends StatelessWidget {
                 ),
               ],
             ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _AnnouncementCard extends StatelessWidget {
-  final Announcement announcement;
-  final VoidCallback onTap;
-
-  const _AnnouncementCard({required this.announcement, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(24),
-        child: Container(
-          width: 286,
-          height: 210,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: AppTheme.outlineVariantColor.withValues(alpha: 0.55),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.035),
-                blurRadius: 16,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Icon(
-                  Icons.campaign_rounded,
-                  color: AppTheme.primaryColor,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(height: 14),
-              Text(
-                announcement.title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: AppTheme.textPrimaryColor,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  height: 1.25,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                announcement.content,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: AppTheme.textSecondaryColor,
-                  fontSize: 12,
-                  height: 1.45,
-                ),
-              ),
-              const Spacer(),
-              Row(
-                children: [
-                  const Icon(
-                    Icons.schedule_rounded,
-                    size: 14,
-                    color: AppTheme.textSecondaryColor,
-                  ),
-                  const SizedBox(width: 5),
-                  Text(
-                    _formatWibDate(announcement.createdAt),
-                    style: const TextStyle(
-                      color: AppTheme.textSecondaryColor,
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
-              ),
-            ],
           ),
         ),
       ),
