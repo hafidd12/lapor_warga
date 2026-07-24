@@ -33,6 +33,11 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
     super.dispose();
   }
 
+  Future<void> _refreshReports() async {
+    final state = context.read<AppState>();
+    await state.refreshMyReports().catchError((_) {});
+  }
+
   String _formatDate(DateTime dateTime) {
     const months = [
       'Jan',
@@ -250,117 +255,124 @@ class _AktivitasLaporanScreenState extends State<AktivitasLaporanScreen> {
         automaticallyImplyLeading: false,
         actions: const [NotificationBellButton()],
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 18, 16, 20),
-        children: [
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: _filters.map((filter) {
-                final isSelected = filter == _selectedFilter;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ChoiceChip(
-                    label: Text(filter),
-                    selected: isSelected,
-                    showCheckmark: false,
-                    onSelected: (_) => setState(() => _selectedFilter = filter),
-                    selectedColor: AppTheme.primaryColor,
-                    backgroundColor: AppTheme.surfaceContainerHighest,
-                    labelStyle: TextStyle(
-                      color: isSelected
-                          ? Colors.white
-                          : AppTheme.textSecondaryColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(100),
-                      side: BorderSide(
+      body: RefreshIndicator(
+        onRefresh: _refreshReports,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics(),
+          ),
+          padding: const EdgeInsets.fromLTRB(16, 18, 16, 20),
+          children: [
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: _filters.map((filter) {
+                  final isSelected = filter == _selectedFilter;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ChoiceChip(
+                      label: Text(filter),
+                      selected: isSelected,
+                      showCheckmark: false,
+                      onSelected: (_) =>
+                          setState(() => _selectedFilter = filter),
+                      selectedColor: AppTheme.primaryColor,
+                      backgroundColor: AppTheme.surfaceContainerHighest,
+                      labelStyle: TextStyle(
                         color: isSelected
-                            ? AppTheme.primaryColor
-                            : AppTheme.surfaceContainerHighest,
+                            ? Colors.white
+                            : AppTheme.textSecondaryColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(100),
+                        side: BorderSide(
+                          color: isSelected
+                              ? AppTheme.primaryColor
+                              : AppTheme.surfaceContainerHighest,
+                        ),
                       ),
                     ),
+                  );
+                }).toList(),
+              ),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: _searchController,
+              onChanged: (value) => setState(() => _query = value),
+              decoration: InputDecoration(
+                hintText: 'Cari judul atau lokasi laporan...',
+                prefixIcon: const Icon(
+                  Icons.search,
+                  size: 20,
+                  color: AppTheme.outlineColor,
+                ),
+                suffixIcon: _query.isEmpty
+                    ? null
+                    : IconButton(
+                        tooltip: 'Bersihkan pencarian',
+                        onPressed: () {
+                          setState(() {
+                            _query = '';
+                            _searchController.clear();
+                          });
+                        },
+                        icon: const Icon(
+                          Icons.close_rounded,
+                          size: 18,
+                          color: AppTheme.outlineColor,
+                        ),
+                      ),
+                fillColor: Colors.white,
+                filled: true,
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(
+                    color: AppTheme.outlineVariantColor,
                   ),
-                );
-              }).toList(),
-            ),
-          ),
-          const SizedBox(height: 14),
-          TextField(
-            controller: _searchController,
-            onChanged: (value) => setState(() => _query = value),
-            decoration: InputDecoration(
-              hintText: 'Cari judul atau lokasi laporan...',
-              prefixIcon: const Icon(
-                Icons.search,
-                size: 20,
-                color: AppTheme.outlineColor,
-              ),
-              suffixIcon: _query.isEmpty
-                  ? null
-                  : IconButton(
-                      tooltip: 'Bersihkan pencarian',
-                      onPressed: () {
-                        setState(() {
-                          _query = '';
-                          _searchController.clear();
-                        });
-                      },
-                      icon: const Icon(
-                        Icons.close_rounded,
-                        size: 18,
-                        color: AppTheme.outlineColor,
-                      ),
-                    ),
-              fillColor: Colors.white,
-              filled: true,
-              isDense: true,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(
-                  color: AppTheme.outlineVariantColor,
                 ),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(
-                  color: AppTheme.outlineVariantColor,
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(
+                    color: AppTheme.outlineVariantColor,
+                  ),
                 ),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(
-                  color: AppTheme.primaryColor,
-                  width: 1.5,
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(
+                    color: AppTheme.primaryColor,
+                    width: 1.5,
+                  ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 14),
-          _buildStatsCard(
-            totalReports,
-            processedReports,
-            resolvedReports,
-            completedWithPhoto,
-          ),
-          const SizedBox(height: 14),
-          if (isLoading && reports.isEmpty)
-            _buildLoadingState()
-          else if (error != null && reports.isEmpty)
-            _buildErrorState(error, () => state.refreshMyReports())
-          else if (reports.isEmpty)
-            _buildEmptyState()
-          else
-            ...reports.map(
-              (report) => ReportCard(
-                report: report,
-                onTap: () => _showReportDetail(context, report),
-              ),
+            const SizedBox(height: 14),
+            _buildStatsCard(
+              totalReports,
+              processedReports,
+              resolvedReports,
+              completedWithPhoto,
             ),
-        ],
+            const SizedBox(height: 14),
+            if (isLoading && reports.isEmpty)
+              _buildLoadingState()
+            else if (error != null && reports.isEmpty)
+              _buildErrorState(error, () => state.refreshMyReports())
+            else if (reports.isEmpty)
+              _buildEmptyState()
+            else
+              ...reports.map(
+                (report) => ReportCard(
+                  report: report,
+                  onTap: () => _showReportDetail(context, report),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

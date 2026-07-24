@@ -427,6 +427,23 @@ class AppState with ChangeNotifier {
     }
   }
 
+  Future<void> refreshCitizenDashboardData() async {
+    await refreshRemoteData();
+    await refreshAnnouncements();
+    await refreshPolls();
+    await refreshNotifications();
+    await refreshMyReports();
+  }
+
+  Future<void> refreshAdminDashboardData() async {
+    await refreshRemoteData();
+    await refreshAnnouncements();
+    await refreshPolls();
+    await refreshNotifications();
+    await refreshVerificationUsers();
+    await refreshAdminReports();
+  }
+
   Future<void> refreshActivities() async {
     if (!SupabaseService.isInitialized) {
       _activities.clear();

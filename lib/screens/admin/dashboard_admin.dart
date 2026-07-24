@@ -106,6 +106,11 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
     });
   }
 
+  Future<void> _refreshDashboard() async {
+    final state = context.read<AppState>();
+    await state.refreshAdminDashboardData().catchError((_) {});
+  }
+
   String _formatTimeAgo(DateTime dateTime) {
     final diff = DateTime.now().difference(dateTime);
     if (diff.inDays > 0) return '${diff.inDays} hari yang lalu';
@@ -722,361 +727,371 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
       backgroundColor: Colors.white,
       body: SafeArea(
         bottom: false,
-        child: SingleChildScrollView(
-          controller: _scrollController,
-          physics: const BouncingScrollPhysics(),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                DashboardTopSection(user: user),
-                const SizedBox(height: 18),
-                _buildHeroCard(
-                  context,
-                  totalWargaCount: totalWargaCount,
-                  verifiedWargaCount: verifiedWargaCount,
-                  pendingWargaCount: pendingWargaCount,
-                ),
-                const SizedBox(height: 22),
-                _SectionHeader(
-                  title: 'Statistik Hari Ini',
-                  subtitle: 'Ringkasan cepat aktivitas dan kondisi terkini',
-                ),
-                const SizedBox(height: 16),
-                _buildStatisticsGrid(
-                  newCount: newCount,
-                  processedCount: processedCount,
-                  resolvedCount: resolvedCount,
-                  totalWargaCount: totalWargaCount,
-                ),
-                const SizedBox(height: 28),
-                _SectionHeader(
-                  title: 'Akses Cepat',
-                  subtitle: 'Aksi yang paling sering digunakan RT',
-                ),
-                const SizedBox(height: 16),
-                _buildQuickActions(context),
-                const SizedBox(height: 28),
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: AppTheme.outlineVariantColor.withValues(
-                        alpha: 0.55,
-                      ),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.04),
-                        blurRadius: 16,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
+        child: RefreshIndicator(
+          onRefresh: _refreshDashboard,
+          child: SingleChildScrollView(
+            controller: _scrollController,
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  DashboardTopSection(user: user),
+                  const SizedBox(height: 18),
+                  _buildHeroCard(
+                    context,
+                    totalWargaCount: totalWargaCount,
+                    verifiedWargaCount: verifiedWargaCount,
+                    pendingWargaCount: pendingWargaCount,
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          const Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Pengumuman RT',
-                                  style: TextStyle(
-                                    color: AppTheme.textPrimaryColor,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w700,
-                                    height: 1.2,
-                                  ),
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  'Informasi terbaru dari Ketua RT',
-                                  style: TextStyle(
-                                    color: AppTheme.textSecondaryColor,
-                                    fontSize: 12,
-                                    height: 1.4,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () =>
-                                _showAllAnnouncementsSheet(context),
-                            child: const Text('Lihat Semua'),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      if (isAnnouncementsLoading && latestAnnouncement == null)
-                        const _LoadingDashboardState(
-                          title: 'Memuat pengumuman',
-                          subtitle: 'Mengambil data pengumuman dari Supabase.',
-                        )
-                      else if (announcementError != null &&
-                          latestAnnouncement == null)
-                        _AnnouncementSectionErrorState(
-                          message: announcementError,
-                          onRetry: () {
-                            state.refreshAnnouncements().catchError((_) {});
-                          },
-                        )
-                      else if (latestAnnouncement == null)
-                        const _EmptyDashboardState(
-                          icon: Icons.campaign_rounded,
-                          title: 'Belum ada pengumuman',
-                          subtitle: 'Pengumuman terbaru akan tampil di sini.',
-                        )
-                      else
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _AdminAnnouncementCard(
-                              announcement: latestAnnouncement,
-                              onEditTap: () => _openAnnouncementForm(
-                                context,
-                                announcement: latestAnnouncement,
-                              ),
-                              onDeleteTap: () => _confirmDeleteAnnouncement(
-                                context,
-                                latestAnnouncement,
-                              ),
-                              showLatestBadge: true,
-                            ),
-                          ],
+                  const SizedBox(height: 22),
+                  _SectionHeader(
+                    title: 'Statistik Hari Ini',
+                    subtitle: 'Ringkasan cepat aktivitas dan kondisi terkini',
+                  ),
+                  const SizedBox(height: 16),
+                  _buildStatisticsGrid(
+                    newCount: newCount,
+                    processedCount: processedCount,
+                    resolvedCount: resolvedCount,
+                    totalWargaCount: totalWargaCount,
+                  ),
+                  const SizedBox(height: 28),
+                  _SectionHeader(
+                    title: 'Akses Cepat',
+                    subtitle: 'Aksi yang paling sering digunakan RT',
+                  ),
+                  const SizedBox(height: 16),
+                  _buildQuickActions(context),
+                  const SizedBox(height: 28),
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: AppTheme.outlineVariantColor.withValues(
+                          alpha: 0.55,
                         ),
-                      if (canAddAnnouncement) ...[
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          width: double.infinity,
-                          child: FilledButton.icon(
-                            onPressed: () => _openAnnouncementForm(context),
-                            icon: const Icon(Icons.add_rounded),
-                            label: const Text('Tambah Pengumuman'),
-                          ),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.04),
+                          blurRadius: 16,
+                          offset: const Offset(0, 8),
                         ),
                       ],
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 28),
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: AppTheme.outlineVariantColor.withValues(
-                        alpha: 0.55,
-                      ),
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.04),
-                        blurRadius: 16,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          const Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Voting RT',
-                                  style: TextStyle(
-                                    color: AppTheme.textPrimaryColor,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w700,
-                                    height: 1.2,
-                                  ),
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  'Voting aktif yang sedang berjalan',
-                                  style: TextStyle(
-                                    color: AppTheme.textSecondaryColor,
-                                    fontSize: 12,
-                                    height: 1.4,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () => _showAllPollsSheet(context),
-                            child: const Text('Lihat Semua'),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      if (isPollsLoading && highlightedPoll == null)
-                        const _LoadingDashboardState(
-                          title: 'Memuat voting',
-                          subtitle: 'Mengambil data voting dari Supabase.',
-                        )
-                      else if (pollsError != null && highlightedPoll == null)
-                        _PollSectionErrorState(
-                          message: pollsError,
-                          onRetry: () {
-                            context.read<AppState>().refreshPolls().catchError(
-                              (_) {},
-                            );
-                          },
-                        )
-                      else if (highlightedPoll == null)
-                        const _EmptyDashboardState(
-                          icon: Icons.how_to_vote_rounded,
-                          title: 'Belum ada voting aktif',
-                          subtitle:
-                              'Voting aktif akan tampil di sini ketika tersedia.',
-                        )
-                      else
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            _AdminPollCard(
-                              poll: highlightedPoll,
-                              maxVotes: maxPollVotes,
-                              onDetailTap: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => DetailVotingScreen(
-                                      pollId: highlightedPoll.id,
+                            const Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Pengumuman RT',
+                                    style: TextStyle(
+                                      color: AppTheme.textPrimaryColor,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w700,
+                                      height: 1.2,
                                     ),
                                   ),
-                                );
-                              },
-                              onDeactivateTap: () => _confirmDeactivatePoll(
-                                context,
-                                highlightedPoll,
+                                  SizedBox(height: 4),
+                                  Text(
+                                    'Informasi terbaru dari Ketua RT',
+                                    style: TextStyle(
+                                      color: AppTheme.textSecondaryColor,
+                                      fontSize: 12,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () =>
+                                  _showAllAnnouncementsSheet(context),
+                              child: const Text('Lihat Semua'),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        if (isAnnouncementsLoading &&
+                            latestAnnouncement == null)
+                          const _LoadingDashboardState(
+                            title: 'Memuat pengumuman',
+                            subtitle:
+                                'Mengambil data pengumuman dari Supabase.',
+                          )
+                        else if (announcementError != null &&
+                            latestAnnouncement == null)
+                          _AnnouncementSectionErrorState(
+                            message: announcementError,
+                            onRetry: () {
+                              state.refreshAnnouncements().catchError((_) {});
+                            },
+                          )
+                        else if (latestAnnouncement == null)
+                          const _EmptyDashboardState(
+                            icon: Icons.campaign_rounded,
+                            title: 'Belum ada pengumuman',
+                            subtitle: 'Pengumuman terbaru akan tampil di sini.',
+                          )
+                        else
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _AdminAnnouncementCard(
+                                announcement: latestAnnouncement,
+                                onEditTap: () => _openAnnouncementForm(
+                                  context,
+                                  announcement: latestAnnouncement,
+                                ),
+                                onDeleteTap: () => _confirmDeleteAnnouncement(
+                                  context,
+                                  latestAnnouncement,
+                                ),
+                                showLatestBadge: true,
+                              ),
+                            ],
+                          ),
+                        if (canAddAnnouncement) ...[
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: FilledButton.icon(
+                              onPressed: () => _openAnnouncementForm(context),
+                              icon: const Icon(Icons.add_rounded),
+                              label: const Text('Tambah Pengumuman'),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: AppTheme.outlineVariantColor.withValues(
+                          alpha: 0.55,
+                        ),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.04),
+                          blurRadius: 16,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            const Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Voting RT',
+                                    style: TextStyle(
+                                      color: AppTheme.textPrimaryColor,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w700,
+                                      height: 1.2,
+                                    ),
+                                  ),
+                                  SizedBox(height: 4),
+                                  Text(
+                                    'Voting aktif yang sedang berjalan',
+                                    style: TextStyle(
+                                      color: AppTheme.textSecondaryColor,
+                                      fontSize: 12,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () => _showAllPollsSheet(context),
+                              child: const Text('Lihat Semua'),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        if (isPollsLoading && highlightedPoll == null)
+                          const _LoadingDashboardState(
+                            title: 'Memuat voting',
+                            subtitle: 'Mengambil data voting dari Supabase.',
+                          )
+                        else if (pollsError != null && highlightedPoll == null)
+                          _PollSectionErrorState(
+                            message: pollsError,
+                            onRetry: () {
+                              context
+                                  .read<AppState>()
+                                  .refreshPolls()
+                                  .catchError((_) {});
+                            },
+                          )
+                        else if (highlightedPoll == null)
+                          const _EmptyDashboardState(
+                            icon: Icons.how_to_vote_rounded,
+                            title: 'Belum ada voting aktif',
+                            subtitle:
+                                'Voting aktif akan tampil di sini ketika tersedia.',
+                          )
+                        else
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _AdminPollCard(
+                                poll: highlightedPoll,
+                                maxVotes: maxPollVotes,
+                                onDetailTap: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => DetailVotingScreen(
+                                        pollId: highlightedPoll.id,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                onDeactivateTap: () => _confirmDeactivatePoll(
+                                  context,
+                                  highlightedPoll,
+                                ),
+                              ),
+                            ],
+                          ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: FilledButton.icon(
+                                onPressed: () => _openPollForm(context),
+                                icon: const Icon(Icons.add_rounded),
+                                label: const Text('Tambah Voting'),
                               ),
                             ),
                           ],
                         ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: FilledButton.icon(
-                              onPressed: () => _openPollForm(context),
-                              icon: const Icon(Icons.add_rounded),
-                              label: const Text('Tambah Voting'),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 28),
-                Container(
-                  key: _reportSectionKey,
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: AppTheme.outlineVariantColor.withValues(
-                        alpha: 0.55,
-                      ),
+                      ],
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.04),
-                        blurRadius: 16,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          const Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Laporan Masuk',
-                                  style: TextStyle(
-                                    color: AppTheme.textPrimaryColor,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w700,
-                                    height: 1.2,
-                                  ),
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  'Laporan terbaru dari warga.',
-                                  style: TextStyle(
-                                    color: AppTheme.textSecondaryColor,
-                                    fontSize: 12,
-                                    height: 1.4,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () =>
-                                _showAllReportsSheet(context, reports: reports),
-                            child: const Text('Lihat Semua'),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 18),
-                      if (isReportsLoading && latestReport == null)
-                        const _LoadingDashboardState(
-                          title: 'Memuat laporan masuk',
-                          subtitle: 'Mengambil data laporan dari Supabase.',
-                        )
-                      else if (reportError != null && latestReport == null)
-                        _ReportSectionErrorState(
-                          message: reportError,
-                          onRetry: () => state.refreshAdminReports(),
-                        )
-                      else if (latestReport == null)
-                        const _EmptyDashboardState(
-                          icon: Icons.inbox_rounded,
-                          title: 'Belum ada laporan masuk',
-                          subtitle:
-                              'Laporan warga yang baru masuk akan tampil di sini.',
-                        )
-                      else
-                        _AdminReportCard(
-                          report: latestReport,
-                          categoryIcon: _categoryIcon(latestReport.category),
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => DetailLaporanAdminScreen(
-                                  reportId: latestReport.id,
-                                ),
-                              ),
-                            );
-                          },
+                  const SizedBox(height: 28),
+                  Container(
+                    key: _reportSectionKey,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: AppTheme.outlineVariantColor.withValues(
+                          alpha: 0.55,
                         ),
-                    ],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.04),
+                          blurRadius: 16,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            const Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Laporan Masuk',
+                                    style: TextStyle(
+                                      color: AppTheme.textPrimaryColor,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w700,
+                                      height: 1.2,
+                                    ),
+                                  ),
+                                  SizedBox(height: 4),
+                                  Text(
+                                    'Laporan terbaru dari warga.',
+                                    style: TextStyle(
+                                      color: AppTheme.textSecondaryColor,
+                                      fontSize: 12,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () => _showAllReportsSheet(
+                                context,
+                                reports: reports,
+                              ),
+                              child: const Text('Lihat Semua'),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 18),
+                        if (isReportsLoading && latestReport == null)
+                          const _LoadingDashboardState(
+                            title: 'Memuat laporan masuk',
+                            subtitle: 'Mengambil data laporan dari Supabase.',
+                          )
+                        else if (reportError != null && latestReport == null)
+                          _ReportSectionErrorState(
+                            message: reportError,
+                            onRetry: () => state.refreshAdminReports(),
+                          )
+                        else if (latestReport == null)
+                          const _EmptyDashboardState(
+                            icon: Icons.inbox_rounded,
+                            title: 'Belum ada laporan masuk',
+                            subtitle:
+                                'Laporan warga yang baru masuk akan tampil di sini.',
+                          )
+                        else
+                          _AdminReportCard(
+                            report: latestReport,
+                            categoryIcon: _categoryIcon(latestReport.category),
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => DetailLaporanAdminScreen(
+                                    reportId: latestReport.id,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 100),
-              ],
+                  const SizedBox(height: 100),
+                ],
+              ),
             ),
           ),
         ),

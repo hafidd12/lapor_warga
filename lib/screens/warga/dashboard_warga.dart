@@ -32,6 +32,11 @@ class _DashboardWargaScreenState extends State<DashboardWargaScreen> {
     });
   }
 
+  Future<void> _refreshDashboard() async {
+    final state = context.read<AppState>();
+    await state.refreshCitizenDashboardData().catchError((_) {});
+  }
+
   String _greetingFor(DateTime now) {
     final hour = now.hour;
     if (hour >= 4 && hour < 11) return 'Selamat Pagi';
@@ -242,215 +247,220 @@ class _DashboardWargaScreenState extends State<DashboardWargaScreen> {
       backgroundColor: Colors.white,
       body: SafeArea(
         bottom: false,
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                DashboardTopSection(user: user),
-                const SizedBox(height: 18),
-                _buildHeroBanner(context),
-                const SizedBox(height: 22),
-                _buildSectionHeader(
-                  title: 'Status Laporan Saya',
-                  subtitle: 'Pantau perkembangan laporan Anda',
-                  actionLabel: 'Lihat Semua',
-                  onActionTap: goToAktivitas ?? () {},
-                ),
-                const SizedBox(height: 14),
-                if (isReportsLoading && myReports.isEmpty)
-                  _buildSectionLoadingIndicator(
-                    message: 'Memuat laporan Anda...',
-                    height: 190,
-                  )
-                else if (reportError != null && myReports.isEmpty)
-                  _buildReportErrorState(
-                    message: reportError,
-                    onRetry: () => state.refreshMyReports(),
-                    height: 190,
-                  )
-                else if (myReports.isEmpty)
-                  _buildEmptyState(
-                    icon: Icons.assignment_outlined,
-                    title: 'Belum ada laporan aktif',
-                    subtitle: 'Gunakan tombol Laporkan Sekarang untuk mulai.',
-                  )
-                else
-                  SizedBox(
-                    height: 196,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      physics: const BouncingScrollPhysics(),
-                      itemCount: visibleMyReports.length,
-                      separatorBuilder: (_, _) => const SizedBox(width: 12),
-                      itemBuilder: (context, index) {
-                        return _ReportStatusCard(
-                          report: visibleMyReports[index],
-                          onTap: () => _openReportDetail(
-                            context,
-                            visibleMyReports[index],
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                const SizedBox(height: 28),
-                _buildSectionHeader(
-                  title: 'Pengumuman Terbaru',
-                  subtitle: 'Informasi terbaru dari Ketua RT',
-                  actionLabel: 'Lihat Semua',
-                  onActionTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const DaftarPengumumanScreen(),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 16),
-                if (isAnnouncementsLoading && announcements.isEmpty)
-                  _buildSectionLoadingIndicator(
-                    message: 'Memuat pengumuman...',
-                    height: 228,
-                  )
-                else if (announcementError != null && announcements.isEmpty)
-                  _buildErrorSection(
-                    title: 'Pengumuman Terbaru',
-                    subtitle: announcementError,
-                    onRetry: () {
-                      state.refreshAnnouncements().catchError((_) {});
-                    },
-                    height: 228,
-                  )
-                else if (announcements.isEmpty)
-                  _buildEmptyState(
-                    icon: Icons.campaign_rounded,
-                    title: 'Belum ada pengumuman baru',
-                    subtitle: 'Semua pengumuman akan tampil di sini.',
-                  )
-                else
-                  SizedBox(
-                    height: 226,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      physics: const BouncingScrollPhysics(),
-                      itemCount: announcements.length,
-                      separatorBuilder: (_, _) => const SizedBox(width: 14),
-                      itemBuilder: (context, index) {
-                        return AnnouncementPreviewCard(
-                          announcement: announcements[index],
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => DetailPengumumanScreen(
-                                  announcement: announcements[index],
-                                ),
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                const SizedBox(height: 28),
-                if (isReportsLoading && completedReports.isEmpty)
-                  _buildLoadingSection(
-                    title: 'Bukti Selesai dari RT',
-                    subtitle:
-                        'Laporan yang telah ditindaklanjuti oleh Ketua RT',
-                    height: 272,
-                  )
-                else if (reportError != null && completedReports.isEmpty)
-                  _buildErrorSection(
-                    title: 'Bukti Selesai dari RT',
-                    subtitle: reportError,
-                    onRetry: () => state.refreshMyReports(),
-                    height: 272,
-                  )
-                else if (completedReports.isNotEmpty) ...[
+        child: RefreshIndicator(
+          onRefresh: _refreshDashboard,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  DashboardTopSection(user: user),
+                  const SizedBox(height: 18),
+                  _buildHeroBanner(context),
+                  const SizedBox(height: 22),
                   _buildSectionHeader(
-                    title: 'Bukti Selesai dari RT',
-                    subtitle:
-                        'Laporan yang telah ditindaklanjuti oleh Ketua RT',
-                    actionLabel: completedReports.length > 2
-                        ? 'Lihat Semua'
-                        : null,
-                    onActionTap: completedReports.length > 2
-                        ? () => _showCompletedReportsSheet(
-                            context,
-                            reports: completedReports,
-                            rtRw: user?.rtRw,
-                          )
-                        : null,
+                    title: 'Status Laporan Saya',
+                    subtitle: 'Pantau perkembangan laporan Anda',
+                    actionLabel: 'Lihat Semua',
+                    onActionTap: goToAktivitas ?? () {},
                   ),
                   const SizedBox(height: 14),
-                  SizedBox(
-                    height: 272,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      physics: const BouncingScrollPhysics(),
-                      itemCount: visibleCompletedReports.length,
-                      separatorBuilder: (_, _) => const SizedBox(width: 12),
-                      itemBuilder: (context, index) {
-                        return _CompletionProofCard(
-                          report: visibleCompletedReports[index],
-                          rtRw: user?.rtRw,
-                          onTap: () => _openReportDetail(
-                            context,
-                            visibleCompletedReports[index],
-                          ),
-                        );
-                      },
+                  if (isReportsLoading && myReports.isEmpty)
+                    _buildSectionLoadingIndicator(
+                      message: 'Memuat laporan Anda...',
+                      height: 190,
+                    )
+                  else if (reportError != null && myReports.isEmpty)
+                    _buildReportErrorState(
+                      message: reportError,
+                      onRetry: () => state.refreshMyReports(),
+                      height: 190,
+                    )
+                  else if (myReports.isEmpty)
+                    _buildEmptyState(
+                      icon: Icons.assignment_outlined,
+                      title: 'Belum ada laporan aktif',
+                      subtitle: 'Gunakan tombol Laporkan Sekarang untuk mulai.',
+                    )
+                  else
+                    SizedBox(
+                      height: 196,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        itemCount: visibleMyReports.length,
+                        separatorBuilder: (_, _) => const SizedBox(width: 12),
+                        itemBuilder: (context, index) {
+                          return _ReportStatusCard(
+                            report: visibleMyReports[index],
+                            onTap: () => _openReportDetail(
+                              context,
+                              visibleMyReports[index],
+                            ),
+                          );
+                        },
+                      ),
                     ),
-                  ),
-                ],
-                const SizedBox(height: 28),
-                _buildSectionHeader(
-                  title: 'Voting Lingkungan',
-                  subtitle: 'Berikan suara untuk keputusan bersama warga',
-                  actionLabel: 'Lihat Semua',
-                  onActionTap: () => _showAllPollsSheet(
-                    context,
-                    polls: state.polls,
-                    userId: userId,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                if (isPollsLoading && poll == null)
-                  _buildSectionLoadingIndicator(
-                    message: 'Memuat voting...',
-                    height: 180,
-                  )
-                else if (pollsError != null && poll == null)
-                  _buildErrorSection(
-                    title: 'Voting Lingkungan',
-                    subtitle: pollsError,
-                    onRetry: () => state.refreshPolls().catchError((_) {}),
-                    height: 180,
-                  )
-                else if (poll == null)
-                  _buildEmptyState(
-                    icon: Icons.how_to_vote_rounded,
-                    title: 'Tidak ada voting aktif',
-                    subtitle: 'Voting aktif akan muncul di sini.',
-                  )
-                else
-                  _buildPollSummaryCard(
-                    context,
-                    poll: poll,
-                    hasVoted: hasVoted,
-                    onViewTap: () {
+                  const SizedBox(height: 28),
+                  _buildSectionHeader(
+                    title: 'Pengumuman Terbaru',
+                    subtitle: 'Informasi terbaru dari Ketua RT',
+                    actionLabel: 'Lihat Semua',
+                    onActionTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (_) => DetailVotingScreen(pollId: poll.id),
+                          builder: (_) => const DaftarPengumumanScreen(),
                         ),
                       );
                     },
                   ),
-                const SizedBox(height: 40),
-              ],
+                  const SizedBox(height: 16),
+                  if (isAnnouncementsLoading && announcements.isEmpty)
+                    _buildSectionLoadingIndicator(
+                      message: 'Memuat pengumuman...',
+                      height: 228,
+                    )
+                  else if (announcementError != null && announcements.isEmpty)
+                    _buildErrorSection(
+                      title: 'Pengumuman Terbaru',
+                      subtitle: announcementError,
+                      onRetry: () {
+                        state.refreshAnnouncements().catchError((_) {});
+                      },
+                      height: 228,
+                    )
+                  else if (announcements.isEmpty)
+                    _buildEmptyState(
+                      icon: Icons.campaign_rounded,
+                      title: 'Belum ada pengumuman baru',
+                      subtitle: 'Semua pengumuman akan tampil di sini.',
+                    )
+                  else
+                    SizedBox(
+                      height: 226,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        itemCount: announcements.length,
+                        separatorBuilder: (_, _) => const SizedBox(width: 14),
+                        itemBuilder: (context, index) {
+                          return AnnouncementPreviewCard(
+                            announcement: announcements[index],
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => DetailPengumumanScreen(
+                                    announcement: announcements[index],
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  const SizedBox(height: 28),
+                  if (isReportsLoading && completedReports.isEmpty)
+                    _buildLoadingSection(
+                      title: 'Bukti Selesai dari RT',
+                      subtitle:
+                          'Laporan yang telah ditindaklanjuti oleh Ketua RT',
+                      height: 272,
+                    )
+                  else if (reportError != null && completedReports.isEmpty)
+                    _buildErrorSection(
+                      title: 'Bukti Selesai dari RT',
+                      subtitle: reportError,
+                      onRetry: () => state.refreshMyReports(),
+                      height: 272,
+                    )
+                  else if (completedReports.isNotEmpty) ...[
+                    _buildSectionHeader(
+                      title: 'Bukti Selesai dari RT',
+                      subtitle:
+                          'Laporan yang telah ditindaklanjuti oleh Ketua RT',
+                      actionLabel: completedReports.length > 2
+                          ? 'Lihat Semua'
+                          : null,
+                      onActionTap: completedReports.length > 2
+                          ? () => _showCompletedReportsSheet(
+                              context,
+                              reports: completedReports,
+                              rtRw: user?.rtRw,
+                            )
+                          : null,
+                    ),
+                    const SizedBox(height: 14),
+                    SizedBox(
+                      height: 272,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        itemCount: visibleCompletedReports.length,
+                        separatorBuilder: (_, _) => const SizedBox(width: 12),
+                        itemBuilder: (context, index) {
+                          return _CompletionProofCard(
+                            report: visibleCompletedReports[index],
+                            rtRw: user?.rtRw,
+                            onTap: () => _openReportDetail(
+                              context,
+                              visibleCompletedReports[index],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 28),
+                  _buildSectionHeader(
+                    title: 'Voting Lingkungan',
+                    subtitle: 'Berikan suara untuk keputusan bersama warga',
+                    actionLabel: 'Lihat Semua',
+                    onActionTap: () => _showAllPollsSheet(
+                      context,
+                      polls: state.polls,
+                      userId: userId,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  if (isPollsLoading && poll == null)
+                    _buildSectionLoadingIndicator(
+                      message: 'Memuat voting...',
+                      height: 180,
+                    )
+                  else if (pollsError != null && poll == null)
+                    _buildErrorSection(
+                      title: 'Voting Lingkungan',
+                      subtitle: pollsError,
+                      onRetry: () => state.refreshPolls().catchError((_) {}),
+                      height: 180,
+                    )
+                  else if (poll == null)
+                    _buildEmptyState(
+                      icon: Icons.how_to_vote_rounded,
+                      title: 'Tidak ada voting aktif',
+                      subtitle: 'Voting aktif akan muncul di sini.',
+                    )
+                  else
+                    _buildPollSummaryCard(
+                      context,
+                      poll: poll,
+                      hasVoted: hasVoted,
+                      onViewTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => DetailVotingScreen(pollId: poll.id),
+                          ),
+                        );
+                      },
+                    ),
+                  const SizedBox(height: 40),
+                ],
+              ),
             ),
           ),
         ),

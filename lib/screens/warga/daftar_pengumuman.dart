@@ -10,6 +10,10 @@ import 'detail_pengumuman.dart';
 class DaftarPengumumanScreen extends StatelessWidget {
   const DaftarPengumumanScreen({super.key});
 
+  Future<void> _refreshAnnouncements(BuildContext context) async {
+    await context.read<AppState>().refreshAnnouncements().catchError((_) {});
+  }
+
   List<Announcement> _filteredAnnouncements(AppState state) {
     final currentRtRw = state.currentUser?.rtRw?.trim() ?? '';
     final announcements = state.announcements
@@ -45,41 +49,46 @@ class DaftarPengumumanScreen extends StatelessWidget {
         elevation: 0.5,
         actions: const [NotificationBellButton()],
       ),
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (announcements.isEmpty)
-              _EmptyAnnouncementState(
-                onRefresh: () {
-                  state.refreshAnnouncements().catchError((_) {});
-                },
-              )
-            else
-              Column(
-                children: [
-                  for (var i = 0; i < announcements.length; i++) ...[
-                    _AnnouncementListCard(
-                      announcement: announcements[i],
-                      formatDate: _formatDate,
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => DetailPengumumanScreen(
-                              announcement: announcements[i],
+      body: RefreshIndicator(
+        onRefresh: () => _refreshAnnouncements(context),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics(),
+          ),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (announcements.isEmpty)
+                _EmptyAnnouncementState(
+                  onRefresh: () {
+                    state.refreshAnnouncements().catchError((_) {});
+                  },
+                )
+              else
+                Column(
+                  children: [
+                    for (var i = 0; i < announcements.length; i++) ...[
+                      _AnnouncementListCard(
+                        announcement: announcements[i],
+                        formatDate: _formatDate,
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => DetailPengumumanScreen(
+                                announcement: announcements[i],
+                              ),
                             ),
-                          ),
-                        );
-                      },
-                    ),
-                    if (i != announcements.length - 1)
-                      const SizedBox(height: 14),
+                          );
+                        },
+                      ),
+                      if (i != announcements.length - 1)
+                        const SizedBox(height: 14),
+                    ],
                   ],
-                ],
-              ),
-          ],
+                ),
+            ],
+          ),
         ),
       ),
     );

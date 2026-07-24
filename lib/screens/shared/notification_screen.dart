@@ -68,69 +68,93 @@ class NotificationScreen extends StatelessWidget {
             foregroundColor: AppTheme.textPrimaryColor,
             elevation: 0.5,
           ),
-          body: notifications.isEmpty
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 72,
-                          height: 72,
-                          decoration: BoxDecoration(
-                            color: AppTheme.primaryColor.withValues(alpha: 0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.notifications_none_rounded,
-                            color: AppTheme.primaryColor,
-                            size: 36,
-                          ),
+          body: LayoutBuilder(
+            builder: (context, constraints) {
+              return RefreshIndicator(
+                onRefresh: () =>
+                    state.refreshNotifications().catchError((_) {}),
+                child: notifications.isEmpty
+                    ? ListView(
+                        physics: const AlwaysScrollableScrollPhysics(
+                          parent: BouncingScrollPhysics(),
                         ),
-                        const SizedBox(height: 16),
-                        const Text(
-                          'Belum ada notifikasi',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: AppTheme.textPrimaryColor,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
+                        children: [
+                          SizedBox(
+                            height: constraints.maxHeight,
+                            child: Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(24),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      width: 72,
+                                      height: 72,
+                                      decoration: BoxDecoration(
+                                        color: AppTheme.primaryColor.withValues(
+                                          alpha: 0.1,
+                                        ),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.notifications_none_rounded,
+                                        color: AppTheme.primaryColor,
+                                        size: 36,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    const Text(
+                                      'Belum ada notifikasi',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: AppTheme.textPrimaryColor,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    const Text(
+                                      'Saat ini belum ada notifikasi untuk ditampilkan.',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: AppTheme.textSecondaryColor,
+                                        fontSize: 13,
+                                        height: 1.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
                           ),
+                        ],
+                      )
+                    : ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(
+                          parent: BouncingScrollPhysics(),
                         ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Saat ini belum ada notifikasi untuk ditampilkan.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: AppTheme.textSecondaryColor,
-                            fontSize: 13,
-                            height: 1.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-              : ListView.builder(
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                  itemCount: notifications.length,
-                  itemBuilder: (context, index) {
-                    final notification = notifications[index];
-                    return Padding(
-                      padding: EdgeInsets.only(
-                        bottom: index == notifications.length - 1 ? 0 : 12,
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                        itemCount: notifications.length,
+                        itemBuilder: (context, index) {
+                          final notification = notifications[index];
+                          return Padding(
+                            padding: EdgeInsets.only(
+                              bottom: index == notifications.length - 1
+                                  ? 0
+                                  : 12,
+                            ),
+                            child: _NotificationTile(
+                              notification: notification,
+                              formatDateTime: _formatWibDate,
+                              icon: _notificationIcon(notification.type),
+                              iconColor: _notificationColor(notification.type),
+                            ),
+                          );
+                        },
                       ),
-                      child: _NotificationTile(
-                        notification: notification,
-                        formatDateTime: _formatWibDate,
-                        icon: _notificationIcon(notification.type),
-                        iconColor: _notificationColor(notification.type),
-                      ),
-                    );
-                  },
-                ),
+              );
+            },
+          ),
         );
       },
     );

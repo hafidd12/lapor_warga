@@ -11,6 +11,10 @@ class AktivitasAdminScreen extends StatelessWidget {
 
   const AktivitasAdminScreen({super.key, this.onBackPressed});
 
+  Future<void> _refreshActivities(BuildContext context) async {
+    await context.read<AppState>().refreshActivities().catchError((_) {});
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = Provider.of<AppState>(context);
@@ -34,17 +38,40 @@ class AktivitasAdminScreen extends StatelessWidget {
         ),
         actions: const [NotificationBellButton()],
       ),
-      body: groupedActivities.isEmpty
-          ? const _ActivityEmptyState()
-          : ListView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-              itemCount: groupedActivities.length,
-              itemBuilder: (context, index) {
-                final group = groupedActivities[index];
-                final isLastGroup = index == groupedActivities.length - 1;
-                return _ActivitySection(group: group, isLastGroup: isLastGroup);
-              },
-            ),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return RefreshIndicator(
+            onRefresh: () => _refreshActivities(context),
+            child: groupedActivities.isEmpty
+                ? ListView(
+                    physics: const AlwaysScrollableScrollPhysics(
+                      parent: BouncingScrollPhysics(),
+                    ),
+                    children: [
+                      SizedBox(
+                        height: constraints.maxHeight,
+                        child: const _ActivityEmptyState(),
+                      ),
+                    ],
+                  )
+                : ListView.builder(
+                    physics: const AlwaysScrollableScrollPhysics(
+                      parent: BouncingScrollPhysics(),
+                    ),
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                    itemCount: groupedActivities.length,
+                    itemBuilder: (context, index) {
+                      final group = groupedActivities[index];
+                      final isLastGroup = index == groupedActivities.length - 1;
+                      return _ActivitySection(
+                        group: group,
+                        isLastGroup: isLastGroup,
+                      );
+                    },
+                  ),
+          );
+        },
+      ),
     );
   }
 
