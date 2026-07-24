@@ -249,7 +249,7 @@ class _DashboardWargaScreenState extends State<DashboardWargaScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                DashboardTopSection(user: user, onNotificationsTap: () {}),
+                DashboardTopSection(user: user),
                 const SizedBox(height: 18),
                 _buildHeroBanner(context),
                 const SizedBox(height: 22),

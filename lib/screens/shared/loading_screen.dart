@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart'
 import 'package:in_app_update/in_app_update.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/models.dart';
 import '../../providers/app_state.dart';
 import '../../theme.dart';
@@ -19,6 +20,9 @@ class LoadingScreen extends StatefulWidget {
 }
 
 class LoadingScreenState extends State<LoadingScreen> {
+  static const _nonGovernmentDisclaimerAcceptedKey =
+      'accepted_non_government_disclaimer';
+
   Timer? _timer;
   StreamSubscription<InstallStatus>? _installUpdateSubscription;
   StreamSubscription<AuthState>? _authStateSubscription;
@@ -113,6 +117,12 @@ class LoadingScreenState extends State<LoadingScreen> {
   }
 
   Future<void> _runStartupFlow() async {
+    await _showDisclaimerIfNeeded();
+
+    if (!mounted || _passwordRecoveryDetected) {
+      return;
+    }
+
     if (_passwordRecoveryDetected) {
       debugPrint(
         '[LoadingScreen] Startup flow dibatalkan karena password recovery sedang aktif.',
@@ -129,6 +139,56 @@ class LoadingScreenState extends State<LoadingScreen> {
       if (!mounted) return;
       _navigateToLogin();
     }
+  }
+
+  Future<void> _showDisclaimerIfNeeded() async {
+    final prefs = await SharedPreferences.getInstance();
+    final hasAccepted =
+        prefs.getBool(_nonGovernmentDisclaimerAcceptedKey) ?? false;
+
+    if (hasAccepted || !mounted) {
+      return;
+    }
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return PopScope(
+          canPop: false,
+          child: AlertDialog(
+            title: const Text('Tentang Lapor Warga'),
+            content: const SingleChildScrollView(
+              child: Text(
+                'Lapor Warga merupakan aplikasi komunikasi dan pelaporan '
+                'lingkungan yang dikembangkan sebagai proyek akademik.\n\n'
+                'Aplikasi ini bukan aplikasi resmi pemerintah dan tidak '
+                'mewakili kementerian, pemerintah daerah, maupun instansi '
+                'pemerintah lainnya.\n\n'
+                'Aplikasi ini hanya digunakan sebagai media komunikasi antara '
+                'warga dan pengurus RT/RW.\n\n'
+                'Informasi resmi mengenai layanan pemerintahan harus diperoleh '
+                'melalui kanal resmi pemerintah.',
+              ),
+            ),
+            actions: [
+              FilledButton(
+                onPressed: () async {
+                  await prefs.setBool(
+                    _nonGovernmentDisclaimerAcceptedKey,
+                    true,
+                  );
+                  if (dialogContext.mounted) {
+                    Navigator.of(dialogContext).pop();
+                  }
+                },
+                child: const Text('Saya Mengerti'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Future<bool> _checkAndHandleAppUpdate() async {
